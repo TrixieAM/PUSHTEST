@@ -22,7 +22,10 @@ import {
   ListItemText,
   ListItemIcon,
   Card,
-  CardContent
+  CardContent,
+  Menu,
+  MenuItem,
+  InputAdornment
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -40,6 +43,7 @@ import {
   Person as PersonIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
+  ArrowDropDown as ArrowDropDownIcon,
 } from "@mui/icons-material";
 
 import ReorderIcon from '@mui/icons-material/Reorder';
@@ -57,6 +61,140 @@ const getAuthHeaders = () => {
       'Content-Type': 'application/json',
     },
   };
+};
+
+// Flexible Year Input Component with Dropdown
+const FlexibleYearInput = ({ value, onChange, label, disabled = false, error = false, helperText = '' }) => {
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [inputValue, setInputValue] = useState(value || '');
+  const currentYear = new Date().getFullYear();
+  const years = [];
+  
+  // Generate years from 1950 to current year + 10
+  for (let year = 1950; year <= currentYear + 10; year++) {
+    years.push(year);
+  }
+
+  useEffect(() => {
+    setInputValue(value || '');
+  }, [value]);
+
+  const handleMenuOpen = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleYearSelect = (year) => {
+    setInputValue(year.toString());
+    onChange(year.toString());
+    handleMenuClose();
+  };
+
+  const handleInputChange = (e) => {
+    const newValue = e.target.value;
+    // Only allow numbers and limit to 4 digits
+    if (newValue === '' || (/^\d+$/.test(newValue) && newValue.length <= 4)) {
+      setInputValue(newValue);
+      onChange(newValue);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'ArrowDown' && !anchorEl) {
+      handleMenuOpen(e);
+    } else if (e.key === 'Escape' && anchorEl) {
+      handleMenuClose();
+    }
+  };
+
+  return (
+    <Box>
+      <Typography variant="caption" sx={{ fontWeight: "bold", mb: 0.5, color: "#333", display: 'block' }}>
+        {label}
+      </Typography>
+      <TextField
+        value={inputValue}
+        onChange={handleInputChange}
+        onKeyDown={handleKeyDown}
+        onFocus={handleInputChange}
+        placeholder="Enter year or select from dropdown"
+        fullWidth
+        size="small"
+        disabled={disabled}
+        error={error}
+        helperText={helperText}
+        InputProps={{
+          endAdornment: (
+            <InputAdornment position="end">
+              <IconButton
+                onClick={handleMenuOpen}
+                size="small"
+                disabled={disabled}
+                sx={{ color: '#6D2323' }}
+              >
+                <ArrowDropDownIcon />
+              </IconButton>
+            </InputAdornment>
+          ),
+        }}
+        sx={{
+          '& .MuiOutlinedInput-root': {
+            '& fieldset': {
+              borderColor: error ? 'red' : '#6D2323',
+              borderWidth: '1.5px'
+            },
+            '&:hover fieldset': {
+              borderColor: error ? 'red' : '#6D2323',
+            },
+            '&.Mui-focused fieldset': {
+              borderColor: error ? 'red' : '#6D2323',
+            },
+          },
+        }}
+      />
+      
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+        PaperProps={{
+          style: {
+            maxHeight: 300,
+            width: '200px',
+          },
+        }}
+      >
+        <MenuItem disabled>
+          <Typography variant="caption" sx={{ fontWeight: 'bold', color: '#666' }}>
+            Select a year:
+          </Typography>
+        </MenuItem>
+        {years.map((year) => (
+          <MenuItem
+            key={year}
+            onClick={() => handleYearSelect(year)}
+            selected={year.toString() === inputValue}
+            sx={{
+              '&:hover': {
+                backgroundColor: '#f5f5f5',
+              },
+              '&.Mui-selected': {
+                backgroundColor: '#e8eaf6',
+                '&:hover': {
+                  backgroundColor: '#c5cae9',
+                },
+              },
+            }}
+          >
+            {year}
+          </MenuItem>
+        ))}
+      </Menu>
+    </Box>
+  );
 };
 
 // Employee Autocomplete Component
@@ -392,6 +530,26 @@ const College = () => {
   useEffect(() => {
     fetchColleges();
   }, []);
+
+  // Auto-update Year Graduated when Period To changes for new college
+  useEffect(() => {
+    if (newCollege.collegePeriodTo) {
+      setNewCollege(prev => ({
+        ...prev,
+        collegeYearGraduated: prev.collegePeriodTo
+      }));
+    }
+  }, [newCollege.collegePeriodTo]);
+
+  // Auto-update Year Graduated when Period To changes for edit college
+  useEffect(() => {
+    if (editCollege && editCollege.collegePeriodTo) {
+      setEditCollege(prev => ({
+        ...prev,
+        collegeYearGraduated: prev.collegePeriodTo
+      }));
+    }
+  }, [editCollege?.collegePeriodTo]);
 
   const fetchColleges = async () => {
     try {
@@ -860,54 +1018,18 @@ const College = () => {
                   </Grid>
 
                   <Grid item xs={12} sm={6}>
-                    <Typography variant="caption" sx={{ fontWeight: "bold", mb: 0.5, color: "#333", display: 'block' }}>
-                      Period From
-                    </Typography>
-                    <TextField
+                    <FlexibleYearInput
                       value={newCollege.collegePeriodFrom}
-                      onChange={(e) => handleChange("collegePeriodFrom", e.target.value)}
-                      fullWidth
-                      size="small"
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                              '& fieldset': {
-                                borderColor: '#6D2323',
-                                borderWidth: '1.5px'
-                              },
-                              '&:hover fieldset': {
-                                borderColor: '#6D2323',
-                              },
-                              '&.Mui-focused fieldset': {
-                                borderColor: '#6D2323',
-                              },
-                            },
-                      }}
+                      onChange={(value) => handleChange("collegePeriodFrom", value)}
+                      label="Period From"
                     />
                   </Grid>
 
                   <Grid item xs={12} sm={6}>
-                    <Typography variant="caption" sx={{ fontWeight: "bold", mb: 0.5, color: "#333", display: 'block' }}>
-                      Period To
-                    </Typography>
-                    <TextField
+                    <FlexibleYearInput
                       value={newCollege.collegePeriodTo}
-                      onChange={(e) => handleChange("collegePeriodTo", e.target.value)}
-                      fullWidth
-                      size="small"
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                              '& fieldset': {
-                                borderColor: '#6D2323',
-                                borderWidth: '1.5px'
-                              },
-                              '&:hover fieldset': {
-                                borderColor: '#6D2323',
-                              },
-                              '&.Mui-focused fieldset': {
-                                borderColor: '#6D2323',
-                              },
-                            },
-                      }}
+                      onChange={(value) => handleChange("collegePeriodTo", value)}
+                      label="Period To"
                     />
                   </Grid>
 
@@ -939,26 +1061,32 @@ const College = () => {
 
                   <Grid item xs={12} sm={6}>
                     <Typography variant="caption" sx={{ fontWeight: "bold", mb: 0.5, color: "#333", display: 'block' }}>
-                      Year Graduated
+                      Year Graduated <span style={{ color: '#666', fontSize: '0.7rem' }}>(Auto-filled from Period To)</span>
                     </Typography>
                     <TextField
                       value={newCollege.collegeYearGraduated}
-                      onChange={(e) => handleChange("collegeYearGraduated", e.target.value)}
                       fullWidth
                       size="small"
+                      InputProps={{
+                        readOnly: true,
+                      }}
                       sx={{
                         '& .MuiOutlinedInput-root': {
-                              '& fieldset': {
-                                borderColor: '#6D2323',
-                                borderWidth: '1.5px'
-                              },
-                              '&:hover fieldset': {
-                                borderColor: '#6D2323',
-                              },
-                              '&.Mui-focused fieldset': {
-                                borderColor: '#6D2323',
-                              },
-                            },
+                          '& fieldset': {
+                            borderColor: '#6D2323',
+                            borderWidth: '1.5px'
+                          },
+                          '&:hover fieldset': {
+                            borderColor: '#6D2323',
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: '#6D2323',
+                          },
+                        },
+                        '& .MuiInputBase-input.Mui-disabled': {
+                          WebkitTextFillColor: '#000',
+                          backgroundColor: '#f5f5f5',
+                        },
                       }}
                     />
                   </Grid>
@@ -1175,7 +1303,7 @@ const College = () => {
                               </Typography>
                               
                               <Typography variant="body2" fontWeight="bold" color="#333" mb={1} noWrap sx={{ flexGrow: 1 }}>
-                                {college.collegeDegree || 'No Degree'}
+                                {college.collegeNameOfSchool || 'No College Name'}
                               </Typography>
                               
                               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1235,7 +1363,7 @@ const College = () => {
                               </Box>
                               
                               <Typography variant="body2" color="#666" sx={{ mb: 0.5 }}>
-                                {college.collegeDegree || 'No Degree'}
+                                {college.collegeNameOfSchool || 'No College Name'}
                               </Typography>
                               
                               <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -1528,64 +1656,40 @@ const College = () => {
                   </Grid>
 
                   <Grid item xs={12} sm={6}>
-                    <Typography variant="caption" sx={{ fontWeight: "bold", mb: 0.5, color: "#333", display: 'block' }}>
-                      Period From
-                    </Typography>
                     {isEditing ? (
-                      <TextField
+                      <FlexibleYearInput
                         value={editCollege.collegePeriodFrom}
-                        onChange={(e) => handleChange("collegePeriodFrom", e.target.value, true)}
-                        fullWidth
-                        size="small"
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            '& fieldset': {
-                              borderColor: "#6D2323",
-                            },
-                            '&:hover fieldset': {
-                              borderColor: "#6D2323",
-                            },
-                            '&.Mui-focused fieldset': {
-                              borderColor: "#6D2323",
-                            },
-                          },
-                        }}
+                        onChange={(value) => handleChange("collegePeriodFrom", value, true)}
+                        label="Period From"
                       />
                     ) : (
-                      <Typography variant="body2" sx={{ p: 1, bgcolor: '#f5f5f5', borderRadius: 1 }}>
-                        {editCollege.collegePeriodFrom || 'N/A'}
-                      </Typography>
+                      <Box>
+                        <Typography variant="caption" sx={{ fontWeight: "bold", mb: 0.5, color: "#333", display: 'block' }}>
+                          Period From
+                        </Typography>
+                        <Typography variant="body2" sx={{ p: 1, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+                          {editCollege.collegePeriodFrom || 'N/A'}
+                        </Typography>
+                      </Box>
                     )}
                   </Grid>
 
                   <Grid item xs={12} sm={6}>
-                    <Typography variant="caption" sx={{ fontWeight: "bold", mb: 0.5, color: "#333", display: 'block' }}>
-                      Period To
-                    </Typography>
                     {isEditing ? (
-                      <TextField
+                      <FlexibleYearInput
                         value={editCollege.collegePeriodTo}
-                        onChange={(e) => handleChange("collegePeriodTo", e.target.value, true)}
-                        fullWidth
-                        size="small"
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            '& fieldset': {
-                              borderColor: "#6D2323",
-                            },
-                            '&:hover fieldset': {
-                              borderColor: "#6D2323",
-                            },
-                            '&.Mui-focused fieldset': {
-                              borderColor: "#6D2323",
-                            },
-                          },
-                        }}
+                        onChange={(value) => handleChange("collegePeriodTo", value, true)}
+                        label="Period To"
                       />
                     ) : (
-                      <Typography variant="body2" sx={{ p: 1, bgcolor: '#f5f5f5', borderRadius: 1 }}>
-                        {editCollege.collegePeriodTo || 'N/A'}
-                      </Typography>
+                      <Box>
+                        <Typography variant="caption" sx={{ fontWeight: "bold", mb: 0.5, color: "#333", display: 'block' }}>
+                          Period To
+                        </Typography>
+                        <Typography variant="body2" sx={{ p: 1, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+                          {editCollege.collegePeriodTo || 'N/A'}
+                        </Typography>
+                      </Box>
                     )}
                   </Grid>
 
@@ -1622,25 +1726,31 @@ const College = () => {
 
                   <Grid item xs={12} sm={6}>
                     <Typography variant="caption" sx={{ fontWeight: "bold", mb: 0.5, color: "#333", display: 'block' }}>
-                      Year Graduated
+                      Year Graduated <span style={{ color: '#666', fontSize: '0.7rem' }}>(Auto-filled from Period To)</span>
                     </Typography>
                     {isEditing ? (
                       <TextField
                         value={editCollege.collegeYearGraduated}
-                        onChange={(e) => handleChange("collegeYearGraduated", e.target.value, true)}
                         fullWidth
                         size="small"
+                        InputProps={{
+                          readOnly: true,
+                        }}
                         sx={{
                           '& .MuiOutlinedInput-root': {
                             '& fieldset': {
-                              borderColor: "#6D2323",
+                              borderColor: '#6D2323',
                             },
                             '&:hover fieldset': {
-                              borderColor: "#6D2323",
+                              borderColor: '#6D2323',
                             },
                             '&.Mui-focused fieldset': {
-                              borderColor: "#6D2323",
+                              borderColor: '#6D2323',
                             },
+                          },
+                          '& .MuiInputBase-input.Mui-disabled': {
+                            WebkitTextFillColor: '#000',
+                            backgroundColor: '#f5f5f5',
                           },
                         }}
                       />

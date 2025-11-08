@@ -28,6 +28,19 @@ router.get("/college-table", (req, res) => {
   });
 });
 
+router.get('/college-by-person/:person_id', (req, res) => {
+  const { person_id } = req.params;
+  const sql = `SELECT * FROM college_table WHERE person_id = ?`;
+  db.query(sql, [person_id], (err, results) => {
+    if (err) {
+      console.error('Error fetching college by person_id:', err);
+      res.status(500).json({ error: 'Failed to fetch college records' });
+    } else {
+      res.json(results);
+    }
+  });
+});
+
 // Create (Add New College Entry)
 router.post("/college-table", (req, res) => {
   const { collegeNameOfSchool, collegeDegree, collegePeriodFrom, collegePeriodTo, collegeHighestAttained, collegeYearGraduated, collegeScholarshipAcademicHonorsReceived, person_id } = req.body;

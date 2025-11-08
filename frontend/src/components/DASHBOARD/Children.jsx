@@ -22,7 +22,9 @@ import {
   ListItemText,
   ListItemIcon,
   Card,
-  CardContent
+  CardContent,
+  Divider,
+  Avatar
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -38,6 +40,8 @@ import {
   Person as PersonIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
+  Group as GroupIcon,
+  FamilyRestroom as FamilyRestroomIcon
 } from "@mui/icons-material";
 
 import ReorderIcon from '@mui/icons-material/Reorder';
@@ -342,6 +346,14 @@ const Children = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [selectedEditEmployee, setSelectedEditEmployee] = useState(null);
   
+  // New state for the employee children modal
+  const [employeeChildrenModal, setEmployeeChildrenModal] = useState({
+    open: false,
+    employeeId: null,
+    employeeName: '',
+    children: []
+  });
+  
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
@@ -417,6 +429,24 @@ const Children = () => {
       console.error('Error fetching children:', error);
       showSnackbar('Failed to fetch children records. Please try again.', 'error');
     }
+  };
+
+  // Group children by employee
+  const groupChildrenByEmployee = () => {
+    const grouped = {};
+    
+    children.forEach(child => {
+      if (!grouped[child.person_id]) {
+        grouped[child.person_id] = {
+          employeeId: child.person_id,
+          employeeName: employeeNames[child.person_id] || 'Unknown',
+          children: []
+        };
+      }
+      grouped[child.person_id].children.push(child);
+    });
+    
+    return Object.values(grouped);
   };
 
   const validateForm = () => {
@@ -548,6 +578,26 @@ const Children = () => {
     setIsEditing(false);
   };
 
+  // New function to open employee children modal
+  const handleOpenEmployeeChildrenModal = (employeeId, employeeName, children) => {
+    setEmployeeChildrenModal({
+      open: true,
+      employeeId,
+      employeeName,
+      children
+    });
+  };
+
+  // New function to close employee children modal
+  const handleCloseEmployeeChildrenModal = () => {
+    setEmployeeChildrenModal({
+      open: false,
+      employeeId: null,
+      employeeName: '',
+      children: []
+    });
+  };
+
   const handleStartEdit = () => {
     setIsEditing(true);
   };
@@ -622,12 +672,19 @@ const Children = () => {
     );
   }
 
-  const filteredChildren = children.filter((child) => {
-    const fullName = `${child.childrenFirstName} ${child.childrenMiddleName} ${child.childrenLastName}`.toLowerCase();
-    const personId = child.person_id?.toString() || "";
-    const employeeName = employeeNames[child.person_id]?.toLowerCase() || "";
+  // Get grouped children data
+  const groupedChildren = groupChildrenByEmployee();
+  
+  // Filter grouped children based on search term
+  const filteredGroupedChildren = groupedChildren.filter((group) => {
+    const employeeName = group.employeeName.toLowerCase();
+    const employeeId = group.employeeId?.toString() || "";
+    const childrenNames = group.children.map(child => 
+      `${child.childrenFirstName} ${child.childrenMiddleName} ${child.childrenLastName}`.toLowerCase()
+    ).join(' ');
+    
     const search = searchTerm.toLowerCase();
-    return personId.includes(search) || fullName.includes(search) || employeeName.includes(search);
+    return employeeId.includes(search) || employeeName.includes(search) || childrenNames.includes(search);
   });
 
   return (
@@ -995,13 +1052,13 @@ const Children = () => {
                 }}
               >
                 <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <ReorderIcon sx={{ fontSize: "1.8rem", mr: 2 }} />
+                  <FamilyRestroomIcon sx={{ fontSize: "1.8rem", mr: 2 }} />
                   <Box>
                     <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                      Children Records
+                      Employee Children Records
                     </Typography>
                     <Typography variant="caption" sx={{ opacity: 0.9 }}>
-                      View and manage existing records
+                      View and manage children records by employee
                     </Typography>
                   </Box>
                 </Box>
@@ -1091,10 +1148,10 @@ const Children = () => {
                 >
                   {viewMode === 'grid' ? (
                     <Grid container spacing={1.5}>
-                      {filteredChildren.map((child) => (
-                        <Grid item xs={12} sm={6} md={4} key={child.id}>
+                      {filteredGroupedChildren.map((group) => (
+                        <Grid item xs={12} sm={6} md={4} key={group.employeeId}>
                           <Card
-                            onClick={() => handleOpenModal(child)}
+                            onClick={() => handleOpenEmployeeChildrenModal(group.employeeId, group.employeeName, group.children)}
                             sx={{
                               cursor: "pointer",
                               border: "1px solid #e0e0e0",
@@ -1111,7 +1168,7 @@ const Children = () => {
                           >
                             <CardContent sx={{ p: 1.5, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                <ChildCareIcon sx={{ fontSize: 18, color: '#6d2323', mr: 0.5 }} />
+                                <FamilyRestroomIcon sx={{ fontSize: 18, color: '#6d2323', mr: 0.5 }} />
                                 <Typography variant="caption" sx={{ 
                                   color: '#666', 
                                   px: 0.5, 
@@ -1120,49 +1177,43 @@ const Children = () => {
                                   fontSize: '0.7rem',
                                   fontWeight: 'bold'
                                 }}>
-                                  ID: {child.person_id}
+                                  ID: {group.employeeId}
                                 </Typography>
                               </Box>
                               
                               <Typography variant="body2" fontWeight="bold" color="#333" mb={0.5} noWrap>
-                                {employeeNames[child.person_id] || 'Loading...'}
+                                {group.employeeName}
                               </Typography>
                               
-                              <Typography variant="body2" fontWeight="bold" color="#333" mb={1} noWrap sx={{ flexGrow: 1 }}>
-                                {child.childrenFirstName} {child.childrenMiddleName} {child.childrenLastName}
-                              </Typography>
+                              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                <GroupIcon sx={{ fontSize: 16, color: '#6d2323', mr: 0.5 }} />
+                                <Typography variant="body2" color="#666">
+                                  {group.children.length} {group.children.length === 1 ? 'Child' : 'Children'}
+                                </Typography>
+                              </Box>
                               
-                              {child.dateOfBirth && (
-                                <Box
-                                  sx={{
-                                    display: 'inline-block',
-                                    px: 1,
-                                    py: 0.3,
-                                    borderRadius: 0.5,
-                                    backgroundColor: '#f5f5f5',
-                                    border: '1px solid #ddd',
-                                    alignSelf: 'flex-start'
-                                  }}
-                                >
-                                  <Typography variant="caption" sx={{ 
-                                    color: '#666',
-                                    fontSize: '0.7rem',
-                                    fontWeight: 'bold'
-                                  }}>
-                                    Age: {getAge(child.dateOfBirth)}
+                              <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
+                                {group.children.slice(0, 2).map((child, index) => (
+                                  <Typography key={child.id} variant="caption" color="#666" sx={{ display: 'block', mb: 0.5 }}>
+                                    {index + 1}. {child.childrenFirstName} {child.childrenMiddleName} {child.childrenLastName}
                                   </Typography>
-                                </Box>
-                              )}
+                                ))}
+                                {group.children.length > 2 && (
+                                  <Typography variant="caption" color="#666" sx={{ fontStyle: 'italic' }}>
+                                    +{group.children.length - 2} more
+                                  </Typography>
+                                )}
+                              </Box>
                             </CardContent>
                           </Card>
                         </Grid>
                       ))}
                     </Grid>
                   ) : (
-                    filteredChildren.map((child) => (
+                    filteredGroupedChildren.map((group) => (
                       <Card
-                        key={child.id}
-                        onClick={() => handleOpenModal(child)}
+                        key={group.employeeId}
+                        onClick={() => handleOpenEmployeeChildrenModal(group.employeeId, group.employeeName, group.children)}
                         sx={{
                           cursor: "pointer",
                           border: "1px solid #e0e0e0",
@@ -1176,7 +1227,7 @@ const Children = () => {
                         <Box sx={{ p: 1.5 }}>
                           <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
                             <Box sx={{ mr: 1.5, mt: 0.2 }}>
-                              <ChildCareIcon sx={{ fontSize: 20, color: '#6d2323' }} />
+                              <FamilyRestroomIcon sx={{ fontSize: 20, color: '#6d2323' }} />
                             </Box>
                             
                             <Box sx={{ flexGrow: 1 }}>
@@ -1187,37 +1238,39 @@ const Children = () => {
                                   fontWeight: 'bold',
                                   mr: 1
                                 }}>
-                                  ID: {child.person_id}
+                                  ID: {group.employeeId}
                                 </Typography>
                                 <Typography variant="body2" fontWeight="bold" color="#333">
-                                  {employeeNames[child.person_id] || 'Loading...'}
+                                  {group.employeeName}
                                 </Typography>
                               </Box>
                               
-                              <Typography variant="body2" color="#666" sx={{ mb: 0.5 }}>
-                                {child.childrenFirstName} {child.childrenMiddleName} {child.childrenLastName}
-                              </Typography>
+                              <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                                <GroupIcon sx={{ fontSize: 16, color: '#6d2323', mr: 0.5 }} />
+                                <Typography variant="body2" color="#666">
+                                  {group.children.length} {group.children.length === 1 ? 'Child' : 'Children'}
+                                </Typography>
+                              </Box>
                               
-                              {child.dateOfBirth && (
-                                <Box
-                                  sx={{
-                                    display: 'inline-block',
-                                    px: 1,
-                                    py: 0.3,
-                                    borderRadius: 0.5,
-                                    backgroundColor: '#f5f5f5',
-                                    border: '1px solid #ddd'
-                                  }}
-                                >
-                                  <Typography variant="caption" sx={{ 
-                                    color: '#666',
-                                    fontSize: '0.7rem',
-                                    fontWeight: 'bold'
-                                  }}>
-                                    Age: {getAge(child.dateOfBirth)} years
-                                  </Typography>
-                                </Box>
-                              )}
+                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                {group.children.slice(0, 3).map((child) => (
+                                  <Chip
+                                    key={child.id}
+                                    label={`${child.childrenFirstName} ${child.childrenLastName}`}
+                                    size="small"
+                                    variant="outlined"
+                                    sx={{ fontSize: '0.7rem', height: '24px' }}
+                                  />
+                                ))}
+                                {group.children.length > 3 && (
+                                  <Chip
+                                    label={`+${group.children.length - 3} more`}
+                                    size="small"
+                                    variant="outlined"
+                                    sx={{ fontSize: '0.7rem', height: '24px', fontStyle: 'italic' }}
+                                  />
+                                )}
+                              </Box>
                             </Box>
                           </Box>
                         </Box>
@@ -1225,7 +1278,7 @@ const Children = () => {
                     ))
                   )}
                   
-                  {filteredChildren.length === 0 && (
+                  {filteredGroupedChildren.length === 0 && (
                     <Box textAlign="center" py={4}>
                       <Typography variant="body1" color="#555" fontWeight="bold">
                         No Records Found
@@ -1242,6 +1295,159 @@ const Children = () => {
         </Grid>
       </Container>
 
+      {/* Employee Children Modal */}
+      <Modal
+        open={employeeChildrenModal.open}
+        onClose={handleCloseEmployeeChildrenModal}
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Paper
+          sx={{
+            width: "90%",
+            maxWidth: "800px",
+            maxHeight: "90vh",
+            display: "flex",
+            flexDirection: "column",
+            borderRadius: 2,
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
+            overflow: 'hidden',
+          }}
+        >
+          {/* Modal Header */}
+          <Box
+            sx={{
+              backgroundColor: "#6D2323",
+              color: "#ffffff",
+              p: 2,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center" }}>
+              <FamilyRestroomIcon sx={{ fontSize: "1.8rem", mr: 2 }} />
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                  Children of {employeeChildrenModal.employeeName}
+                </Typography>
+                <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                  Employee ID: {employeeChildrenModal.employeeId} | {employeeChildrenModal.children.length} {employeeChildrenModal.children.length === 1 ? 'Child' : 'Children'}
+                </Typography>
+              </Box>
+            </Box>
+            <IconButton onClick={handleCloseEmployeeChildrenModal} sx={{ color: "#fff" }}>
+              <Close />
+            </IconButton>
+          </Box>
+
+          {/* Modal Content */}
+          <Box sx={{ 
+            p: 3, 
+            flexGrow: 1, 
+            overflowY: 'auto',
+            '&::-webkit-scrollbar': {
+              width: '6px',
+            },
+            '&::-webkit-scrollbar-track': {
+              background: '#f1f1f1',
+              borderRadius: '3px',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              background: '#6D2323',
+              borderRadius: '3px',
+            },
+          }}>
+            {employeeChildrenModal.children.length > 0 ? (
+              <Grid container spacing={2}>
+                {employeeChildrenModal.children.map((child) => (
+                  <Grid item xs={12} sm={6} md={4} key={child.id}>
+                    <Card
+                      onClick={() => handleOpenModal(child)}
+                      sx={{
+                        cursor: "pointer",
+                        border: "1px solid #e0e0e0",
+                        height: "100%",
+                        display: 'flex',
+                        flexDirection: 'column',
+                        "&:hover": { 
+                          borderColor: "#6d2323",
+                          transform: 'translateY(-2px)',
+                          transition: 'all 0.2s ease',
+                          boxShadow: '0 4px 8px rgba(0,0,0,0.15)'
+                        },
+                      }}
+                    >
+                      <CardContent sx={{ p: 1.5, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                          <ChildCareIcon sx={{ fontSize: 18, color: '#6d2323', mr: 0.5 }} />
+                          <Typography variant="caption" sx={{ 
+                            color: '#666', 
+                            px: 0.5, 
+                            py: 0.2, 
+                            borderRadius: 0.5,
+                            fontSize: '0.7rem',
+                            fontWeight: 'bold'
+                          }}>
+                            ID: {child.id}
+                          </Typography>
+                        </Box>
+                        
+                        <Typography variant="body2" fontWeight="bold" color="#333" mb={0.5} noWrap>
+                          {child.childrenFirstName} {child.childrenMiddleName} {child.childrenLastName}
+                        </Typography>
+                        
+                        {child.childrenNameExtension && (
+                          <Typography variant="caption" color="#666" mb={0.5}>
+                            {child.childrenNameExtension}
+                          </Typography>
+                        )}
+                        
+                        {child.dateOfBirth && (
+                          <Box
+                            sx={{
+                              display: 'inline-block',
+                              px: 1,
+                              py: 0.3,
+                              borderRadius: 0.5,
+                              backgroundColor: '#f5f5f5',
+                              border: '1px solid #ddd',
+                              alignSelf: 'flex-start',
+                              mt: 'auto'
+                            }}
+                          >
+                            <Typography variant="caption" sx={{ 
+                              color: '#666',
+                              fontSize: '0.7rem',
+                              fontWeight: 'bold'
+                            }}>
+                              Age: {getAge(child.dateOfBirth)} years
+                            </Typography>
+                          </Box>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            ) : (
+              <Box textAlign="center" py={4}>
+                <Typography variant="body1" color="#555" fontWeight="bold">
+                  No Children Records Found
+                </Typography>
+                <Typography variant="body2" color="#666" sx={{ mt: 0.5 }}>
+                  This employee doesn't have any children records yet.
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        </Paper>
+      </Modal>
+
+      {/* Edit Child Modal */}
       <Modal
         open={!!editChild}
         onClose={handleCloseModal}

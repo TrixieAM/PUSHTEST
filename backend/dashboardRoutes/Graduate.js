@@ -11,20 +11,34 @@ const router = express.Router();
 
 
 
-// READ - Get all graduate studies
 router.get("/graduate-table", (req, res) => {
   const query = "SELECT * FROM graduate_table";
   db.query(query, (err, results) => {
-    if (err) return res.status(500).json({ error: "Error fetching graduate studies" });
+    if (err) {
+      console.error("Error fetching graduate studies:", err);
+      return res.status(500).json({ error: "Error fetching graduate studies" });
+    }
     res.json(results);
   });
 });
 
+router.get('/graduate-by-person/:person_id', (req, res) => {
+  const { person_id } = req.params;
+  const sql = `SELECT * FROM graduate_table WHERE person_id = ?`;
+
+  db.query(sql, [person_id], (err, results) => {
+    if (err) {
+      console.error('Error fetching graduate records by person_id:', err);
+      res.status(500).json({ error: 'Failed to fetch graduate records' });
+    } else {
+      res.json(results);
+    }
+  });
+});
 
 // CREATE - Add new graduate study
 router.post("/graduate-table", (req, res) => {
   console.log("POST Data Received:", req.body);
-
 
   const {
     person_id,
@@ -37,6 +51,10 @@ router.post("/graduate-table", (req, res) => {
     graduateScholarshipAcademicHonorsReceived,
   } = req.body;
 
+  // Validate required fields
+  if (!person_id) {
+    return res.status(400).json({ error: "person_id is required" });
+  }
 
   const query = `
     INSERT INTO graduate_table (
@@ -51,25 +69,30 @@ router.post("/graduate-table", (req, res) => {
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
-
-  db.query(query, [
-    person_id,
-    graduateNameOfSchool,
-    graduateDegree,
-    graduatePeriodFrom,
-    graduatePeriodTo,
-    graduateHighestAttained,
-    graduateYearGraduated,
-    graduateScholarshipAcademicHonorsReceived,
-  ], (err, result) => {
-    if (err) {
-      console.error("Error inserting data:", err);
-      return res.status(500).json({ error: "Error adding graduate study" });
+  db.query(
+    query,
+    [
+      person_id,
+      graduateNameOfSchool || null,
+      graduateDegree || null,
+      graduatePeriodFrom || null,
+      graduatePeriodTo || null,
+      graduateHighestAttained || null,
+      graduateYearGraduated || null,
+      graduateScholarshipAcademicHonorsReceived || null,
+    ],
+    (err, result) => {
+      if (err) {
+        console.error("Error inserting graduate study:", err);
+        return res.status(500).json({ error: "Error adding graduate study" });
+      }
+      res.status(201).json({
+        message: "Graduate study added successfully",
+        id: result.insertId,
+      });
     }
-    res.status(201).json({ message: "Graduate study added", id: result.insertId });
-  });
+  );
 });
-
 
 // UPDATE - Update a graduate study by ID
 router.put("/graduate-table/:id", (req, res) => {
@@ -85,7 +108,6 @@ router.put("/graduate-table/:id", (req, res) => {
     graduateScholarshipAcademicHonorsReceived,
   } = req.body;
 
-
   const query = `
     UPDATE graduate_table SET
       person_id = ?,
@@ -99,37 +121,46 @@ router.put("/graduate-table/:id", (req, res) => {
     WHERE id = ?
   `;
 
-
-  db.query(query, [
-    person_id,
-    graduateNameOfSchool,
-    graduateDegree,
-    graduatePeriodFrom,
-    graduatePeriodTo,
-    graduateHighestAttained,
-    graduateYearGraduated,
-    graduateScholarshipAcademicHonorsReceived,
-    id,
-  ], (err) => {
-    if (err) {
-      console.error("Error updating data:", err);
-      return res.status(500).json({ error: "Error updating graduate study" });
+  db.query(
+    query,
+    [
+      person_id,
+      graduateNameOfSchool || null,
+      graduateDegree || null,
+      graduatePeriodFrom || null,
+      graduatePeriodTo || null,
+      graduateHighestAttained || null,
+      graduateYearGraduated || null,
+      graduateScholarshipAcademicHonorsReceived || null,
+      id,
+    ],
+    (err, result) => {
+      if (err) {
+        console.error("Error updating graduate study:", err);
+        return res.status(500).json({ error: "Error updating graduate study" });
+      }
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: "Graduate study not found" });
+      }
+      res.json({ message: "Graduate study updated successfully" });
     }
-    res.json({ message: "Graduate study updated" });
-  });
+  );
 });
-
 
 // DELETE - Remove a graduate study by ID
 router.delete("/graduate-table/:id", (req, res) => {
   const { id } = req.params;
   const query = `DELETE FROM graduate_table WHERE id = ?`;
-  db.query(query, [id], (err) => {
+
+  db.query(query, [id], (err, result) => {
     if (err) {
-      console.error("Error deleting data:", err);
+      console.error("Error deleting graduate study:", err);
       return res.status(500).json({ error: "Error deleting graduate study" });
     }
-    res.json({ message: "Graduate study deleted" });
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Graduate study not found" });
+    }
+    res.json({ message: "Graduate study deleted successfully" });
   });
 });
 

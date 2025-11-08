@@ -1769,7 +1769,7 @@ const PayrollProcessed = () => {
               size="medium"
               sx={{
                 backgroundColor: '#ffffff',
-                color: '#6d2323',
+                color: '#FFFFFF',
                 textTransform: 'none',
                 border: '1px solid #6d2323',
 
@@ -1790,7 +1790,7 @@ const PayrollProcessed = () => {
               size="medium"
               sx={{
                 backgroundColor: '#ffffff',
-                color: '#6d2323',
+                color: '#FFFFFF',
                 textTransform: 'none',
                 border: '1px solid #6d2323',
 

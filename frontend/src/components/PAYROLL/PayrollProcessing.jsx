@@ -1434,7 +1434,7 @@ const PayrollProcess = () => {
                                 size="small"
                                 sx={{
                                   bgcolor: '#ffffff',
-                                  color: '#6d2323',
+                                  color: '#FFFFFF',
                                   minWidth: '80px',
                                   border: '1px solid #6d2323',
                                   width: '32px',

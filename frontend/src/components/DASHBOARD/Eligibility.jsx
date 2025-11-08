@@ -23,6 +23,7 @@ import {
   ListItemIcon,
   Card,
   CardContent,
+  InputAdornment,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -38,6 +39,7 @@ import {
   Person as PersonIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
+  Percent as PercentIcon,
 } from '@mui/icons-material';
 
 import ReorderIcon from '@mui/icons-material/Reorder';
@@ -55,6 +57,81 @@ const getAuthHeaders = () => {
       'Content-Type': 'application/json',
     },
   };
+};
+
+// Percentage Input Component
+const PercentageInput = ({ value, onChange, label, disabled = false, error = false, helperText = '' }) => {
+  const [inputValue, setInputValue] = useState(value || '');
+
+  useEffect(() => {
+    setInputValue(value || '');
+  }, [value]);
+
+  const handleInputChange = (e) => {
+    let newValue = e.target.value;
+    
+    // Remove any non-digit characters except for decimal point
+    newValue = newValue.replace(/[^\d.]/g, '');
+    
+    // Ensure only one decimal point
+    const parts = newValue.split('.');
+    if (parts.length > 2) {
+      newValue = parts[0] + '.' + parts.slice(1).join('');
+    }
+    
+    // Limit to 2 decimal places
+    if (parts.length === 2 && parts[1].length > 2) {
+      newValue = parts[0] + '.' + parts[1].substring(0, 2);
+    }
+    
+    // Ensure value is between 0 and 100
+    const numValue = parseFloat(newValue);
+    if (!isNaN(numValue) && numValue > 100) {
+      newValue = '100';
+    }
+    
+    setInputValue(newValue);
+    onChange(newValue);
+  };
+
+  return (
+    <Box>
+      <Typography variant="caption" sx={{ fontWeight: "bold", mb: 0.5, color: "#333", display: 'block' }}>
+        {label}
+      </Typography>
+      <TextField
+        value={inputValue}
+        onChange={handleInputChange}
+        placeholder="0.00"
+        fullWidth
+        size="small"
+        disabled={disabled}
+        error={error}
+        helperText={helperText}
+        InputProps={{
+          endAdornment: (
+            <InputAdornment position="end">
+              <PercentIcon sx={{ color: '#6D2323' }} />
+            </InputAdornment>
+          ),
+        }}
+        sx={{
+          '& .MuiOutlinedInput-root': {
+            '& fieldset': {
+              borderColor: error ? 'red' : '#6D2323',
+              borderWidth: '1.5px'
+            },
+            '&:hover fieldset': {
+              borderColor: error ? 'red' : '#6D2323',
+            },
+            '&.Mui-focused fieldset': {
+              borderColor: error ? 'red' : '#6D2323',
+            },
+          },
+        }}
+      />
+    </Box>
+  );
 };
 
 // Employee Autocomplete Component
@@ -440,6 +517,14 @@ const Eligibility = () => {
       }
     });
 
+    // Validate rating is a valid percentage
+    if (newEligibility.eligibilityRating) {
+      const rating = parseFloat(newEligibility.eligibilityRating);
+      if (isNaN(rating) || rating < 0 || rating > 100) {
+        newErrors.eligibilityRating = 'Rating must be a valid percentage (0-100)';
+      }
+    }
+
     if (
       newEligibility.eligibilityDateOfExam &&
       newEligibility.DateOfValidity
@@ -622,6 +707,14 @@ const Eligibility = () => {
       editEligibility.DateOfValidity !== originalEligibility.DateOfValidity ||
       editEligibility.person_id !== originalEligibility.person_id
     );
+  };
+
+  // Format rating as percentage for display
+  const formatRating = (rating) => {
+    if (!rating) return 'N/A';
+    const numRating = parseFloat(rating);
+    if (isNaN(numRating)) return 'N/A';
+    return `${numRating}%`;
   };
 
   if (hasAccess === null) {
@@ -933,38 +1026,12 @@ const Eligibility = () => {
                   </Grid>
 
                   <Grid item xs={12}>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        fontWeight: 'bold',
-                        mb: 0.5,
-                        color: '#333',
-                        display: 'block',
-                      }}
-                    >
-                      Rating
-                    </Typography>
-                    <TextField
+                    <PercentageInput
                       value={newEligibility.eligibilityRating}
-                      onChange={(e) =>
-                        handleChange('eligibilityRating', e.target.value)
-                      }
-                      fullWidth
-                      size="small"
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          '& fieldset': {
-                            borderColor: '#6D2323',
-                            borderWidth: '1.5px',
-                          },
-                          '&:hover fieldset': {
-                            borderColor: '#6D2323',
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#6D2323',
-                          },
-                        },
-                      }}
+                      onChange={(value) => handleChange('eligibilityRating', value)}
+                      label="Rating"
+                      error={!!errors.eligibilityRating}
+                      helperText={errors.eligibilityRating || ''}
                     />
                   </Grid>
 
@@ -1347,8 +1414,7 @@ const Eligibility = () => {
                                 mb={0.5}
                                 noWrap
                               >
-                                {employeeNames[eligibility.person_id] ||
-                                  'Loading...'}
+                                {eligibility.eligibilityName || 'No Eligibility'}
                               </Typography>
 
                               <Typography
@@ -1359,7 +1425,7 @@ const Eligibility = () => {
                                 noWrap
                                 sx={{ flexGrow: 1 }}
                               >
-                                {eligibility.eligibilityName || 'No Eligibility'}
+                                {formatRating(eligibility.eligibilityRating)}
                               </Typography>
 
                               {eligibility.licenseNumber && (
@@ -1455,6 +1521,30 @@ const Eligibility = () => {
                               >
                                 {eligibility.eligibilityName || 'No Eligibility'}
                               </Typography>
+
+                              <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                                <Typography
+                                  variant="caption"
+                                  sx={{
+                                    color: '#666',
+                                    fontSize: '0.7rem',
+                                    fontWeight: 'bold',
+                                    mr: 1,
+                                  }}
+                                >
+                                  Rating:
+                                </Typography>
+                                <Typography
+                                  variant="caption"
+                                  sx={{
+                                    color: '#6D2323',
+                                    fontSize: '0.7rem',
+                                    fontWeight: 'bold',
+                                  }}
+                                >
+                                  {formatRating(eligibility.eligibilityRating)}
+                                </Typography>
+                              </Box>
 
                               {eligibility.licenseNumber && (
                                 <Box
@@ -1793,33 +1883,17 @@ const Eligibility = () => {
                       Rating
                     </Typography>
                     {isEditing ? (
-                      <TextField
+                      <PercentageInput
                         value={editEligibility.eligibilityRating}
-                        onChange={(e) =>
-                          handleChange('eligibilityRating', e.target.value, true)
-                        }
-                        fullWidth
-                        size="small"
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            '& fieldset': {
-                              borderColor: "#6D2323",
-                            },
-                            '&:hover fieldset': {
-                              borderColor: "#6D2323",
-                            },
-                            '&.Mui-focused fieldset': {
-                              borderColor: "#6D2323",
-                            },
-                          },
-                        }}
+                        onChange={(value) => handleChange('eligibilityRating', value, true)}
+                        label=""
                       />
                     ) : (
                       <Typography
                         variant="body2"
                         sx={{ p: 1, bgcolor: '#f5f5f5', borderRadius: 1 }}
                       >
-                        {editEligibility.eligibilityRating || 'N/A'}
+                        {formatRating(editEligibility.eligibilityRating)}
                       </Typography>
                     )}
                   </Grid>

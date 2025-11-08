@@ -234,7 +234,7 @@ const BulkRegister = () => {
   }
 
   return (
-    <Box sx={{ bgcolor: creamColor, minHeight: '100vh', py: 3 }}>
+    <Box sx={{ minHeight: '100vh', py: 3 }}>
       <Container maxWidth="lg">
         {/* Header */}
         <Fade in timeout={500}>

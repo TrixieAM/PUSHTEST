@@ -18,6 +18,20 @@ router.get("/children-table", (req, res) => {
   });
 });
 
+// For children records
+router.get('/children-by-person/:person_id', (req, res) => {
+  const { person_id } = req.params;
+  const sql = `SELECT * FROM children_table WHERE person_id = ?`;
+  db.query(sql, [person_id], (err, results) => {
+    if (err) {
+      console.error('Error fetching children by person_id:', err);
+      res.status(500).json({ error: 'Failed to fetch children' });
+    } else {
+      res.json(results);
+    }
+  });
+});
+
 router.post("/children-table", (req, res) => {
   const { childrenFirstName, childrenMiddleName, childrenLastName, childrenNameExtension, dateOfBirth, person_id } = req.body;
   const query = `INSERT INTO children_table (childrenFirstName, childrenMiddleName, childrenLastName, childrenNameExtension, dateOfBirth, person_id) VALUES (?, ?, ?, ?, ?, ?)`;

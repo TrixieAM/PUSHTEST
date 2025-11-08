@@ -17,65 +17,6 @@ function excelDateToUTCDate(excelDate) {
   return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
 }
 
-router.post("/upload_eligibility", upload.single("file"), async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: "No file uploaded" });
-  }
-
-  try {
-    // Read the uploaded XLS file
-    const workbook = xlsx.readFile(req.file.path);
-    const sheet_name = workbook.SheetNames[0];
-    const sheet = xlsx.utils.sheet_to_json(workbook.Sheets[sheet_name]);
-
-    if (!sheet.length) {
-      return res.status(400).json({ error: "Uploaded file is empty" });
-    }
-
-    console.log("Uploaded sheet data:", sheet);
-
-    // Insert data into MySQL
-
-    const insertPromises = sheet.map((row) => {
-      const eligibilityName = row.eligibilityName;
-      const eligibilityRating = row.eligibilityRating;
-      const eligibilityDateOfExam = excelDateToUTCDate(row.eligibilityDateOfExam);
-      const formattedDateOfExam = eligibilityDateOfExam.toISOString().split("T")[0];
-      const eligibilityPlaceOfExam = row.eligibilityPlaceOfExam;
-      const licenseNumber = row.licenseNumber;
-      const DateOfValidity = excelDateToUTCDate(row.DateOfValidity);
-      const formattedDateOfValidity = DateOfValidity.toISOString().split("T")[0];
-      const person_id = row.person_id;
-
-      const sql = "INSERT INTO eligibility_table (eligibilityName, eligibilityRating, eligibilityDateOfExam, eligibilityPlaceOfExam, licenseNumber, DateOfValidity, person_id) VALUES (?, ?, ?, ?, ?, ?, ?)";
-      return new Promise((resolve, reject) => {
-        db.query(sql, [eligibilityName, eligibilityRating, formattedDateOfExam, eligibilityPlaceOfExam, licenseNumber, formattedDateOfValidity, person_id], (err) => {
-          if (err) {
-            console.error("Error inserting data:", err);
-            return reject(err);
-          }
-          console.log("Data inserted successfully for:", eligibilityName);
-          resolve();
-        });
-      });
-    });
-
-    await Promise.all(insertPromises);
-    res.json({ message: "File uploaded and data inserted successfully" });
-  } catch (error) {
-    console.error("Error processing XLS file:", error);
-    res.status(500).json({ error: "Error processing XLS file" });
-  } finally {
-    // Delete the uploaded file to save space on the server
-    fs.unlink(req.file.path, (err) => {
-      if (err) {
-        console.error("Error deleting uploaded file:", err);
-      } else {
-        console.log("Uploaded file deleted");
-      }
-    });
-  }
-});
 
 //data
 router.get("/data", (req, res) => {
@@ -92,6 +33,20 @@ router.get("/eligibility", (req, res) => {
   db.query(query, (err, result) => {
     if (err) return res.status(500).send(err);
     res.status(200).send(result);
+  });
+});
+
+// For eligibility records
+router.get('/eligibility-by-person/:person_id', (req, res) => {
+  const { person_id } = req.params;
+  const sql = `SELECT * FROM eligibility_table WHERE person_id = ?`;
+  db.query(sql, [person_id], (err, results) => {
+    if (err) {
+      console.error('Error fetching eligibility by person_id:', err);
+      res.status(500).json({ error: 'Failed to fetch eligibility records' });
+    } else {
+      res.json(results);
+    }
   });
 });
 

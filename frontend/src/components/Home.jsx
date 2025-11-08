@@ -61,7 +61,7 @@ const COLORS = {
   darkGray: '#666666'
 };
 
-const Home = () => {
+const HAHAHA = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [username, setUsername] = useState('');
   const [fullName, setFullName] = useState('');
@@ -445,7 +445,6 @@ const Home = () => {
   return (
     <Box sx={{
       minHeight: '100vh',
-      backgroundColor: COLORS.secondary,
       p: { xs: 2, md: 1 }
     }}>
       {/* Header */}
@@ -1494,4 +1493,4 @@ const Home = () => {
   );
 };
 
-export default Home;
+export default HAHAHA;

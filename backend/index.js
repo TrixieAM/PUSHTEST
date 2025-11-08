@@ -2100,24 +2100,34 @@ app.post("/complete-2fa-login", (req, res) => {
 
 
 //data
-app.get('/data', (req, res) => {
-  const query = `SELECT * FROM learning_and_development_table`;
-  db.query(query, (err, result) => {
-    if (err) return res.status(500).send(err);
-    res.status(200).send(result);
-  });
-});
-
-//Read
+// Get all records
 app.get('/learning_and_development_table', (req, res) => {
   const query = 'SELECT * FROM learning_and_development_table';
   db.query(query, (err, result) => {
-    if (err) return res.status(500).send(err);
+    if (err) {
+      console.error('Error fetching learning_and_development_table:', err);
+      return res.status(500).send(err);
+    }
     res.status(200).send(result);
   });
 });
 
-//Add
+app.get('/learning_and_development_table/by-person/:person_id', (req, res) => {
+  const { person_id } = req.params;
+  console.log('Received request for person_id:', person_id); // 👈 Add this line
+
+  const query = 'SELECT * FROM learning_and_development_table WHERE person_id = ?';
+  db.query(query, [person_id], (err, result) => {
+    if (err) {
+      console.error('Error fetching learning_and_development_table by person_id:', err);
+      return res.status(500).send(err);
+    }
+    console.log('Query result:', result); // 👈 Log the data
+    res.status(200).send(result);
+  });
+});
+
+// Add new record
 app.post('/learning_and_development_table', (req, res) => {
   const {
     titleOfProgram,
@@ -2127,9 +2137,15 @@ app.post('/learning_and_development_table', (req, res) => {
     typeOfLearningDevelopment,
     conductedSponsored,
     person_id,
+    incValue
   } = req.body;
-  const query =
-    'INSERT INTO learning_and_development_table (titleOfProgram, dateFrom, dateTo, numberOfHours, typeOfLearningDevelopment, conductedSponsored, person_id) VALUES (?, ?, ?, ?, ?, ?, ?)';
+
+  const query = `
+    INSERT INTO learning_and_development_table 
+    (titleOfProgram, dateFrom, dateTo, numberOfHours, typeOfLearningDevelopment, conductedSponsored, person_id, incValue) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
   db.query(
     query,
     [
@@ -2140,19 +2156,28 @@ app.post('/learning_and_development_table', (req, res) => {
       typeOfLearningDevelopment,
       conductedSponsored,
       person_id,
+      incValue || 0
     ],
     (err, result) => {
-      if (err) return res.status(500).send(err);
+      if (err) {
+        console.error('Error adding record to learning_and_development_table:', err);
+        return res.status(500).send(err);
+      }
+
       insertAuditLog(
         person_id || 'SYSTEM',
-        `Added Program for ${person_id} in Learning and Development Program`
+        `Added new Learning and Development record for Person ID ${person_id}`
       );
-      res.status(201).send({ message: 'Item created', id: result.insertId });
+
+      res.status(201).send({
+        message: 'Record successfully added',
+        id: result.insertId
+      });
     }
   );
 });
 
-//Update
+// Update existing record
 app.put('/learning_and_development_table/:id', (req, res) => {
   const {
     titleOfProgram,
@@ -2162,10 +2187,19 @@ app.put('/learning_and_development_table/:id', (req, res) => {
     typeOfLearningDevelopment,
     conductedSponsored,
     person_id,
+    incValue
   } = req.body;
+
   const { id } = req.params;
-  const query =
-    'UPDATE learning_and_development_table SET titleOfProgram = ?, dateFrom = ?, dateTo = ?, numberOfHours = ?, typeOfLearningDevelopment = ?, conductedSponsored = ?, person_id = ? WHERE id = ?';
+
+  const query = `
+    UPDATE learning_and_development_table 
+    SET titleOfProgram = ?, dateFrom = ?, dateTo = ?, numberOfHours = ?, 
+        typeOfLearningDevelopment = ?, conductedSponsored = ?, 
+        person_id = ?, incValue = ? 
+    WHERE id = ?
+  `;
+
   db.query(
     query,
     [
@@ -2176,22 +2210,38 @@ app.put('/learning_and_development_table/:id', (req, res) => {
       typeOfLearningDevelopment,
       conductedSponsored,
       person_id,
-      id,
+      incValue || 0,
+      id
     ],
     (err, result) => {
-      if (err) return res.status(500).send(err);
-      res.status(200).send({ message: 'Item updated' });
+      if (err) {
+        console.error('Error updating record in learning_and_development_table:', err);
+        return res.status(500).send(err);
+      }
+
+      insertAuditLog(
+        person_id || 'SYSTEM',
+        `Updated Learning and Development record ID ${id}`
+      );
+
+      res.status(200).send({ message: 'Record successfully updated' });
     }
   );
 });
 
-//delete
+// Delete record
 app.delete('/learning_and_development_table/:id', (req, res) => {
   const { id } = req.params;
   const query = 'DELETE FROM learning_and_development_table WHERE id = ?';
+
   db.query(query, [id], (err, result) => {
-    if (err) return res.status(500).send(err);
-    res.status(200).send({ message: 'Item deleted' });
+    if (err) {
+      console.error('Error deleting record from learning_and_development_table:', err);
+      return res.status(500).send(err);
+    }
+
+    insertAuditLog('SYSTEM', `Deleted Learning and Development record ID ${id}`);
+    res.status(200).send({ message: 'Record successfully deleted' });
   });
 });
 

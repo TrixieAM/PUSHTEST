@@ -39,6 +39,12 @@ import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
 } from '@mui/icons-material';
+import {
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+} from '@mui/material';
 
 import ReorderIcon from '@mui/icons-material/Reorder';
 import LoadingOverlay from '../LoadingOverlay';
@@ -1198,28 +1204,29 @@ const WorkExperience = () => {
                     >
                       Government Service
                     </Typography>
-                    <TextField
-                      value={newWorkExperience.isGovtService}
-                      onChange={(e) =>
-                        handleChange('isGovtService', e.target.value)
-                      }
-                      fullWidth
-                      size="small"
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          '& fieldset': {
-                            borderColor: '#6D2323',
-                            borderWidth: '1.5px',
+                    <FormControl fullWidth size="small">
+                      <Select
+                        value={newWorkExperience.isGovtService || 'No'}
+                        onChange={(e) => handleChange('isGovtService', e.target.value)}
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            '& fieldset': {
+                              borderColor: '#6D2323',
+                              borderWidth: '1.5px',
+                            },
+                            '&:hover fieldset': {
+                              borderColor: '#6D2323',
+                            },
+                            '&.Mui-focused fieldset': {
+                              borderColor: '#6D2323',
+                            },
                           },
-                          '&:hover fieldset': {
-                            borderColor: '#6D2323',
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#6D2323',
-                          },
-                        },
-                      }}
-                    />
+                        }}
+                      >
+                        <MenuItem value="Yes">Yes</MenuItem>
+                        <MenuItem value="No">No</MenuItem>
+                      </Select>
+                    </FormControl>
                   </Grid>
                 </Grid>
 
@@ -2170,27 +2177,28 @@ const WorkExperience = () => {
                       Government Service
                     </Typography>
                     {isEditing ? (
-                      <TextField
-                        value={editWorkExperience.isGovtService}
-                        onChange={(e) =>
-                          handleChange('isGovtService', e.target.value, true)
-                        }
-                        fullWidth
-                        size="small"
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            '& fieldset': {
-                              borderColor: "#6D2323",
+                      <FormControl fullWidth size="small">
+                        <Select
+                          value={editWorkExperience.isGovtService || 'No'}
+                          onChange={(e) => handleChange('isGovtService', e.target.value, true)}
+                          sx={{
+                            '& .MuiOutlinedInput-root': {
+                              '& fieldset': {
+                                borderColor: "#6D2323",
+                              },
+                              '&:hover fieldset': {
+                                borderColor: "#6D2323",
+                              },
+                              '&.Mui-focused fieldset': {
+                                borderColor: "#6D2323",
+                              },
                             },
-                            '&:hover fieldset': {
-                              borderColor: "#6D2323",
-                            },
-                            '&.Mui-focused fieldset': {
-                              borderColor: "#6D2323",
-                            },
-                          },
-                        }}
-                      />
+                          }}
+                        >
+                          <MenuItem value="Yes">Yes</MenuItem>
+                          <MenuItem value="No">No</MenuItem>
+                        </Select>
+                      </FormControl>
                     ) : (
                       <Typography
                         variant="body2"

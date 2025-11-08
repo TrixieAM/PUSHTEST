@@ -57,7 +57,51 @@ const getAuthHeaders = () => {
   };
 };
 
-// Employee Autocomplete Component
+// Date formatting helper
+const formatDate = (dateString) => {
+  if (!dateString) return '';
+  
+  try {
+    const date = new Date(dateString);
+    // Check if the date is valid
+    if (isNaN(date.getTime())) return dateString;
+    
+    // Format as "Month Day, Year" (e.g., "October 1, 2025")
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return dateString;
+  }
+};
+
+// Date range formatting helper
+const formatDateRange = (dateFrom, dateTo) => {
+  if (!dateFrom && !dateTo) return '';
+  if (!dateFrom) return `Until ${formatDate(dateTo)}`;
+  if (!dateTo) return `From ${formatDate(dateFrom)}`;
+  
+  try {
+    const from = new Date(dateFrom);
+    const to = new Date(dateTo);
+    
+    // If same month and year, format as "October 1-31, 2025"
+    if (from.getMonth() === to.getMonth() && from.getFullYear() === to.getFullYear()) {
+      return `${from.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })} ${from.getDate()}-${to.getDate()}`;
+    }
+    
+    // Otherwise, format as "October 1, 2025 - November 15, 2025"
+    return `${formatDate(dateFrom)} - ${formatDate(dateTo)}`;
+  } catch (error) {
+    console.error('Error formatting date range:', error);
+    return `${formatDate(dateFrom)} - ${formatDate(dateTo)}`;
+  }
+};
+
+// Employee Autocomplete Component (unchanged)
 const EmployeeAutocomplete = ({
   value,
   onChange,
@@ -1312,6 +1356,7 @@ const VoluntaryWork = () => {
                                 {voluntary.nameAndAddress || 'No Organization'}
                               </Typography>
 
+                             
                               {voluntary.numberOfHours && (
                                 <Box
                                   sx={{
@@ -1405,6 +1450,9 @@ const VoluntaryWork = () => {
                               >
                                 {voluntary.nameAndAddress || 'No Organization'}
                               </Typography>
+
+                              
+                              
 
                               {voluntary.numberOfHours && (
                                 <Box
@@ -1770,7 +1818,7 @@ const VoluntaryWork = () => {
                         variant="body2"
                         sx={{ p: 1, bgcolor: '#f5f5f5', borderRadius: 1 }}
                       >
-                        {editVoluntary.dateFrom?.split('T')[0] || 'N/A'}
+                        {formatDate(editVoluntary.dateFrom)}
                       </Typography>
                     )}
                   </Grid>
@@ -1815,7 +1863,7 @@ const VoluntaryWork = () => {
                         variant="body2"
                         sx={{ p: 1, bgcolor: '#f5f5f5', borderRadius: 1 }}
                       >
-                        {editVoluntary.dateTo?.split('T')[0] || 'N/A'}
+                        {formatDate(editVoluntary.dateTo)}
                       </Typography>
                     )}
                   </Grid>

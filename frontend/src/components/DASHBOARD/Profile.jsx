@@ -13,7 +13,18 @@ import {
   Snackbar, SnackbarContent, useScrollTrigger,
   Menu, MenuItem, ListItemIcon,
   ListItemText,
-  ToggleButton, ToggleButtonGroup
+  ToggleButton, ToggleButtonGroup,
+  List, ListItem, ListItemText as MuiListItemText,
+  ListItemIcon as MuiListItemIcon,
+  Divider,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem as MuiMenuItem,
+  InputAdornment
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import PersonIcon from '@mui/icons-material/Person';
@@ -43,6 +54,17 @@ import CropOriginalIcon from '@mui/icons-material/CropOriginal';
 import GridViewIcon from '@mui/icons-material/GridView';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import { ExitToApp } from "@mui/icons-material";
+import ChildCareIcon from '@mui/icons-material/ChildCare';
+import FamilyRestroomIcon from '@mui/icons-material/FamilyRestroom';
+import AddIcon from '@mui/icons-material/Add';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import SchoolRoundedIcon from '@mui/icons-material/SchoolRounded';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import FactCheckIcon from '@mui/icons-material/FactCheck';
+import PercentIcon from '@mui/icons-material/Percent';
+import PsychologyIcon from '@mui/icons-material/Psychology';
+import BookIcon from '@mui/icons-material/Book';
+import LightbulbIcon from '@mui/icons-material/Lightbulb';
 
 // HR Professional Color Palette
 const colors = {
@@ -526,6 +548,245 @@ const FloatingButton = styled(Fab)(({ theme }) => ({
   }
 }));
 
+const ChildCard = styled(Card)(({ theme }) => ({
+  border: "1px solid #e0e0e0",
+  height: "100%",
+  display: 'flex',
+  flexDirection: 'column',
+  "&:hover": { 
+    borderColor: colors.primary,
+    transform: 'translateY(-2px)',
+    transition: 'all 0.2s ease',
+    boxShadow: shadows.medium
+  },
+}));
+
+const ChildListItem = styled(ListItem)(({ theme }) => ({
+  border: "1px solid #e0e0e0",
+  borderRadius: theme.spacing(1),
+  marginBottom: theme.spacing(1),
+  "&:hover": { 
+    borderColor: colors.primary,
+    backgroundColor: alpha(colors.primary, 0.05)
+  },
+}));
+
+const CollegeCard = styled(Card)(({ theme }) => ({
+  border: "1px solid #e0e0e0",
+  height: "100%",
+  display: 'flex',
+  flexDirection: 'column',
+  "&:hover": { 
+    borderColor: colors.primary,
+    transform: 'translateY(-2px)',
+    transition: 'all 0.2s ease',
+    boxShadow: shadows.medium
+  },
+}));
+
+const CollegeListItem = styled(ListItem)(({ theme }) => ({
+  border: "1px solid #e0e0e0",
+  borderRadius: theme.spacing(1),
+  marginBottom: theme.spacing(1),
+  "&:hover": { 
+    borderColor: colors.primary,
+    backgroundColor: alpha(colors.primary, 0.05)
+  },
+}));
+
+const GraduateCard = styled(Card)(({ theme }) => ({
+  border: "1px solid #e0e0e0",
+  height: "100%",
+  display: 'flex',
+  flexDirection: 'column',
+  "&:hover": { 
+    borderColor: colors.primary,
+    transform: 'translateY(-2px)',
+    transition: 'all 0.2s ease',
+    boxShadow: shadows.medium
+  },
+}));
+
+const GraduateListItem = styled(ListItem)(({ theme }) => ({
+  border: "1px solid #e0e0e0",
+  borderRadius: theme.spacing(1),
+  marginBottom: theme.spacing(1),
+  "&:hover": { 
+    borderColor: colors.primary,
+    backgroundColor: alpha(colors.primary, 0.05)
+  },
+}));
+
+const ScrollableContainer = styled(Box)(({ theme }) => ({
+  maxHeight: '500px',
+  overflowY: 'auto',
+  paddingRight: theme.spacing(1),
+  '&::-webkit-scrollbar': {
+    width: '6px',
+  },
+  '&::-webkit-scrollbar-track': {
+    background: '#f1f1f1',
+    borderRadius: '3px',
+  },
+  '&::-webkit-scrollbar-thumb': {
+    background: colors.primary,
+    borderRadius: '3px',
+  },
+}));
+
+const EducationSubTabs = styled(Tabs)(({ theme }) => ({
+  backgroundColor: alpha(colors.secondary, 0.5),
+  borderRadius: theme.spacing(2),
+  padding: theme.spacing(0.5),
+  marginBottom: theme.spacing(3),
+  '& .MuiTabs-indicator': {
+    display: 'none'
+  },
+}));
+
+const EducationSubTab = styled(Tab)(({ theme }) => ({
+  textTransform: 'none',
+  fontWeight: 600,
+  fontSize: '0.9rem',
+  minWidth: 'auto',
+  padding: theme.spacing(1, 2),
+  borderRadius: theme.spacing(1.5),
+  transition: 'all 0.3s ease',
+  '&.Mui-selected': {
+    color: colors.textLight,
+    backgroundColor: colors.primary
+  },
+  '&:not(.Mui-selected)': {
+    color: colors.textSecondary,
+    '&:hover': {
+      backgroundColor: alpha(colors.primary, 0.1),
+      color: colors.primary
+    }
+  }
+}));
+
+const EligibilityCard = styled(Card)(({ theme }) => ({
+  border: "1px solid #e0e0e0",
+  height: "100%",
+  display: 'flex',
+  flexDirection: 'column',
+  "&:hover": { 
+    borderColor: colors.primary,
+    transform: 'translateY(-2px)',
+    transition: 'all 0.2s ease',
+    boxShadow: shadows.medium
+  },
+}));
+
+const EligibilityListItem = styled(ListItem)(({ theme }) => ({
+  border: "1px solid #e0e0e0",
+  borderRadius: theme.spacing(1),
+  marginBottom: theme.spacing(1),
+  "&:hover": { 
+    borderColor: colors.primary,
+    backgroundColor: alpha(colors.primary, 0.05)
+  },
+}));
+
+// Learning and Development Card and ListItem
+const LearningDevelopmentCard = styled(Card)(({ theme }) => ({
+  border: "1px solid #e0e0e0",
+  height: "100%",
+  display: 'flex',
+  flexDirection: 'column',
+  "&:hover": { 
+    borderColor: colors.primary,
+    transform: 'translateY(-2px)',
+    transition: 'all 0.2s ease',
+    boxShadow: shadows.medium
+  },
+}));
+
+const LearningDevelopmentListItem = styled(ListItem)(({ theme }) => ({
+  border: "1px solid #e0e0e0",
+  borderRadius: theme.spacing(1),
+  marginBottom: theme.spacing(1),
+  "&:hover": { 
+    borderColor: colors.primary,
+    backgroundColor: alpha(colors.primary, 0.05)
+  },
+}));
+
+// Percentage Input Component
+const PercentageInput = ({ value, onChange, label, disabled = false, error = false, helperText = '' }) => {
+  const [inputValue, setInputValue] = useState(value || '');
+
+  useEffect(() => {
+    setInputValue(value || '');
+  }, [value]);
+
+  const handleInputChange = (e) => {
+    let newValue = e.target.value;
+    
+    // Remove any non-digit characters except for decimal point
+    newValue = newValue.replace(/[^\d.]/g, '');
+    
+    // Ensure only one decimal point
+    const parts = newValue.split('.');
+    if (parts.length > 2) {
+      newValue = parts[0] + '.' + parts.slice(1).join('');
+    }
+    
+    // Limit to 2 decimal places
+    if (parts.length === 2 && parts[1].length > 2) {
+      newValue = parts[0] + '.' + parts[1].substring(0, 2);
+    }
+    
+    // Ensure value is between 0 and 100
+    const numValue = parseFloat(newValue);
+    if (!isNaN(numValue) && numValue > 100) {
+      newValue = '100';
+    }
+    
+    setInputValue(newValue);
+    onChange(newValue);
+  };
+
+  return (
+    <Box>
+      <Typography variant="caption" sx={{ fontWeight: "bold", mb: 0.5, color: "#333", display: 'block' }}>
+        {label}
+      </Typography>
+      <TextField
+        value={inputValue}
+        onChange={handleInputChange}
+        placeholder="0.00"
+        fullWidth
+        size="small"
+        disabled={disabled}
+        error={error}
+        helperText={helperText}
+        InputProps={{
+          endAdornment: (
+            <InputAdornment position="end">
+              <PercentIcon sx={{ color: '#6D2323' }} />
+            </InputAdornment>
+          ),
+        }}
+        sx={{
+          '& .MuiOutlinedInput-root': {
+            '& fieldset': {
+              borderColor: error ? 'red' : '#6D2323',
+              borderWidth: '1.5px'
+            },
+            '&:hover fieldset': {
+              borderColor: error ? 'red' : '#6D2323',
+            },
+            '&.Mui-focused fieldset': {
+              borderColor: error ? 'red' : '#6D2323',
+            },
+          },
+        }}
+      />
+    </Box>
+  );
+};
+
 const Profile = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -543,6 +804,29 @@ const Profile = () => {
   const [viewMode, setViewMode] = useState('grid');
   const employeeNumber = localStorage.getItem('employeeNumber');
   const profileRef = useRef(null);
+  
+  // Children related state
+  const [children, setChildren] = useState([]);
+  const [childrenFormData, setChildrenFormData] = useState([]);
+  
+  // College related state
+  const [colleges, setColleges] = useState([]);
+  const [collegesFormData, setCollegesFormData] = useState([]);
+  
+  // Graduate studies related state
+  const [graduates, setGraduates] = useState([]);
+  const [graduatesFormData, setGraduatesFormData] = useState([]);
+  
+  // Eligibility related state
+  const [eligibilities, setEligibilities] = useState([]);
+  const [eligibilitiesFormData, setEligibilitiesFormData] = useState([]);
+  
+  // Learning and Development related state
+  const [learningDevelopment, setLearningDevelopment] = useState([]);
+  const [learningDevelopmentFormData, setLearningDevelopmentFormData] = useState([]);
+  
+  // Education sub-tab state
+  const [educationSubTabValue, setEducationSubTabValue] = useState(0);
 
   useEffect(() => {
     const fetchPersonData = async () => {
@@ -574,11 +858,126 @@ const Profile = () => {
     fetchPersonData();
   }, [employeeNumber]);
 
+  // Fetch children data for current user
+  useEffect(() => {
+    const fetchChildren = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/ChildrenRoute/children-by-person/${employeeNumber}`);
+        console.log('Children data:', response.data);
+        setChildren(response.data);
+        
+        // Initialize form data with fetched children
+        const formattedChildren = response.data.map(child => ({
+          ...child,
+          dateOfBirth: child.dateOfBirth ? child.dateOfBirth.split('T')[0] : ''
+        }));
+        setChildrenFormData(formattedChildren);
+      } catch (error) {
+        console.error('Error fetching children:', error);
+        setUploadStatus({ message: 'Failed to load children data', type: 'error' });
+        setNotificationOpen(true);
+      }
+    };
+
+    if (employeeNumber) {
+      fetchChildren();
+    }
+  }, [employeeNumber]);
+  
+  // Fetch college data for current user
+  useEffect(() => {
+    const fetchColleges = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/college/college-by-person/${employeeNumber}`);
+        console.log('College data:', response.data);
+        setColleges(response.data);
+        setCollegesFormData(response.data);
+      } catch (error) {
+        console.error('Error fetching colleges:', error);
+        setUploadStatus({ message: 'Failed to load college data', type: 'error' });
+        setNotificationOpen(true);
+      }
+    };
+
+    if (employeeNumber) {
+      fetchColleges();
+    }
+  }, [employeeNumber]);
+  
+  // Fetch graduate studies data for current user
+  useEffect(() => {
+    const fetchGraduates = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/GraduateRoute/graduate-by-person/${employeeNumber}`);
+        console.log('Graduate data:', response.data);
+        setGraduates(response.data);
+        setGraduatesFormData(response.data);
+      } catch (error) {
+        console.error('Error fetching graduates:', error);
+        setUploadStatus({ message: 'Failed to load graduate data', type: 'error' });
+        setNotificationOpen(true);
+      }
+    };
+
+    if (employeeNumber) {
+      fetchGraduates();
+    }
+  }, [employeeNumber]);
+  
+  // Fetch eligibility data for current user
+  useEffect(() => {
+    const fetchEligibilities = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/eligibilityRoute/eligibility-by-person/${employeeNumber}`);
+        console.log('Eligibility data:', response.data);
+        setEligibilities(response.data);
+        
+        // Initialize form data with fetched eligibilities
+        const formattedEligibilities = response.data.map(eligibility => ({
+          ...eligibility,
+          eligibilityDateOfExam: eligibility.eligibilityDateOfExam ? eligibility.eligibilityDateOfExam.split('T')[0] : '',
+          DateOfValidity: eligibility.DateOfValidity ? eligibility.DateOfValidity.split('T')[0] : ''
+        }));
+        setEligibilitiesFormData(formattedEligibilities);
+      } catch (error) {
+        console.error('Error fetching eligibilities:', error);
+        setUploadStatus({ message: 'Failed to load eligibility data', type: 'error' });
+        setNotificationOpen(true);
+      }
+    };
+
+    if (employeeNumber) {
+      fetchEligibilities();
+    }
+  }, [employeeNumber]);
+  
+  // Fetch learning and development data for current user
+  useEffect(() => {
+    const fetchLearningDevelopment = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/learning_and_development_table/by-person/${employeeNumber}`);
+        console.log('Learning and Development data:', response.data);
+        setLearningDevelopment(response.data);
+        setLearningDevelopmentFormData(response.data);
+      } catch (error) {
+        console.error('Error fetching learning and development:', error);
+        setUploadStatus({ message: 'Failed to load learning and development data', type: 'error' });
+        setNotificationOpen(true);
+      }
+    };
+
+    if (employeeNumber) {
+      fetchLearningDevelopment();
+    }
+  }, [employeeNumber]);
+
   const handleEditOpen = () => {
     setEditOpen(true);
   };
   
-  const handleEditClose = () => setEditOpen(false);
+  const handleEditClose = () => {
+    setEditOpen(false);
+  };
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
@@ -587,11 +986,71 @@ const Profile = () => {
 
   const handleSave = async () => {
     try {
+      // Save personal info
       await axios.put(`${API_BASE_URL}/personalinfo/person_table/by-employee/${employeeNumber}`, formData);
       setPerson(formData);
+      
+      // Save children data
+      for (const child of childrenFormData) {
+        if (child.id) {
+          // Update existing child
+          await axios.put(`${API_BASE_URL}/ChildrenRoute/children-table/${child.id}`, child);
+        } else if (child.childrenFirstName && child.childrenLastName && child.dateOfBirth) {
+          // Add new child
+          await axios.post(`${API_BASE_URL}/ChildrenRoute/children-table`, child);
+        }
+      }
+      
+      // Save college data
+      for (const college of collegesFormData) {
+        if (college.id) {
+          // Update existing college
+          await axios.put(`${API_BASE_URL}/college/college-table/${college.id}`, college);
+        } else if (college.collegeNameOfSchool && college.collegeDegree) {
+          // Add new college
+          await axios.post(`${API_BASE_URL}/college/college-table`, college);
+        }
+      }
+      
+      // Save graduate studies data
+      for (const graduate of graduatesFormData) {
+        if (graduate.id) {
+          // Update existing graduate
+          await axios.put(`${API_BASE_URL}/graduate/graduate-table/${graduate.id}`, graduate);
+        } else if (graduate.graduateNameOfSchool && graduate.graduateDegree) {
+          // Add new graduate
+          await axios.post(`${API_BASE_URL}/graduate/graduate-table`, graduate);
+        }
+      }
+      
+      // Save eligibility data
+      for (const eligibility of eligibilitiesFormData) {
+        if (eligibility.id) {
+          // Update existing eligibility
+          await axios.put(`${API_BASE_URL}/eligibilityRoute/eligibility/${eligibility.id}`, eligibility);
+        } else if (eligibility.eligibilityName && eligibility.DateOfValidity) {
+          // Add new eligibility
+          await axios.post(`${API_BASE_URL}/eligibilityRoute/eligibility`, eligibility);
+        }
+      }
+      
+      // Save learning and development data
+      for (const learning of learningDevelopmentFormData) {
+        if (learning.id) {
+          // Update existing learning and development
+          await axios.put(`${API_BASE_URL}/learning_and_development_table/${learning.id}`, learning);
+        } else if (learning.titleOfProgram && learning.dateFrom && learning.dateTo) {
+          // Add new learning and development
+          await axios.post(`${API_BASE_URL}/learning_and_development_table`, learning);
+        }
+      }
+      
       setEditOpen(false);
       setUploadStatus({ message: 'Profile updated successfully!', type: 'success' });
       setNotificationOpen(true);
+      
+      // Refresh data
+      window.location.reload();
     } catch (err) {
       console.error("Update failed:", err);
       setUploadStatus({ message: 'Failed to update profile', type: 'error' });
@@ -696,7 +1155,6 @@ const Profile = () => {
     window.location.reload();
   };
 
-
   const handleMoreMenuOpen = (event) => {
     setMoreMenuAnchorEl(event.currentTarget);
   };
@@ -716,6 +1174,174 @@ const Profile = () => {
     profileRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Children related functions
+  const handleChildrenFormChange = (index, e) => {
+    const { name, value } = e.target;
+    const updatedChildren = [...childrenFormData];
+    updatedChildren[index] = { ...updatedChildren[index], [name]: value };
+    setChildrenFormData(updatedChildren);
+  };
+
+  const handleAddChild = () => {
+    setChildrenFormData([
+      ...childrenFormData,
+      {
+        childrenFirstName: '',
+        childrenMiddleName: '',
+        childrenLastName: '',
+        childrenNameExtension: '',
+        dateOfBirth: '',
+        person_id: employeeNumber,
+      }
+    ]);
+  };
+
+  const handleRemoveChild = (index) => {
+    const updatedChildren = [...childrenFormData];
+    updatedChildren.splice(index, 1);
+    setChildrenFormData(updatedChildren);
+  };
+  
+  // College related functions
+  const handleCollegeFormChange = (index, e) => {
+    const { name, value } = e.target;
+    const updatedColleges = [...collegesFormData];
+    updatedColleges[index] = { ...updatedColleges[index], [name]: value };
+    setCollegesFormData(updatedColleges);
+  };
+
+  const handleAddCollege = () => {
+    setCollegesFormData([
+      ...collegesFormData,
+      {
+        collegeNameOfSchool: '',
+        collegeDegree: '',
+        collegePeriodFrom: '',
+        collegePeriodTo: '',
+        collegeHighestAttained: '',
+        collegeYearGraduated: '',
+        collegeScholarshipAcademicHonorsReceived: '',
+        person_id: employeeNumber,
+      }
+    ]);
+  };
+
+  const handleRemoveCollege = (index) => {
+    const updatedColleges = [...collegesFormData];
+    updatedColleges.splice(index, 1);
+    setCollegesFormData(updatedColleges);
+  };
+  
+  // Graduate studies related functions
+  const handleGraduateFormChange = (index, e) => {
+    const { name, value } = e.target;
+    const updatedGraduates = [...graduatesFormData];
+    updatedGraduates[index] = { ...updatedGraduates[index], [name]: value };
+    setGraduatesFormData(updatedGraduates);
+  };
+
+  const handleAddGraduate = () => {
+    setGraduatesFormData([
+      ...graduatesFormData,
+      {
+        graduateNameOfSchool: '',
+        graduateDegree: '',
+        graduatePeriodFrom: '',
+        graduatePeriodTo: '',
+        graduateHighestLevel: '',
+        graduateYearGraduated: '',
+        graduateScholarshipAcademicHonorsReceived: '',
+        person_id: employeeNumber,
+      }
+    ]);
+  };
+
+  const handleRemoveGraduate = (index) => {
+    const updatedGraduates = [...graduatesFormData];
+    updatedGraduates.splice(index, 1);
+    setGraduatesFormData(updatedGraduates);
+  };
+  
+  // Eligibility related functions
+  const handleEligibilityFormChange = (index, e) => {
+    const { name, value } = e.target;
+    const updatedEligibilities = [...eligibilitiesFormData];
+    updatedEligibilities[index] = { ...updatedEligibilities[index], [name]: value };
+    setEligibilitiesFormData(updatedEligibilities);
+  };
+
+  const handleAddEligibility = () => {
+    setEligibilitiesFormData([
+      ...eligibilitiesFormData,
+      {
+        eligibilityName: '',
+        eligibilityRating: '',
+        eligibilityDateOfExam: '',
+        eligibilityPlaceOfExam: '',
+        licenseNumber: '',
+        DateOfValidity: '',
+        person_id: employeeNumber,
+      }
+    ]);
+  };
+
+  const handleRemoveEligibility = (index) => {
+    const updatedEligibilities = [...eligibilitiesFormData];
+    updatedEligibilities.splice(index, 1);
+    setEligibilitiesFormData(updatedEligibilities);
+  };
+  
+  // Learning and Development related functions
+  const handleLearningDevelopmentFormChange = (index, e) => {
+    const { name, value } = e.target;
+    const updatedLearningDevelopment = [...learningDevelopmentFormData];
+    updatedLearningDevelopment[index] = { ...updatedLearningDevelopment[index], [name]: value };
+    setLearningDevelopmentFormData(updatedLearningDevelopment);
+  };
+
+  const handleAddLearningDevelopment = () => {
+    setLearningDevelopmentFormData([
+      ...learningDevelopmentFormData,
+      {
+        titleOfProgram: '',
+        dateFrom: '',
+        dateTo: '',
+        numberOfHours: '',
+        typeOfLearningDevelopment: '',
+        conductedSponsored: '',
+        person_id: employeeNumber,
+      }
+    ]);
+  };
+
+  const handleRemoveLearningDevelopment = (index) => {
+    const updatedLearningDevelopment = [...learningDevelopmentFormData];
+    updatedLearningDevelopment.splice(index, 1);
+    setLearningDevelopmentFormData(updatedLearningDevelopment);
+  };
+
+  const getAge = (dateOfBirth) => {
+    if (!dateOfBirth) return 'N/A';
+    
+    const today = new Date();
+    const birthDate = new Date(dateOfBirth);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  // Format rating as percentage for display
+  const formatRating = (rating) => {
+    if (!rating) return 'N/A';
+    const numRating = parseFloat(rating);
+    if (isNaN(numRating)) return 'N/A';
+    return `${numRating}%`;
+  };
+
+  // Always include the Children, College, Eligibility, and Learning and Development tabs
   const tabs = [
     { key: 0, label: 'Personal', icon: <PersonIcon /> },
     { key: 1, label: 'Gov. IDs', icon: <BadgeIcon /> },
@@ -723,6 +1349,9 @@ const Profile = () => {
     { key: 3, label: 'Contact', icon: <CallIcon /> },
     { key: 4, label: 'Family', icon: <GroupIcon /> },
     { key: 5, label: 'Education', icon: <SchoolIcon /> },
+    { key: 6, label: 'Children', icon: <ChildCareIcon /> },
+    { key: 7, label: 'Eligibility', icon: <FactCheckIcon /> },
+    { key: 8, label: 'Learning & Development', icon: <BookIcon /> },
   ];
 
   const formFields = {
@@ -762,12 +1391,10 @@ const Profile = () => {
       { label: "Spouse Last Name", name: "spouseLastName", icon: <GroupIcon fontSize="small" /> },
       { label: "Spouse Occupation", name: "spouseOccupation", icon: <WorkIcon fontSize="small" /> }
     ],
-    5: [
-      { label: "Elementary School", name: "elementaryNameOfSchool", icon: <SchoolIcon fontSize="small" /> },
-      { label: "Elementary Degree", name: "elementaryDegree", icon: <SchoolIcon fontSize="small" /> },
-      { label: "Secondary School", name: "secondaryNameOfSchool", icon: <SchoolIcon fontSize="small" /> },
-      { label: "Secondary Degree", name: "secondaryDegree", icon: <SchoolIcon fontSize="small" /> }
-    ]
+    5: [], // Education tab will have sub-tabs
+    6: [], // Children tab doesn't have form fields
+    7: [], // Eligibility tab doesn't have form fields
+    8: [], // Learning and Development tab doesn't have form fields
   };
 
   if (loading) {
@@ -785,6 +1412,376 @@ const Profile = () => {
   }
 
   const renderTabContentGrid = (tabIndex) => {
+    // Special handling for Education tab with sub-tabs
+    if (tabIndex === 5) {
+      return (
+        <Box>
+          <EducationSubTabs
+            value={educationSubTabValue}
+            onChange={(e, newValue) => setEducationSubTabValue(newValue)}
+            variant="fullWidth"
+          >
+            <EducationSubTab label="Elementary & Secondary" icon={<SchoolIcon />} />
+            <EducationSubTab label="College" icon={<SchoolRoundedIcon />} />
+            <EducationSubTab label="Graduate Studies" icon={<PsychologyIcon />} />
+          </EducationSubTabs>
+          
+          {educationSubTabValue === 0 && (
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={6} md={4}>
+                <Card 
+                  sx={{ 
+                    height: '100%', 
+                    display: 'flex',
+                    flexDirection: 'column',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'translateY(-5px)',
+                      boxShadow: shadows.medium
+                    }
+                  }}
+                >
+                  <CardContent sx={{ flex: 1 }}>
+                    <Box display="flex" alignItems="center" mb={1}>
+                      <SchoolIcon fontSize="small" />
+                      <Typography variant="subtitle2" color={colors.textSecondary} ml={1}>
+                        Elementary School
+                      </Typography>
+                    </Box>
+                    <Typography variant="body1" fontWeight={500}>
+                      {person?.elementaryNameOfSchool || '—'}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <Card 
+                  sx={{ 
+                    height: '100%', 
+                    display: 'flex',
+                    flexDirection: 'column',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'translateY(-5px)',
+                      boxShadow: shadows.medium
+                    }
+                  }}
+                >
+                  <CardContent sx={{ flex: 1 }}>
+                    <Box display="flex" alignItems="center" mb={1}>
+                      <SchoolIcon fontSize="small" />
+                      <Typography variant="subtitle2" color={colors.textSecondary} ml={1}>
+                        Elementary Degree
+                      </Typography>
+                    </Box>
+                    <Typography variant="body1" fontWeight={500}>
+                      {person?.elementaryDegree || '—'}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <Card 
+                  sx={{ 
+                    height: '100%', 
+                    display: 'flex',
+                    flexDirection: 'column',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'translateY(-5px)',
+                      boxShadow: shadows.medium
+                    }
+                  }}
+                >
+                  <CardContent sx={{ flex: 1 }}>
+                    <Box display="flex" alignItems="center" mb={1}>
+                      <SchoolIcon fontSize="small" />
+                      <Typography variant="subtitle2" color={colors.textSecondary} ml={1}>
+                        Secondary School
+                      </Typography>
+                    </Box>
+                    <Typography variant="body1" fontWeight={500}>
+                      {person?.secondaryNameOfSchool || '—'}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <Card 
+                  sx={{ 
+                    height: '100%', 
+                    display: 'flex',
+                    flexDirection: 'column',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'translateY(-5px)',
+                      boxShadow: shadows.medium
+                    }
+                  }}
+                >
+                  <CardContent sx={{ flex: 1 }}>
+                    <Box display="flex" alignItems="center" mb={1}>
+                      <SchoolIcon fontSize="small" />
+                      <Typography variant="subtitle2" color={colors.textSecondary} ml={1}>
+                        Secondary Degree
+                      </Typography>
+                    </Box>
+                    <Typography variant="body1" fontWeight={500}>
+                      {person?.secondaryDegree || '—'}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          )}
+          
+          {educationSubTabValue === 1 && (
+            <Box>
+              {colleges.length > 0 ? (
+                <Grid container spacing={3}>
+                  {colleges.map((college) => (
+                    <Grid item xs={12} sm={6} md={4} key={college.id}>
+                      <CollegeCard>
+                        <CardContent sx={{ flex: 1 }}>
+                          <Typography variant="h6" fontWeight="bold" color={colors.textPrimary} mb={1}>
+                            {college.collegeNameOfSchool}
+                          </Typography>
+                          <Typography variant="body2" color={colors.textSecondary} mb={1}>
+                            {college.collegeDegree}
+                          </Typography>
+                          {college.collegePeriodFrom && college.collegePeriodTo && (
+                            <Box display="flex" alignItems="center">
+                              <CalendarTodayIcon sx={{ fontSize: 16, color: colors.textSecondary, mr: 1 }} />
+                              <Typography variant="body2" color={colors.textSecondary}>
+                                {college.collegePeriodFrom} - {college.collegePeriodTo}
+                              </Typography>
+                            </Box>
+                          )}
+                        </CardContent>
+                      </CollegeCard>
+                    </Grid>
+                  ))}
+                </Grid>
+              ) : (
+                <Box textAlign="center" py={4}>
+                  <Typography variant="h6" color={colors.textSecondary}>
+                    No college records found
+                  </Typography>
+                  <Typography variant="body2" color={colors.textSecondary} mt={1}>
+                    Click "Edit Profile" to add college records
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          )}
+          
+          {educationSubTabValue === 2 && (
+            <Box>
+              {graduates.length > 0 ? (
+                <Grid container spacing={3}>
+                  {graduates.map((graduate) => (
+                    <Grid item xs={12} sm={6} md={4} key={graduate.id}>
+                      <GraduateCard>
+                        <CardContent sx={{ flex: 1 }}>
+                          <Typography variant="h6" fontWeight="bold" color={colors.textPrimary} mb={1}>
+                            {graduate.graduateNameOfSchool}
+                          </Typography>
+                          <Typography variant="body2" color={colors.textSecondary} mb={1}>
+                            {graduate.graduateDegree}
+                          </Typography>
+                          {graduate.graduatePeriodFrom && graduate.graduatePeriodTo && (
+                            <Box display="flex" alignItems="center">
+                              <CalendarTodayIcon sx={{ fontSize: 16, color: colors.textSecondary, mr: 1 }} />
+                              <Typography variant="body2" color={colors.textSecondary}>
+                                {graduate.graduatePeriodFrom} - {graduate.graduatePeriodTo}
+                              </Typography>
+                            </Box>
+                          )}
+                        </CardContent>
+                      </GraduateCard>
+                    </Grid>
+                  ))}
+                </Grid>
+              ) : (
+                <Box textAlign="center" py={4}>
+                  <Typography variant="h6" color={colors.textSecondary}>
+                    No graduate studies records found
+                  </Typography>
+                  <Typography variant="body2" color={colors.textSecondary} mt={1}>
+                    Click "Edit Profile" to add graduate studies records
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          )}
+        </Box>
+      );
+    }
+    
+    // Special handling for Children tab
+    if (tabIndex === 6) {
+      return (
+        <Box>
+          <ScrollableContainer>
+            {children.length > 0 ? (
+              <Grid container spacing={3}>
+                {children.map((child) => (
+                  <Grid item xs={12} sm={6} md={4} key={child.id}>
+                    <ChildCard>
+                      <CardContent sx={{ flex: 1 }}>
+                        <Box display="flex" alignItems="center" mb={1}>
+                          <ChildCareIcon sx={{ color: colors.primary, mr: 1 }} />
+                        </Box>
+                        <Typography variant="h6" fontWeight="bold" color={colors.textPrimary} mb={1}>
+                          {child.childrenFirstName} {child.childrenMiddleName} {child.childrenLastName}
+                          {child.childrenNameExtension && ` ${child.childrenNameExtension}`}
+                        </Typography>
+                        {child.dateOfBirth && (
+                          <Box display="flex" alignItems="center" mb={1}>
+                            <CakeIcon sx={{ fontSize: 16, color: colors.textSecondary, mr: 1 }} />
+                            <Typography variant="body2" color={colors.textSecondary}>
+                              {new Date(child.dateOfBirth).toLocaleDateString()} (Age: {getAge(child.dateOfBirth)})
+                            </Typography>
+                          </Box>
+                        )}
+                      </CardContent>
+                    </ChildCard>
+                  </Grid>
+                ))}
+              </Grid>
+            ) : (
+              <Box textAlign="center" py={4}>
+                <Typography variant="h6" color={colors.textSecondary}>
+                  No children records found
+                </Typography>
+                <Typography variant="body2" color={colors.textSecondary} mt={1}>
+                  Click "Edit Profile" to add children records
+                </Typography>
+              </Box>
+            )}
+          </ScrollableContainer>
+        </Box>
+      );
+    }
+    
+    // Special handling for Eligibility tab
+    if (tabIndex === 7) {
+      return (
+        <Box>
+          <ScrollableContainer>
+            {eligibilities.length > 0 ? (
+              <Grid container spacing={3}>
+                {eligibilities.map((eligibility) => (
+                  <Grid item xs={12} sm={6} md={4} key={eligibility.id}>
+                    <EligibilityCard>
+                      <CardContent sx={{ flex: 1 }}>
+                        <Box display="flex" alignItems="center" mb={1}>
+                          <FactCheckIcon sx={{ color: colors.primary, mr: 1 }} />
+                        </Box>
+                        <Typography variant="h6" fontWeight="bold" color={colors.textPrimary} mb={1}>
+                          {eligibility.eligibilityName}
+                        </Typography>
+                        <Typography variant="body2" color={colors.textSecondary} mb={1}>
+                          Rating: {formatRating(eligibility.eligibilityRating)}
+                        </Typography>
+                        {eligibility.licenseNumber && (
+                          <Box display="flex" alignItems="center" mb={1}>
+                            <Typography variant="body2" color={colors.textSecondary} sx={{ mr: 1 }}>
+                              License:
+                            </Typography>
+                            <Typography variant="body2" color={colors.textPrimary}>
+                              {eligibility.licenseNumber}
+                            </Typography>
+                          </Box>
+                        )}
+                        {eligibility.DateOfValidity && (
+                          <Box display="flex" alignItems="center">
+                            <Typography variant="body2" color={colors.textSecondary} sx={{ mr: 1 }}>
+                              Valid Until:
+                            </Typography>
+                            <Typography variant="body2" color={colors.textPrimary}>
+                              {new Date(eligibility.DateOfValidity).toLocaleDateString()}
+                            </Typography>
+                          </Box>
+                        )}
+                      </CardContent>
+                    </EligibilityCard>
+                  </Grid>
+                ))}
+              </Grid>
+            ) : (
+              <Box textAlign="center" py={4}>
+                <Typography variant="h6" color={colors.textSecondary}>
+                  No eligibility records found
+                </Typography>
+                <Typography variant="body2" color={colors.textSecondary} mt={1}>
+                  Click "Edit Profile" to add eligibility records
+                </Typography>
+              </Box>
+            )}
+          </ScrollableContainer>
+        </Box>
+      );
+    }
+    
+    // Special handling for Learning and Development tab
+    if (tabIndex === 8) {
+      return (
+        <Box>
+          <ScrollableContainer>
+            {learningDevelopment.length > 0 ? (
+              <Grid container spacing={3}>
+                {learningDevelopment.map((learning) => (
+                  <Grid item xs={12} sm={6} md={4} key={learning.id}>
+                    <LearningDevelopmentCard>
+                      <CardContent sx={{ flex: 1 }}>
+                        <Box display="flex" alignItems="center" mb={1}>
+                          <LightbulbIcon sx={{ color: colors.primary, mr: 1 }} />
+                        </Box>
+                        <Typography variant="h6" fontWeight="bold" color={colors.textPrimary} mb={1}>
+                          {learning.titleOfProgram}
+                        </Typography>
+                        <Typography variant="body2" color={colors.textSecondary} mb={1}>
+                          Type: {learning.typeOfLearningDevelopment || 'N/A'}
+                        </Typography>
+                        {learning.dateFrom && learning.dateTo && (
+                          <Box display="flex" alignItems="center" mb={1}>
+                            <CalendarTodayIcon sx={{ fontSize: 16, color: colors.textSecondary, mr: 1 }} />
+                            <Typography variant="body2" color={colors.textSecondary}>
+                              {learning.dateFrom} - {learning.dateTo}
+                            </Typography>
+                          </Box>
+                        )}
+                        {learning.numberOfHours && (
+                          <Typography variant="body2" color={colors.textSecondary} mb={1}>
+                            Hours: {learning.numberOfHours}
+                          </Typography>
+                        )}
+                        {learning.conductedSponsored && (
+                          <Typography variant="body2" color={colors.textSecondary}>
+                            Conducted/Sponsored by: {learning.conductedSponsored}
+                          </Typography>
+                        )}
+                      </CardContent>
+                    </LearningDevelopmentCard>
+                  </Grid>
+                ))}
+              </Grid>
+            ) : (
+              <Box textAlign="center" py={4}>
+                <Typography variant="h6" color={colors.textSecondary}>
+                  No learning and development records found
+                </Typography>
+                <Typography variant="body2" color={colors.textSecondary} mt={1}>
+                  Click "Edit Profile" to add learning and development records
+                </Typography>
+              </Box>
+            )}
+          </ScrollableContainer>
+        </Box>
+      );
+    }
+    
     const fields = formFields[tabIndex] || [];
     
     return (
@@ -822,6 +1819,288 @@ const Profile = () => {
   };
 
   const renderTabContentList = (tabIndex) => {
+    // Special handling for Education tab with sub-tabs
+    if (tabIndex === 5) {
+      return (
+        <Box>
+          <EducationSubTabs
+            value={educationSubTabValue}
+            onChange={(e, newValue) => setEducationSubTabValue(newValue)}
+            variant="fullWidth"
+          >
+            <EducationSubTab label="Elementary & Secondary" icon={<SchoolIcon />} />
+            <EducationSubTab label="College" icon={<SchoolRoundedIcon />} />
+            <EducationSubTab label="Graduate Studies" icon={<PsychologyIcon />} />
+          </EducationSubTabs>
+          
+          {educationSubTabValue === 0 && (
+            <Box>
+              <InfoItem>
+                <InfoLabel variant="body2">
+                  <SchoolIcon fontSize="small" />
+                  Elementary School:
+                </InfoLabel>
+                <InfoValue variant="body1">
+                  {person?.elementaryNameOfSchool || '—'}
+                </InfoValue>
+              </InfoItem>
+              <InfoItem>
+                <InfoLabel variant="body2">
+                  <SchoolIcon fontSize="small" />
+                  Elementary Degree:
+                </InfoLabel>
+                <InfoValue variant="body1">
+                  {person?.elementaryDegree || '—'}
+                </InfoValue>
+              </InfoItem>
+              <InfoItem>
+                <InfoLabel variant="body2">
+                  <SchoolIcon fontSize="small" />
+                  Secondary School:
+                </InfoLabel>
+                <InfoValue variant="body1">
+                  {person?.secondaryNameOfSchool || '—'}
+                </InfoValue>
+              </InfoItem>
+              <InfoItem>
+                <InfoLabel variant="body2">
+                  <SchoolIcon fontSize="small" />
+                  Secondary Degree:
+                </InfoLabel>
+                <InfoValue variant="body1">
+                  {person?.secondaryDegree || '—'}
+                </InfoValue>
+              </InfoItem>
+            </Box>
+          )}
+          
+          {educationSubTabValue === 1 && (
+            <Box>
+              <ScrollableContainer>
+                {colleges.length > 0 ? (
+                  <List>
+                    {colleges.map((college) => (
+                      <React.Fragment key={college.id}>
+                        <CollegeListItem>
+                          <MuiListItemIcon>
+                            <SchoolRoundedIcon sx={{ color: colors.primary }} />
+                          </MuiListItemIcon>
+                          <MuiListItemText
+                            primary={college.collegeNameOfSchool}
+                            secondary={
+                              college.collegeDegree 
+                                ? `${college.collegeDegree} (${college.collegePeriodFrom || 'N/A'} - ${college.collegePeriodTo || 'N/A'})`
+                                : 'No degree information'
+                            }
+                          />
+                        </CollegeListItem>
+                        <Divider variant="inset" component="li" />
+                      </React.Fragment>
+                    ))}
+                  </List>
+                ) : (
+                  <Box textAlign="center" py={4}>
+                    <Typography variant="h6" color={colors.textSecondary}>
+                      No college records found
+                    </Typography>
+                    <Typography variant="body2" color={colors.textSecondary} mt={1}>
+                      Click "Edit Profile" to add college records
+                    </Typography>
+                  </Box>
+                )}
+              </ScrollableContainer>
+            </Box>
+          )}
+          
+          {educationSubTabValue === 2 && (
+            <Box>
+              <ScrollableContainer>
+                {graduates.length > 0 ? (
+                  <List>
+                    {graduates.map((graduate) => (
+                      <React.Fragment key={graduate.id}>
+                        <GraduateListItem>
+                          <MuiListItemIcon>
+                            <PsychologyIcon sx={{ color: colors.primary }} />
+                          </MuiListItemIcon>
+                          <MuiListItemText
+                            primary={graduate.graduateNameOfSchool}
+                            secondary={
+                              graduate.graduateDegree 
+                                ? `${graduate.graduateDegree} (${graduate.graduatePeriodFrom || 'N/A'} - ${graduate.graduatePeriodTo || 'N/A'})`
+                                : 'No degree information'
+                            }
+                          />
+                        </GraduateListItem>
+                        <Divider variant="inset" component="li" />
+                      </React.Fragment>
+                    ))}
+                  </List>
+                ) : (
+                  <Box textAlign="center" py={4}>
+                    <Typography variant="h6" color={colors.textSecondary}>
+                      No graduate studies records found
+                    </Typography>
+                    <Typography variant="body2" color={colors.textSecondary} mt={1}>
+                      Click "Edit Profile" to add graduate studies records
+                    </Typography>
+                  </Box>
+                )}
+              </ScrollableContainer>
+            </Box>
+          )}
+        </Box>
+      );
+    }
+    
+    // Special handling for Children tab
+    if (tabIndex === 6) {
+      return (
+        <Box>
+          <ScrollableContainer>
+            {children.length > 0 ? (
+              <List>
+                {children.map((child) => (
+                  <React.Fragment key={child.id}>
+                    <ChildListItem>
+                      <MuiListItemIcon>
+                        <ChildCareIcon sx={{ color: colors.primary }} />
+                      </MuiListItemIcon>
+                      <MuiListItemText
+                        primary={`${child.childrenFirstName} ${child.childrenMiddleName} ${child.childrenLastName}${child.childrenNameExtension ? ` ${child.childrenNameExtension}` : ''}`}
+                        secondary={
+                          child.dateOfBirth 
+                            ? `Born: ${new Date(child.dateOfBirth).toLocaleDateString()} (Age: {getAge(child.dateOfBirth)})`
+                            : 'No birth date recorded'
+                        }
+                      />
+                    </ChildListItem>
+                    <Divider variant="inset" component="li" />
+                  </React.Fragment>
+                ))}
+              </List>
+            ) : (
+              <Box textAlign="center" py={4}>
+                <Typography variant="h6" color={colors.textSecondary}>
+                  No children records found
+                </Typography>
+                <Typography variant="body2" color={colors.textSecondary} mt={1}>
+                  Click "Edit Profile" to add children records
+                </Typography>
+              </Box>
+            )}
+          </ScrollableContainer>
+        </Box>
+      );
+    }
+    
+    // Special handling for Eligibility tab
+    if (tabIndex === 7) {
+      return (
+        <Box>
+          <ScrollableContainer>
+            {eligibilities.length > 0 ? (
+              <List>
+                {eligibilities.map((eligibility) => (
+                  <React.Fragment key={eligibility.id}>
+                    <EligibilityListItem>
+                      <MuiListItemIcon>
+                        <FactCheckIcon sx={{ color: colors.primary }} />
+                      </MuiListItemIcon>
+                      <MuiListItemText
+                        primary={eligibility.eligibilityName}
+                        secondary={
+                          <>
+                            Rating: {formatRating(eligibility.eligibilityRating)}
+                            {eligibility.licenseNumber && (
+                              <Typography component="span" sx={{ ml: 1 }}>
+                                License: {eligibility.licenseNumber}
+                              </Typography>
+                            )}
+                            {eligibility.DateOfValidity && (
+                              <Typography component="span" sx={{ ml: 1, display: 'block' }}>
+                                Valid Until: {new Date(eligibility.DateOfValidity).toLocaleDateString()}
+                              </Typography>
+                            )}
+                          </>
+                        }
+                      />
+                    </EligibilityListItem>
+                    <Divider variant="inset" component="li" />
+                  </React.Fragment>
+                ))}
+              </List>
+            ) : (
+              <Box textAlign="center" py={4}>
+                <Typography variant="h6" color={colors.textSecondary}>
+                  No eligibility records found
+                </Typography>
+                <Typography variant="body2" color={colors.textSecondary} mt={1}>
+                  Click "Edit Profile" to add eligibility records
+                </Typography>
+              </Box>
+            )}
+          </ScrollableContainer>
+        </Box>
+      );
+    }
+    
+    // Special handling for Learning and Development tab
+    if (tabIndex === 8) {
+      return (
+        <Box>
+          <ScrollableContainer>
+            {learningDevelopment.length > 0 ? (
+              <List>
+                {learningDevelopment.map((learning) => (
+                  <React.Fragment key={learning.id}>
+                    <LearningDevelopmentListItem>
+                      <MuiListItemIcon>
+                        <LightbulbIcon sx={{ color: colors.primary }} />
+                      </MuiListItemIcon>
+                      <MuiListItemText
+                        primary={learning.titleOfProgram}
+                        secondary={
+                          <>
+                            Type: {learning.typeOfLearningDevelopment || 'N/A'}
+                            {learning.dateFrom && learning.dateTo && (
+                              <Typography component="span" sx={{ ml: 1, display: 'block' }}>
+                                Period: {learning.dateFrom} - {learning.dateTo}
+                              </Typography>
+                            )}
+                            {learning.numberOfHours && (
+                              <Typography component="span" sx={{ ml: 1, display: 'block' }}>
+                                Hours: {learning.numberOfHours}
+                              </Typography>
+                            )}
+                            {learning.conductedSponsored && (
+                              <Typography component="span" sx={{ ml: 1, display: 'block' }}>
+                                Conducted/Sponsored by: {learning.conductedSponsored}
+                              </Typography>
+                            )}
+                          </>
+                        }
+                      />
+                    </LearningDevelopmentListItem>
+                    <Divider variant="inset" component="li" />
+                  </React.Fragment>
+                ))}
+              </List>
+            ) : (
+              <Box textAlign="center" py={4}>
+                <Typography variant="h6" color={colors.textSecondary}>
+                  No learning and development records found
+                </Typography>
+                <Typography variant="body2" color={colors.textSecondary} mt={1}>
+                  Click "Edit Profile" to add learning and development records
+                </Typography>
+              </Box>
+            )}
+          </ScrollableContainer>
+        </Box>
+      );
+    }
+    
     const fields = formFields[tabIndex] || [];
     
     return (
@@ -842,6 +2121,611 @@ const Profile = () => {
   };
 
   const renderFormFields = () => {
+    // Special handling for Education tab with sub-tabs
+    if (tabValue === 5) {
+      if (educationSubTabValue === 0) {
+        return (
+          <Box>
+            <Typography variant="h6" gutterBottom>
+              Elementary & Secondary Education
+            </Typography>
+            <Typography variant="body2" color="textSecondary" gutterBottom>
+              This section displays your elementary and secondary education information.
+            </Typography>
+            
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={6}>
+                <FormField
+                  fullWidth
+                  label="Elementary School"
+                  name="elementaryNameOfSchool"
+                  value={formData.elementaryNameOfSchool || ''}
+                  onChange={handleFormChange}
+                  variant="outlined"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormField
+                  fullWidth
+                  label="Elementary Degree"
+                  name="elementaryDegree"
+                  value={formData.elementaryDegree || ''}
+                  onChange={handleFormChange}
+                  variant="outlined"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormField
+                  fullWidth
+                  label="Secondary School"
+                  name="secondaryNameOfSchool"
+                  value={formData.secondaryNameOfSchool || ''}
+                  onChange={handleFormChange}
+                  variant="outlined"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormField
+                  fullWidth
+                  label="Secondary Degree"
+                  name="secondaryDegree"
+                  value={formData.secondaryDegree || ''}
+                  onChange={handleFormChange}
+                  variant="outlined"
+                />
+              </Grid>
+            </Grid>
+          </Box>
+        );
+      } else if (educationSubTabValue === 1) {
+        return (
+          <Box>
+            <Typography variant="h6" gutterBottom>
+              College Information
+            </Typography>
+            
+            {collegesFormData.length > 0 ? (
+              <Box>
+                {collegesFormData.map((college, index) => (
+                  <Box key={index} mb={3} p={2} sx={{ backgroundColor: alpha(colors.secondary, 0.3), borderRadius: 2 }}>
+                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                      <Typography variant="h6">
+                        College {index + 1}
+                      </Typography>
+                      <IconButton onClick={() => handleRemoveCollege(index)} color="error">
+                        <DeleteIcon />
+                      </IconButton>
+                    </Box>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12}>
+                        <FormField
+                          fullWidth
+                          label="College Name"
+                          name="collegeNameOfSchool"
+                          value={college.collegeNameOfSchool || ''}
+                          onChange={(e) => handleCollegeFormChange(index, e)}
+                          variant="outlined"
+                        />
+                      </Grid>
+                      <Grid item xs={12}>
+                        <FormField
+                          fullWidth
+                          label="Degree"
+                          name="collegeDegree"
+                          value={college.collegeDegree || ''}
+                          onChange={(e) => handleCollegeFormChange(index, e)}
+                          variant="outlined"
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <FormField
+                          fullWidth
+                          label="Period From"
+                          name="collegePeriodFrom"
+                          value={college.collegePeriodFrom || ''}
+                          onChange={(e) => handleCollegeFormChange(index, e)}
+                          variant="outlined"
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <FormField
+                          fullWidth
+                          label="Period To"
+                          name="collegePeriodTo"
+                          value={college.collegePeriodTo || ''}
+                          onChange={(e) => handleCollegeFormChange(index, e)}
+                          variant="outlined"
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <FormField
+                          fullWidth
+                          label="Highest Attained"
+                          name="collegeHighestAttained"
+                          value={college.collegeHighestAttained || ''}
+                          onChange={(e) => handleCollegeFormChange(index, e)}
+                          variant="outlined"
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <FormField
+                          fullWidth
+                          label="Year Graduated"
+                          name="collegeYearGraduated"
+                          value={college.collegeYearGraduated || ''}
+                          onChange={(e) => handleCollegeFormChange(index, e)}
+                          variant="outlined"
+                        />
+                      </Grid>
+                      <Grid item xs={12}>
+                        <FormField
+                          fullWidth
+                          label="Honors Received"
+                          name="collegeScholarshipAcademicHonorsReceived"
+                          value={college.collegeScholarshipAcademicHonorsReceived || ''}
+                          onChange={(e) => handleCollegeFormChange(index, e)}
+                          variant="outlined"
+                        />
+                      </Grid>
+                    </Grid>
+                  </Box>
+                ))}
+              </Box>
+            ) : (
+              <Box textAlign="center" py={4}>
+                <Typography variant="h6" color={colors.textSecondary}>
+                  No college records found
+                </Typography>
+              </Box>
+            )}
+            
+            <Box mt={2} display="flex" justifyContent="center">
+              <ActionButton
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={handleAddCollege}
+              >
+                Add College
+              </ActionButton>
+            </Box>
+          </Box>
+        );
+      } else {
+        return (
+          <Box>
+            <Typography variant="h6" gutterBottom>
+              Graduate Studies Information
+            </Typography>
+            
+            {graduatesFormData.length > 0 ? (
+              <Box>
+                {graduatesFormData.map((graduate, index) => (
+                  <Box key={index} mb={3} p={2} sx={{ backgroundColor: alpha(colors.secondary, 0.3), borderRadius: 2 }}>
+                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                      <Typography variant="h6">
+                        Graduate Studies {index + 1}
+                      </Typography>
+                      <IconButton onClick={() => handleRemoveGraduate(index)} color="error">
+                        <DeleteIcon />
+                      </IconButton>
+                    </Box>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12}>
+                        <FormField
+                          fullWidth
+                          label="School Name"
+                          name="graduateNameOfSchool"
+                          value={graduate.graduateNameOfSchool || ''}
+                          onChange={(e) => handleGraduateFormChange(index, e)}
+                          variant="outlined"
+                        />
+                      </Grid>
+                      <Grid item xs={12}>
+                        <FormField
+                          fullWidth
+                          label="Degree"
+                          name="graduateDegree"
+                          value={graduate.graduateDegree || ''}
+                          onChange={(e) => handleGraduateFormChange(index, e)}
+                          variant="outlined"
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <FormField
+                          fullWidth
+                          label="Period From"
+                          name="graduatePeriodFrom"
+                          value={graduate.graduatePeriodFrom || ''}
+                          onChange={(e) => handleGraduateFormChange(index, e)}
+                          variant="outlined"
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <FormField
+                          fullWidth
+                          label="Period To"
+                          name="graduatePeriodTo"
+                          value={graduate.graduatePeriodTo || ''}
+                          onChange={(e) => handleGraduateFormChange(index, e)}
+                          variant="outlined"
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <FormField
+                          fullWidth
+                          label="Highest Level"
+                          name="graduateHighestLevel"
+                          value={graduate.graduateHighestLevel || ''}
+                          onChange={(e) => handleGraduateFormChange(index, e)}
+                          variant="outlined"
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <FormField
+                          fullWidth
+                          label="Year Graduated"
+                          name="graduateYearGraduated"
+                          value={graduate.graduateYearGraduated || ''}
+                          onChange={(e) => handleGraduateFormChange(index, e)}
+                          variant="outlined"
+                        />
+                      </Grid>
+                      <Grid item xs={12}>
+                        <FormField
+                          fullWidth
+                          label="Honors Received"
+                          name="graduateScholarshipAcademicHonorsReceived"
+                          value={graduate.graduateScholarshipAcademicHonorsReceived || ''}
+                          onChange={(e) => handleGraduateFormChange(index, e)}
+                          variant="outlined"
+                        />
+                      </Grid>
+                    </Grid>
+                  </Box>
+                ))}
+              </Box>
+            ) : (
+              <Box textAlign="center" py={4}>
+                <Typography variant="h6" color={colors.textSecondary}>
+                  No graduate studies records found
+                </Typography>
+              </Box>
+            )}
+            
+            <Box mt={2} display="flex" justifyContent="center">
+              <ActionButton
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={handleAddGraduate}
+              >
+                Add Graduate Studies
+              </ActionButton>
+            </Box>
+          </Box>
+        );
+      }
+    }
+    
+    // Special handling for Children tab
+    if (tabValue === 6) {
+      return (
+        <Box>
+          <Typography variant="h6" gutterBottom>
+            Children Information
+          </Typography>
+          
+          {childrenFormData.length > 0 ? (
+            <Box>
+              {childrenFormData.map((child, index) => (
+                <Box key={index} mb={3} p={2} sx={{ backgroundColor: alpha(colors.secondary, 0.3), borderRadius: 2 }}>
+                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                    <Typography variant="h6">
+                      Child {index + 1}
+                    </Typography>
+                    <IconButton onClick={() => handleRemoveChild(index)} color="error">
+                      <DeleteIcon />
+                    </IconButton>
+                  </Box>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                      <FormField
+                        fullWidth
+                        label="First Name"
+                        name="childrenFirstName"
+                        value={child.childrenFirstName || ''}
+                        onChange={(e) => handleChildrenFormChange(index, e)}
+                        variant="outlined"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <FormField
+                        fullWidth
+                        label="Middle Name"
+                        name="childrenMiddleName"
+                        value={child.childrenMiddleName || ''}
+                        onChange={(e) => handleChildrenFormChange(index, e)}
+                        variant="outlined"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <FormField
+                        fullWidth
+                        label="Last Name"
+                        name="childrenLastName"
+                        value={child.childrenLastName || ''}
+                        onChange={(e) => handleChildrenFormChange(index, e)}
+                        variant="outlined"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <FormField
+                        fullWidth
+                        label="Name Extension"
+                        name="childrenNameExtension"
+                        value={child.childrenNameExtension || ''}
+                        onChange={(e) => handleChildrenFormChange(index, e)}
+                        variant="outlined"
+                        placeholder="e.g., Jr., Sr., III"
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <FormField
+                        fullWidth
+                        label="Date of Birth"
+                        name="dateOfBirth"
+                        type="date"
+                        value={child.dateOfBirth || ''}
+                        onChange={(e) => handleChildrenFormChange(index, e)}
+                        variant="outlined"
+                        InputLabelProps={{ shrink: true }}
+                      />
+                    </Grid>
+                  </Grid>
+                </Box>
+              ))}
+            </Box>
+          ) : (
+            <Box textAlign="center" py={4}>
+              <Typography variant="h6" color={colors.textSecondary}>
+                No children records found
+              </Typography>
+            </Box>
+          )}
+          
+          <Box mt={2} display="flex" justifyContent="center">
+            <ActionButton
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleAddChild}
+            >
+              Add Child
+            </ActionButton>
+          </Box>
+        </Box>
+      );
+    }
+    
+    // Special handling for Eligibility tab
+    if (tabValue === 7) {
+      return (
+        <Box>
+          <Typography variant="h6" gutterBottom>
+            Eligibility Information
+          </Typography>
+          
+          {eligibilitiesFormData.length > 0 ? (
+            <Box>
+              {eligibilitiesFormData.map((eligibility, index) => (
+                <Box key={index} mb={3} p={2} sx={{ backgroundColor: alpha(colors.secondary, 0.3), borderRadius: 2 }}>
+                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                    <Typography variant="h6">
+                      Eligibility {index + 1}
+                    </Typography>
+                    <IconButton onClick={() => handleRemoveEligibility(index)} color="error">
+                      <DeleteIcon />
+                    </IconButton>
+                  </Box>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                      <FormField
+                        fullWidth
+                        label="Eligibility Name"
+                        name="eligibilityName"
+                        value={eligibility.eligibilityName || ''}
+                        onChange={(e) => handleEligibilityFormChange(index, e)}
+                        variant="outlined"
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <Box sx={{ mb: 1 }}>
+                        <Typography variant="caption" sx={{ fontWeight: "bold", mb: 0.5, color: "#333", display: 'block' }}>
+                          Rating
+                        </Typography>
+                        <PercentageInput
+                          value={eligibility.eligibilityRating || ''}
+                          onChange={(value) => handleEligibilityFormChange(index, { target: { name: 'eligibilityRating', value } })}
+                        />
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <FormField
+                        fullWidth
+                        label="Date of Exam"
+                        name="eligibilityDateOfExam"
+                        type="date"
+                        value={eligibility.eligibilityDateOfExam || ''}
+                        onChange={(e) => handleEligibilityFormChange(index, e)}
+                        variant="outlined"
+                        InputLabelProps={{ shrink: true }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <FormField
+                        fullWidth
+                        label="Place of Exam"
+                        name="eligibilityPlaceOfExam"
+                        value={eligibility.eligibilityPlaceOfExam || ''}
+                        onChange={(e) => handleEligibilityFormChange(index, e)}
+                        variant="outlined"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <FormField
+                        fullWidth
+                        label="License Number"
+                        name="licenseNumber"
+                        value={eligibility.licenseNumber || ''}
+                        onChange={(e) => handleEligibilityFormChange(index, e)}
+                        variant="outlined"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <FormField
+                        fullWidth
+                        label="Date of Validity"
+                        name="DateOfValidity"
+                        type="date"
+                        value={eligibility.DateOfValidity || ''}
+                        onChange={(e) => handleEligibilityFormChange(index, e)}
+                        variant="outlined"
+                        InputLabelProps={{ shrink: true }}
+                      />
+                    </Grid>
+                  </Grid>
+                </Box>
+              ))}
+            </Box>
+          ) : (
+            <Box textAlign="center" py={4}>
+              <Typography variant="h6" color={colors.textSecondary}>
+                No eligibility records found
+              </Typography>
+            </Box>
+          )}
+          
+          <Box mt={2} display="flex" justifyContent="center">
+            <ActionButton
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleAddEligibility}
+            >
+              Add Eligibility
+            </ActionButton>
+          </Box>
+        </Box>
+      );
+    }
+    
+    // Special handling for Learning and Development tab
+    if (tabValue === 8) {
+      return (
+        <Box>
+          <Typography variant="h6" gutterBottom>
+            Learning and Development Information
+          </Typography>
+          
+          {learningDevelopmentFormData.length > 0 ? (
+            <Box>
+              {learningDevelopmentFormData.map((learning, index) => (
+                <Box key={index} mb={3} p={2} sx={{ backgroundColor: alpha(colors.secondary, 0.3), borderRadius: 2 }}>
+                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                    <Typography variant="h6">
+                      Learning Program {index + 1}
+                    </Typography>
+                    <IconButton onClick={() => handleRemoveLearningDevelopment(index)} color="error">
+                      <DeleteIcon />
+                    </IconButton>
+                  </Box>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                      <FormField
+                        fullWidth
+                        label="Title of Program"
+                        name="titleOfProgram"
+                        value={learning.titleOfProgram || ''}
+                        onChange={(e) => handleLearningDevelopmentFormChange(index, e)}
+                        variant="outlined"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <FormField
+                        fullWidth
+                        label="Date From"
+                        name="dateFrom"
+                        type="date"
+                        value={learning.dateFrom || ''}
+                        onChange={(e) => handleLearningDevelopmentFormChange(index, e)}
+                        variant="outlined"
+                        InputLabelProps={{ shrink: true }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <FormField
+                        fullWidth
+                        label="Date To"
+                        name="dateTo"
+                        type="date"
+                        value={learning.dateTo || ''}
+                        onChange={(e) => handleLearningDevelopmentFormChange(index, e)}
+                        variant="outlined"
+                        InputLabelProps={{ shrink: true }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <FormField
+                        fullWidth
+                        label="Number of Hours"
+                        name="numberOfHours"
+                        value={learning.numberOfHours || ''}
+                        onChange={(e) => handleLearningDevelopmentFormChange(index, e)}
+                        variant="outlined"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <FormField
+                        fullWidth
+                        label="Type of Learning Development"
+                        name="typeOfLearningDevelopment"
+                        value={learning.typeOfLearningDevelopment || ''}
+                        onChange={(e) => handleLearningDevelopmentFormChange(index, e)}
+                        variant="outlined"
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <FormField
+                        fullWidth
+                        label="Conducted/Sponsored"
+                        name="conductedSponsored"
+                        value={learning.conductedSponsored || ''}
+                        onChange={(e) => handleLearningDevelopmentFormChange(index, e)}
+                        variant="outlined"
+                      />
+                    </Grid>
+                  </Grid>
+                </Box>
+              ))}
+            </Box>
+          ) : (
+            <Box textAlign="center" py={4}>
+              <Typography variant="h6" color={colors.textSecondary}>
+                No learning and development records found
+              </Typography>
+            </Box>
+          )}
+          
+          <Box mt={2} display="flex" justifyContent="center">
+            <ActionButton
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleAddLearningDevelopment}
+            >
+              Add Learning Program
+            </ActionButton>
+          </Box>
+        </Box>
+      );
+    }
+    
     const fields = formFields[tabValue] || [];
     
     return (
@@ -968,6 +2852,7 @@ const Profile = () => {
         </ContentContainer>
       </SectionPaper>
 
+      {/* Edit Profile Modal */}
       <Modal
         open={editOpen}
         onClose={handleEditClose}
@@ -1094,6 +2979,7 @@ const Profile = () => {
         </Backdrop>
       </Modal>
 
+      {/* Image Preview Modals */}
       <ImagePreviewModal
         open={imageZoomOpen}
         onClose={handleImageZoomClose}

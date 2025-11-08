@@ -23,6 +23,11 @@ import {
   ListItemIcon,
   Card,
   CardContent,
+  InputAdornment,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -38,6 +43,7 @@ import {
   Person as PersonIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
+  ArrowDropDown as ArrowDropDownIcon,
 } from '@mui/icons-material';
 
 import ReorderIcon from '@mui/icons-material/Reorder';
@@ -57,7 +63,124 @@ const getAuthHeaders = () => {
   };
 };
 
-// Employee Autocomplete Component
+// Custom Year Input Component with Dropdown
+const YearInput = ({
+  value,
+  onChange,
+  label,
+  error,
+  helperText,
+  disabled = false,
+  autoUpdate = false,
+  sourceYear = null,
+}) => {
+  const [open, setOpen] = useState(false);
+  const currentYear = new Date().getFullYear();
+  const startYear = 1950;
+  const years = Array.from({ length: currentYear - startYear + 1 }, (_, i) => startYear + i);
+
+  // Auto-update if sourceYear changes and autoUpdate is true
+  useEffect(() => {
+    if (autoUpdate && sourceYear && sourceYear !== value) {
+      onChange(sourceYear);
+    }
+  }, [sourceYear, autoUpdate, onChange, value]);
+
+  const handleYearChange = (event) => {
+    onChange(event.target.value);
+    setOpen(false);
+  };
+
+  const handleInputChange = (event) => {
+    const inputValue = event.target.value;
+    // Only allow numbers and limit to 4 digits
+    if (/^\d{0,4}$/.test(inputValue)) {
+      onChange(inputValue);
+    }
+  };
+
+  return (
+    <FormControl fullWidth size="small" error={!!error}>
+      <Typography
+        variant="caption"
+        sx={{
+          fontWeight: 'bold',
+          mb: 0.5,
+          color: '#333',
+          display: 'block',
+        }}
+      >
+        {label}
+      </Typography>
+      <TextField
+        value={value || ''}
+        onChange={handleInputChange}
+        disabled={disabled}
+        error={!!error}
+        helperText={helperText || ''}
+        size="small"
+        InputProps={{
+          endAdornment: (
+            <InputAdornment position="end">
+              <IconButton
+                onClick={() => setOpen(!open)}
+                size="small"
+                disabled={disabled}
+                sx={{ color: '#6D2323' }}
+              >
+                <ArrowDropDownIcon />
+              </IconButton>
+            </InputAdornment>
+          ),
+        }}
+        sx={{
+          '& .MuiOutlinedInput-root': {
+            '& fieldset': {
+              borderColor: error ? 'red' : '#6D2323',
+              borderWidth: '1.5px',
+            },
+            '&:hover fieldset': {
+              borderColor: error ? 'red' : '#6D2323',
+            },
+            '&.Mui-focused fieldset': {
+              borderColor: error ? 'red' : '#6D2323',
+            },
+          },
+        }}
+      />
+      {open && (
+        <Paper
+          elevation={3}
+          sx={{
+            position: 'absolute',
+            zIndex: 1000,
+            maxHeight: 200,
+            overflow: 'auto',
+            mt: 1,
+            width: '100%',
+          }}
+        >
+          {years.map((year) => (
+            <MenuItem
+              key={year}
+              value={year}
+              onClick={() => handleYearChange({ target: { value: year } })}
+              sx={{
+                '&:hover': {
+                  backgroundColor: '#f5f5f5',
+                },
+              }}
+            >
+              {year}
+            </MenuItem>
+          ))}
+        </Paper>
+      )}
+    </FormControl>
+  );
+};
+
+// Employee Autocomplete Component (unchanged)
 const EmployeeAutocomplete = ({
   value,
   onChange,
@@ -448,10 +571,10 @@ const Vocational = () => {
       newVocational.vocationalPeriodTo
     ) {
       if (
-        new Date(newVocational.vocationalPeriodFrom) >
-        new Date(newVocational.vocationalPeriodTo)
+        parseInt(newVocational.vocationalPeriodFrom) >
+        parseInt(newVocational.vocationalPeriodTo)
       ) {
-        newErrors.vocationalPeriodTo = 'End date must be after start date';
+        newErrors.vocationalPeriodTo = 'End year must be after start year';
       }
     }
 
@@ -991,94 +1114,22 @@ const Vocational = () => {
                   </Grid>
 
                   <Grid item xs={12} sm={6}>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        fontWeight: 'bold',
-                        mb: 0.5,
-                        color: '#333',
-                        display: 'block',
-                      }}
-                    >
-                      Period From
-                    </Typography>
-                    <TextField
-                      type="date"
+                    <YearInput
                       value={newVocational.vocationalPeriodFrom}
-                      onChange={(e) =>
-                        handleChange('vocationalPeriodFrom', e.target.value)
-                      }
-                      fullWidth
-                      size="small"
-                      InputLabelProps={{ shrink: true }}
+                      onChange={(value) => handleChange('vocationalPeriodFrom', value)}
+                      label="Period From"
                       error={!!errors.vocationalPeriodFrom}
                       helperText={errors.vocationalPeriodFrom || ''}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          '& fieldset': {
-                            borderColor: errors.vocationalPeriodFrom
-                              ? 'red'
-                              : '#6D2323',
-                            borderWidth: '1.5px',
-                          },
-                          '&:hover fieldset': {
-                            borderColor: errors.vocationalPeriodFrom
-                              ? 'red'
-                              : '#6D2323',
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: errors.vocationalPeriodFrom
-                              ? 'red'
-                              : '#6D2323',
-                          },
-                        },
-                      }}
                     />
                   </Grid>
 
                   <Grid item xs={12} sm={6}>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        fontWeight: 'bold',
-                        mb: 0.5,
-                        color: '#333',
-                        display: 'block',
-                      }}
-                    >
-                      Period To
-                    </Typography>
-                    <TextField
-                      type="date"
+                    <YearInput
                       value={newVocational.vocationalPeriodTo}
-                      onChange={(e) =>
-                        handleChange('vocationalPeriodTo', e.target.value)
-                      }
-                      fullWidth
-                      size="small"
-                      InputLabelProps={{ shrink: true }}
+                      onChange={(value) => handleChange('vocationalPeriodTo', value)}
+                      label="Period To"
                       error={!!errors.vocationalPeriodTo}
                       helperText={errors.vocationalPeriodTo || ''}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          '& fieldset': {
-                            borderColor: errors.vocationalPeriodTo
-                              ? 'red'
-                              : '#6D2323',
-                            borderWidth: '1.5px',
-                          },
-                          '&:hover fieldset': {
-                            borderColor: errors.vocationalPeriodTo
-                              ? 'red'
-                              : '#6D2323',
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: errors.vocationalPeriodTo
-                              ? 'red'
-                              : '#6D2323',
-                          },
-                        },
-                      }}
                     />
                   </Grid>
 
@@ -1122,38 +1173,12 @@ const Vocational = () => {
                   </Grid>
 
                   <Grid item xs={12} sm={6}>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        fontWeight: 'bold',
-                        mb: 0.5,
-                        color: '#333',
-                        display: 'block',
-                      }}
-                    >
-                      Year Graduated
-                    </Typography>
-                    <TextField
+                    <YearInput
                       value={newVocational.vocationalYearGraduated}
-                      onChange={(e) =>
-                        handleChange('vocationalYearGraduated', e.target.value)
-                      }
-                      fullWidth
-                      size="small"
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          '& fieldset': {
-                            borderColor: '#6D2323',
-                            borderWidth: '1.5px',
-                          },
-                          '&:hover fieldset': {
-                            borderColor: '#6D2323',
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#6D2323',
-                          },
-                        },
-                      }}
+                      onChange={(value) => handleChange('vocationalYearGraduated', value)}
+                      label="Year Graduated"
+                      autoUpdate={true}
+                      sourceYear={newVocational.vocationalPeriodTo}
                     />
                   </Grid>
 
@@ -1549,9 +1574,9 @@ const Vocational = () => {
                               )}
                             </Box>
                           </Box>
-                          </Box>
-                        </Card>
-                      ))
+                        </Box>
+                      </Card>
+                    ))
                   )}
 
                   {filteredData.length === 0 && (
@@ -1897,104 +1922,62 @@ const Vocational = () => {
                   </Grid>
 
                   <Grid item xs={12} sm={6}>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        fontWeight: "bold",
-                        mb: 0.5,
-                        color: "#333",
-                        display: 'block',
-                      }}
-                    >
-                      Period From
-                    </Typography>
                     {isEditing ? (
-                      <TextField
-                        type="date"
-                        value={
-                          editVocational.vocationalPeriodFrom?.split('T')[0] || ''
-                        }
-                        onChange={(e) =>
-                          handleChange(
-                            'vocationalPeriodFrom',
-                            e.target.value,
-                            true
-                          )
-                        }
-                        fullWidth
-                        size="small"
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            '& fieldset': {
-                              borderColor: "#6D2323",
-                            },
-                            '&:hover fieldset': {
-                              borderColor: "#6D2323",
-                            },
-                            '&.Mui-focused fieldset': {
-                              borderColor: "#6D2323",
-                            },
-                          },
-                        }}
+                      <YearInput
+                        value={editVocational.vocationalPeriodFrom}
+                        onChange={(value) => handleChange('vocationalPeriodFrom', value, true)}
+                        label="Period From"
                       />
                     ) : (
-                      <Typography
-                        variant="body2"
-                        sx={{ p: 1, bgcolor: '#f5f5f5', borderRadius: 1 }}
-                      >
-                        {editVocational.vocationalPeriodFrom?.split('T')[0] || 'N/A'}
-                      </Typography>
+                      <>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            fontWeight: "bold",
+                            mb: 0.5,
+                            color: "#333",
+                            display: 'block',
+                          }}
+                        >
+                          Period From
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{ p: 1, bgcolor: '#f5f5f5', borderRadius: 1 }}
+                        >
+                          {editVocational.vocationalPeriodFrom || 'N/A'}
+                        </Typography>
+                      </>
                     )}
                   </Grid>
 
                   <Grid item xs={12} sm={6}>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        fontWeight: "bold",
-                        mb: 0.5,
-                        color: "#333",
-                        display: 'block',
-                      }}
-                    >
-                      Period To
-                    </Typography>
                     {isEditing ? (
-                      <TextField
-                        type="date"
-                        value={
-                          editVocational.vocationalPeriodTo?.split('T')[0] || ''
-                        }
-                        onChange={(e) =>
-                          handleChange(
-                            'vocationalPeriodTo',
-                            e.target.value,
-                            true
-                          )
-                        }
-                        fullWidth
-                        size="small"
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            '& fieldset': {
-                              borderColor: "#6D2323",
-                            },
-                            '&:hover fieldset': {
-                              borderColor: "#6D2323",
-                            },
-                            '&.Mui-focused fieldset': {
-                              borderColor: "#6D2323",
-                            },
-                          },
-                        }}
+                      <YearInput
+                        value={editVocational.vocationalPeriodTo}
+                        onChange={(value) => handleChange('vocationalPeriodTo', value, true)}
+                        label="Period To"
                       />
                     ) : (
-                      <Typography
-                        variant="body2"
-                        sx={{ p: 1, bgcolor: '#f5f5f5', borderRadius: 1 }}
-                      >
-                        {editVocational.vocationalPeriodTo?.split('T')[0] || 'N/A'}
-                      </Typography>
+                      <>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            fontWeight: "bold",
+                            mb: 0.5,
+                            color: "#333",
+                            display: 'block',
+                          }}
+                        >
+                          Period To
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{ p: 1, bgcolor: '#f5f5f5', borderRadius: 1 }}
+                        >
+                          {editVocational.vocationalPeriodTo || 'N/A'}
+                        </Typography>
+                      </>
                     )}
                   </Grid>
 
@@ -2047,50 +2030,34 @@ const Vocational = () => {
                   </Grid>
 
                   <Grid item xs={12} sm={6}>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        fontWeight: "bold",
-                        mb: 0.5,
-                        color: "#333",
-                        display: 'block',
-                      }}
-                    >
-                      Year Graduated
-                    </Typography>
                     {isEditing ? (
-                      <TextField
+                      <YearInput
                         value={editVocational.vocationalYearGraduated}
-                        onChange={(e) =>
-                          handleChange(
-                            'vocationalYearGraduated',
-                            e.target.value,
-                            true
-                          )
-                        }
-                        fullWidth
-                        size="small"
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            '& fieldset': {
-                              borderColor: "#6D2323",
-                            },
-                            '&:hover fieldset': {
-                              borderColor: "#6D2323",
-                            },
-                            '&.Mui-focused fieldset': {
-                              borderColor: "#6D2323",
-                            },
-                          },
-                        }}
+                        onChange={(value) => handleChange('vocationalYearGraduated', value, true)}
+                        label="Year Graduated"
+                        autoUpdate={true}
+                        sourceYear={editVocational.vocationalPeriodTo}
                       />
                     ) : (
-                      <Typography
-                        variant="body2"
-                        sx={{ p: 1, bgcolor: '#f5f5f5', borderRadius: 1 }}
-                      >
-                        {editVocational.vocationalYearGraduated || 'N/A'}
-                      </Typography>
+                      <>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            fontWeight: "bold",
+                            mb: 0.5,
+                            color: "#333",
+                            display: 'block',
+                          }}
+                        >
+                          Year Graduated
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{ p: 1, bgcolor: '#f5f5f5', borderRadius: 1 }}
+                        >
+                          {editVocational.vocationalYearGraduated || 'N/A'}
+                        </Typography>
+                      </>
                     )}
                   </Grid>
 
