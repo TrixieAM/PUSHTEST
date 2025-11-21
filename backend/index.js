@@ -60,7 +60,7 @@ app.use(express.urlencoded({ extended: true }));
 const allowedOrigins = [
   'http://localhost:5137',
   'http://192.168.20.16:5137',
-  'http://192.168.50.50:5137',
+  'http://192.168.50.45:5137',
   'http://136.239.248.42:5137',
 ];
 

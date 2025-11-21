@@ -31,7 +31,7 @@ import {
   alpha,
   Avatar,
   Tooltip,
-} from "@mui/material";
+} from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -47,19 +47,24 @@ import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
   Refresh,
-} from "@mui/icons-material";
+} from '@mui/icons-material';
 
 import ReorderIcon from '@mui/icons-material/Reorder';
 import LoadingOverlay from '../LoadingOverlay';
 import SuccessfullOverlay from '../SuccessfulOverlay';
 import AccessDenied from '../AccessDenied';
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from 'react-router-dom';
 import { useSystemSettings } from '../../hooks/useSystemSettings';
 
 // Helper function to convert hex to rgb
 const hexToRgb = (hex) => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '109, 35, 35';
+  return result
+    ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(
+        result[3],
+        16
+      )}`
+    : '109, 35, 35';
 };
 
 // Professional styled components - colors will be applied via sx prop
@@ -73,23 +78,29 @@ const GlassCard = styled(Card)(({ theme }) => ({
   },
 }));
 
-const ProfessionalButton = styled(Button)(({ theme, variant, color = 'primary' }) => ({
-  borderRadius: 12,
-  fontWeight: 600,
-  padding: '12px 24px',
-  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-  textTransform: 'none',
-  fontSize: '0.95rem',
-  letterSpacing: '0.025em',
-  boxShadow: variant === 'contained' ? '0 4px 14px rgba(254, 249, 225, 0.25)' : 'none',
-  '&:hover': {
-    transform: 'translateY(-2px)',
-    boxShadow: variant === 'contained' ? '0 6px 20px rgba(254, 249, 225, 0.35)' : 'none',
-  },
-  '&:active': {
-    transform: 'translateY(0)',
-  },
-}));
+const ProfessionalButton = styled(Button)(
+  ({ theme, variant, color = 'primary' }) => ({
+    borderRadius: 12,
+    fontWeight: 600,
+    padding: '12px 24px',
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    textTransform: 'none',
+    fontSize: '0.95rem',
+    letterSpacing: '0.025em',
+    boxShadow:
+      variant === 'contained' ? '0 4px 14px rgba(254, 249, 225, 0.25)' : 'none',
+    '&:hover': {
+      transform: 'translateY(-2px)',
+      boxShadow:
+        variant === 'contained'
+          ? '0 6px 20px rgba(254, 249, 225, 0.35)'
+          : 'none',
+    },
+    '&:active': {
+      transform: 'translateY(0)',
+    },
+  })
+);
 
 const ModernTextField = styled(TextField)(({ theme }) => ({
   '& .MuiOutlinedInput-root': {
@@ -111,16 +122,47 @@ const ModernTextField = styled(TextField)(({ theme }) => ({
   },
 }));
 
-// Auth header helper
+// Enhanced Auth header helper with error handling
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
+
+  if (!token) {
+    console.error('No authentication token found in localStorage');
+    // Optionally redirect to login
+    // window.location.href = '/login';
+    return {};
+  }
+
+  // For debugging - log token existence (remove in production)
+  console.log('Auth token being used:', token ? 'Token exists' : 'No token');
+
   return {
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
+    withCredentials: true, // Important for cookies if using them
   };
 };
+
+// Add axios response interceptor for global error handling
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      console.error(
+        'Authentication error:',
+        error.response?.data?.message || 'Unauthorized'
+      );
+      // Optionally redirect to login
+      // localStorage.removeItem('token');
+      // window.location.href = '/login';
+    } else if (error.response?.status === 403) {
+      console.error('Authorization error: Insufficient permissions');
+    }
+    return Promise.reject(error);
+  }
+);
 
 // Employee Autocomplete Component
 const EmployeeAutocomplete = ({
@@ -171,7 +213,9 @@ const EmployeeAutocomplete = ({
     setIsLoading(true);
     try {
       const response = await axios.get(
-        `${API_BASE_URL}/Remittance/employees/search?q=${encodeURIComponent(searchQuery)}`,
+        `${API_BASE_URL}/Remittance/employees/search?q=${encodeURIComponent(
+          searchQuery
+        )}`,
         getAuthHeaders()
       );
       setEmployees(response.data);
@@ -387,13 +431,13 @@ const ItemTable = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
-  const [successAction, setSuccessAction] = useState("");
+  const [successAction, setSuccessAction] = useState('');
   const [errors, setErrors] = useState({});
   const [viewMode, setViewMode] = useState('grid');
-  
+
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [selectedEditEmployee, setSelectedEditEmployee] = useState(null);
-  
+
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
@@ -407,7 +451,7 @@ const ItemTable = () => {
   const { settings } = useSystemSettings();
   const [hasAccess, setHasAccess] = useState(null);
   const navigate = useNavigate();
-  
+
   // Get colors from system settings
   const primaryColor = settings.accentColor || '#FEF9E1'; // Cards color
   const secondaryColor = settings.backgroundColor || '#FFF8E7'; // Background
@@ -419,7 +463,7 @@ const ItemTable = () => {
   const blackColor = '#1a1a1a';
   const whiteColor = '#FFFFFF';
   const grayColor = '#6c757d';
-  
+
   useEffect(() => {
     const userId = localStorage.getItem('employeeNumber');
     const pageId = 10; // Different page ID for items
@@ -429,14 +473,16 @@ const ItemTable = () => {
     }
     const checkAccess = async () => {
       try {
+        const authHeaders = getAuthHeaders();
         const response = await fetch(`${API_BASE_URL}/page_access/${userId}`, {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
+          method: 'GET',
+          ...authHeaders,
         });
         if (response.ok) {
           const accessData = await response.json();
-          const hasPageAccess = accessData.some(access => 
-            access.page_id === pageId && String(access.page_privilege) === '1'
+          const hasPageAccess = accessData.some(
+            (access) =>
+              access.page_id === pageId && String(access.page_privilege) === '1'
           );
           setHasAccess(hasPageAccess);
         } else {
@@ -456,13 +502,18 @@ const ItemTable = () => {
 
   const fetchItems = async () => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/api/item-table`, getAuthHeaders());
+      const res = await axios.get(
+        `${API_BASE_URL}/api/item-table`,
+        getAuthHeaders()
+      );
       setData(res.data);
-      
+
       // Fetch employee names for all records
-      const uniqueEmployeeIds = [...new Set(res.data.map(item => item.employeeID).filter(Boolean))];
+      const uniqueEmployeeIds = [
+        ...new Set(res.data.map((item) => item.employeeID).filter(Boolean)),
+      ];
       const namesMap = {};
-      
+
       await Promise.all(
         uniqueEmployeeIds.map(async (id) => {
           try {
@@ -476,7 +527,7 @@ const ItemTable = () => {
           }
         })
       );
-      
+
       setEmployeeNames(namesMap);
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -487,13 +538,13 @@ const ItemTable = () => {
   const validateForm = () => {
     const newErrors = {};
     const requiredFields = ['item_description', 'employeeID', 'name'];
-    
-    requiredFields.forEach(field => {
+
+    requiredFields.forEach((field) => {
       if (!newItem[field] || newItem[field].trim() === '') {
         newErrors[field] = 'This field is required';
       }
     });
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -503,10 +554,14 @@ const ItemTable = () => {
       showSnackbar('Please fill in all required fields', 'error');
       return;
     }
-    
+
     setLoading(true);
     try {
-      await axios.post(`${API_BASE_URL}/api/item-table`, newItem, getAuthHeaders());
+      await axios.post(
+        `${API_BASE_URL}/api/item-table`,
+        newItem,
+        getAuthHeaders()
+      );
       setNewItem({
         item_description: '',
         employeeID: '',
@@ -518,12 +573,12 @@ const ItemTable = () => {
       });
       setSelectedEmployee(null);
       setErrors({});
-      setTimeout(() => {     
-        setLoading(false);  
-        setSuccessAction("adding");
+      setTimeout(() => {
+        setLoading(false);
+        setSuccessAction('adding');
         setSuccessOpen(true);
         setTimeout(() => setSuccessOpen(false), 2000);
-      }, 300);  
+      }, 300);
       fetchItems();
     } catch (err) {
       console.error('Error adding data:', err);
@@ -534,13 +589,17 @@ const ItemTable = () => {
 
   const handleUpdate = async () => {
     try {
-      await axios.put(`${API_BASE_URL}/api/item-table/${editItem.id}`, editItem, getAuthHeaders());
+      await axios.put(
+        `${API_BASE_URL}/api/item-table/${editItem.id}`,
+        editItem,
+        getAuthHeaders()
+      );
       setEditItem(null);
       setOriginalItem(null);
       setSelectedEditEmployee(null);
       setIsEditing(false);
       fetchItems();
-      setSuccessAction("edit");
+      setSuccessAction('edit');
       setSuccessOpen(true);
       setTimeout(() => setSuccessOpen(false), 2000);
     } catch (err) {
@@ -551,13 +610,16 @@ const ItemTable = () => {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`${API_BASE_URL}/api/item-table/${id}`, getAuthHeaders());
+      await axios.delete(
+        `${API_BASE_URL}/api/item-table/${id}`,
+        getAuthHeaders()
+      );
       setEditItem(null);
       setOriginalItem(null);
       setSelectedEditEmployee(null);
       setIsEditing(false);
       fetchItems();
-      setSuccessAction("delete");
+      setSuccessAction('delete');
       setSuccessOpen(true);
       setTimeout(() => setSuccessOpen(false), 2000);
     } catch (err) {
@@ -572,7 +634,7 @@ const ItemTable = () => {
     } else {
       setNewItem({ ...newItem, [field]: value });
       if (errors[field]) {
-        setErrors(prev => {
+        setErrors((prev) => {
           const newErrors = { ...prev };
           delete newErrors[field];
           return newErrors;
@@ -585,13 +647,13 @@ const ItemTable = () => {
     setNewItem({ ...newItem, employeeID });
     // Auto-fill name when employee is selected
     if (selectedEmployee) {
-      setNewItem({ 
-        ...newItem, 
+      setNewItem({
+        ...newItem,
         employeeID: employeeNumber,
-        name: selectedEmployee.name
+        name: selectedEmployee.name,
       });
     }
-    setErrors(prev => {
+    setErrors((prev) => {
       const newErrors = { ...prev };
       delete newErrors.employeeID;
       delete newErrors.name;
@@ -602,10 +664,10 @@ const ItemTable = () => {
   const handleEmployeeSelect = (employee) => {
     setSelectedEmployee(employee);
     // Auto-fill name when employee is selected
-    setNewItem({ 
-      ...newItem, 
+    setNewItem({
+      ...newItem,
       employeeID: employee.employeeNumber,
-      name: employee.name
+      name: employee.name,
     });
   };
 
@@ -613,10 +675,10 @@ const ItemTable = () => {
     setEditItem({ ...editItem, employeeID });
     // Auto-fill name when employee is selected
     if (selectedEditEmployee) {
-      setEditItem({ 
-        ...editItem, 
+      setEditItem({
+        ...editItem,
         employeeID: employeeNumber,
-        name: selectedEditEmployee.name
+        name: selectedEditEmployee.name,
       });
     }
   };
@@ -624,16 +686,17 @@ const ItemTable = () => {
   const handleEditEmployeeSelect = (employee) => {
     setSelectedEditEmployee(employee);
     // Auto-fill name when employee is selected
-    setEditItem({ 
-      ...editItem, 
+    setEditItem({
+      ...editItem,
       employeeID: employee.employeeNumber,
-      name: employee.name
+      name: employee.name,
     });
   };
 
   const handleOpenModal = async (item) => {
-    const employeeName = employeeNames[item.employeeID] || item.name || 'Unknown';
-    
+    const employeeName =
+      employeeNames[item.employeeID] || item.name || 'Unknown';
+
     setEditItem({ ...item });
     setOriginalItem({ ...item });
     setSelectedEditEmployee({
@@ -650,7 +713,10 @@ const ItemTable = () => {
   const handleCancelEdit = () => {
     setEditItem({ ...originalItem });
     setSelectedEditEmployee({
-      name: employeeNames[originalItem.employeeID] || originalItem.name || 'Unknown',
+      name:
+        employeeNames[originalItem.employeeID] ||
+        originalItem.name ||
+        'Unknown',
       employeeNumber: originalItem.employeeID,
     });
     setIsEditing(false);
@@ -671,7 +737,7 @@ const ItemTable = () => {
 
   const hasChanges = () => {
     if (!editItem || !originalItem) return false;
-    
+
     return (
       editItem.item_description !== originalItem.item_description ||
       editItem.employeeID !== originalItem.employeeID ||
@@ -694,12 +760,12 @@ const ItemTable = () => {
   // Function to get year from salary grade
   const getYearFromSalaryGrade = (salaryGrade) => {
     if (!salaryGrade) return new Date().getFullYear().toString();
-    
+
     // For JO grades, use current year
     if (salaryGrade.includes('JO')) {
       return new Date().getFullYear().toString();
     }
-    
+
     // For regular grades, you might have a mapping logic
     // For now, we'll use current year as default
     return new Date().getFullYear().toString();
@@ -708,7 +774,13 @@ const ItemTable = () => {
   if (hasAccess === null) {
     return (
       <Container maxWidth="md" sx={{ py: 8 }}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+          }}
+        >
           <CircularProgress sx={{ color: textPrimaryColor, mb: 2 }} />
           <Typography variant="h6" sx={{ color: textPrimaryColor }}>
             Loading access information...
@@ -717,10 +789,10 @@ const ItemTable = () => {
       </Container>
     );
   }
-  
+
   if (!hasAccess) {
     return (
-      <AccessDenied 
+      <AccessDenied
         title="Access Denied"
         message="You do not have permission to access Item Information. Contact your administrator to request access."
         returnPath="/admin-home"
@@ -730,34 +802,42 @@ const ItemTable = () => {
   }
 
   const filteredData = data.filter((item) => {
-    const employeeID = item.employeeID?.toString() || "";
-    const name = item.name?.toLowerCase() || "";
-    const itemDescription = item.item_description?.toLowerCase() || "";
+    const employeeID = item.employeeID?.toString() || '';
+    const name = item.name?.toLowerCase() || '';
+    const itemDescription = item.item_description?.toLowerCase() || '';
     const search = searchTerm.toLowerCase();
-    return employeeID.includes(search) || name.includes(search) || itemDescription.includes(search);
+    return (
+      employeeID.includes(search) ||
+      name.includes(search) ||
+      itemDescription.includes(search)
+    );
   });
 
   return (
-    <Box sx={{ 
-      py: 4,
-      mt: -5,
-      width: '1600px', // Fixed width
-      mx: 'auto', // Center horizontally
-      overflow: 'hidden', // Prevent horizontal scroll
-    }}>
+    <Box
+      sx={{
+        py: 4,
+        mt: -5,
+        width: '1600px', // Fixed width
+        mx: 'auto', // Center horizontally
+        overflow: 'hidden', // Prevent horizontal scroll
+      }}
+    >
       {/* Container with fixed width */}
       <Box sx={{ px: 6 }}>
         {/* Header */}
         <Fade in timeout={500}>
           <Box sx={{ mb: 4 }}>
-            <GlassCard sx={{
-              background: `rgba(${hexToRgb(primaryColor)}, 0.95)`,
-              boxShadow: `0 8px 40px ${alpha(accentColor, 0.08)}`,
-              border: `1px solid ${alpha(accentColor, 0.1)}`,
-              '&:hover': {
-                boxShadow: `0 12px 48px ${alpha(accentColor, 0.15)}`,
-              },
-            }}>
+            <GlassCard
+              sx={{
+                background: `rgba(${hexToRgb(primaryColor)}, 0.95)`,
+                boxShadow: `0 8px 40px ${alpha(accentColor, 0.08)}`,
+                border: `1px solid ${alpha(accentColor, 0.1)}`,
+                '&:hover': {
+                  boxShadow: `0 12px 48px ${alpha(accentColor, 0.15)}`,
+                },
+              }}
+            >
               <Box
                 sx={{
                   p: 5,
@@ -775,7 +855,10 @@ const ItemTable = () => {
                     right: -50,
                     width: 200,
                     height: 200,
-                    background: `radial-gradient(circle, ${alpha(accentColor, 0.1)} 0%, ${alpha(accentColor, 0)} 70%)`,
+                    background: `radial-gradient(circle, ${alpha(
+                      accentColor,
+                      0.1
+                    )} 0%, ${alpha(accentColor, 0)} 70%)`,
                   }}
                 />
                 <Box
@@ -785,48 +868,75 @@ const ItemTable = () => {
                     left: '30%',
                     width: 150,
                     height: 150,
-                    background: `radial-gradient(circle, ${alpha(accentColor, 0.08)} 0%, ${alpha(accentColor, 0)} 70%)`,
+                    background: `radial-gradient(circle, ${alpha(
+                      accentColor,
+                      0.08
+                    )} 0%, ${alpha(accentColor, 0)} 70%)`,
                   }}
                 />
-                
-                <Box display="flex" alignItems="center" justifyContent="space-between" position="relative" zIndex={1}>
+
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="space-between"
+                  position="relative"
+                  zIndex={1}
+                >
                   <Box display="flex" alignItems="center">
-                    <Avatar 
-                      sx={{ 
-                        bgcolor: alpha(accentColor, 0.15), 
-                        mr: 4, 
+                    <Avatar
+                      sx={{
+                        bgcolor: alpha(accentColor, 0.15),
+                        mr: 4,
                         width: 64,
                         height: 64,
-                        boxShadow: `0 8px 24px ${alpha(accentColor, 0.15)}`
+                        boxShadow: `0 8px 24px ${alpha(accentColor, 0.15)}`,
                       }}
                     >
-                      <FactCheckIcon sx={{color: textPrimaryColor, fontSize: 32 }} />
+                      <FactCheckIcon
+                        sx={{ color: textPrimaryColor, fontSize: 32 }}
+                      />
                     </Avatar>
                     <Box>
-                      <Typography variant="h4" component="h1" sx={{ fontWeight: 700, mb: 1, lineHeight: 1.2, color: textPrimaryColor }}>
+                      <Typography
+                        variant="h4"
+                        component="h1"
+                        sx={{
+                          fontWeight: 700,
+                          mb: 1,
+                          lineHeight: 1.2,
+                          color: textPrimaryColor,
+                        }}
+                      >
                         Item Information Management
                       </Typography>
-                      <Typography variant="body1" sx={{ opacity: 0.8, fontWeight: 400, color: accentDark }}>
+                      <Typography
+                        variant="body1"
+                        sx={{
+                          opacity: 0.8,
+                          fontWeight: 400,
+                          color: accentDark,
+                        }}
+                      >
                         Add and manage item records for employees
                       </Typography>
                     </Box>
                   </Box>
                   <Box display="flex" alignItems="center" gap={2}>
-                    <Chip 
-                      label="Enterprise Grade" 
-                      size="small" 
-                      sx={{ 
-                        bgcolor: 'rgba(109,35,35,0.15)', 
+                    <Chip
+                      label="Enterprise Grade"
+                      size="small"
+                      sx={{
+                        bgcolor: 'rgba(109,35,35,0.15)',
                         color: accentColor,
                         fontWeight: 500,
-                        '& .MuiChip-label': { px: 1 }
-                      }} 
+                        '& .MuiChip-label': { px: 1 },
+                      }}
                     />
                     <Tooltip title="Refresh Data">
-                      <IconButton 
+                      <IconButton
                         onClick={() => window.location.reload()}
-                        sx={{ 
-                          bgcolor: 'rgba(109,35,35,0.1)', 
+                        sx={{
+                          bgcolor: 'rgba(109,35,35,0.1)',
                           '&:hover': { bgcolor: 'rgba(109,35,35,0.2)' },
                           color: accentColor,
                           width: 48,
@@ -845,7 +955,10 @@ const ItemTable = () => {
 
         {/* Loading Backdrop */}
         <Backdrop
-          sx={{ color: primaryColor, zIndex: (theme) => theme.zIndex.drawer + 1 }}
+          sx={{
+            color: primaryColor,
+            zIndex: (theme) => theme.zIndex.drawer + 1,
+          }}
           open={loading}
         >
           <Box sx={{ textAlign: 'center' }}>
@@ -861,18 +974,24 @@ const ItemTable = () => {
           {/* Add New Item Section */}
           <Grid item xs={12} lg={6}>
             <Fade in timeout={700}>
-              <GlassCard sx={{ height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
+              <GlassCard
+                sx={{
+                  height: 'calc(100vh - 200px)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
                 <Box
                   sx={{
                     p: 4,
                     background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
                     color: accentColor,
-                    display: "flex",
-                    alignItems: "center",
+                    display: 'flex',
+                    alignItems: 'center',
                     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
                   }}
                 >
-                  <FactCheckIcon sx={{ fontSize: "1.8rem", mr: 2 }} />
+                  <FactCheckIcon sx={{ fontSize: '1.8rem', mr: 2 }} />
                   <Box>
                     <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
                       Add New Item
@@ -883,22 +1002,46 @@ const ItemTable = () => {
                   </Box>
                 </Box>
 
-                <Box sx={{ 
-                  p: 4, 
-                  flexGrow: 1, 
-                  display: 'flex', 
-                  flexDirection: 'column',
-                  overflowY: 'auto'
-                }}>
+                <Box
+                  sx={{
+                    p: 4,
+                    flexGrow: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflowY: 'auto',
+                  }}
+                >
                   <Box sx={{ mb: 3 }}>
-                    <Typography variant="h5" sx={{ fontWeight: 600, mb: 2, color: accentColor, display: 'flex', alignItems: 'center' }}>
+                    <Typography
+                      variant="h5"
+                      sx={{
+                        fontWeight: 600,
+                        mb: 2,
+                        color: accentColor,
+                        display: 'flex',
+                        alignItems: 'center',
+                      }}
+                    >
                       <PersonIcon sx={{ mr: 2, fontSize: 24 }} />
-                      Employee Information <span style={{ marginLeft: '12px', fontWeight: 400, opacity: 0.7, color: 'red' }}>*</span>
+                      Employee Information{' '}
+                      <span
+                        style={{
+                          marginLeft: '12px',
+                          fontWeight: 400,
+                          opacity: 0.7,
+                          color: 'red',
+                        }}
+                      >
+                        *
+                      </span>
                     </Typography>
-                    
+
                     <Grid container spacing={2}>
                       <Grid item xs={12} sm={6}>
-                        <Typography variant="body2" sx={{ fontWeight: 500, mb: 1, color: accentColor }}>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 500, mb: 1, color: accentColor }}
+                        >
                           Search Employee
                         </Typography>
                         <EmployeeAutocomplete
@@ -914,7 +1057,10 @@ const ItemTable = () => {
                       </Grid>
 
                       <Grid item xs={12} sm={6}>
-                        <Typography variant="body2" sx={{ fontWeight: 500, mb: 1, color: accentColor }}>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 500, mb: 1, color: accentColor }}
+                        >
                           Selected Employee
                         </Typography>
                         {selectedEmployee ? (
@@ -929,8 +1075,16 @@ const ItemTable = () => {
                               gap: 1.5,
                             }}
                           >
-                            <PersonIcon sx={{ color: accentColor, fontSize: 20 }} />
-                            <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                            <PersonIcon
+                              sx={{ color: accentColor, fontSize: 20 }}
+                            />
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                flex: 1,
+                              }}
+                            >
                               <Typography
                                 variant="body2"
                                 sx={{
@@ -984,19 +1138,43 @@ const ItemTable = () => {
 
                   <Divider sx={{ my: 3, borderColor: 'rgba(109,35,35,0.1)' }} />
 
-                  <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, color: accentColor, display: 'flex', alignItems: 'center' }}>
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      fontWeight: 600,
+                      mb: 3,
+                      color: accentColor,
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                  >
                     <FactCheckIcon sx={{ mr: 2, fontSize: 24 }} />
                     Item Details
                   </Typography>
 
                   <Grid container spacing={2}>
                     <Grid item xs={12}>
-                      <Typography variant="body2" sx={{ fontWeight: 500, mb: 1, color: accentColor }}>
-                        Position <span style={{ marginLeft: '12px', fontWeight: 400, opacity: 0.7, color: 'red' }}>*</span>
+                      <Typography
+                        variant="body2"
+                        sx={{ fontWeight: 500, mb: 1, color: accentColor }}
+                      >
+                        Position{' '}
+                        <span
+                          style={{
+                            marginLeft: '12px',
+                            fontWeight: 400,
+                            opacity: 0.7,
+                            color: 'red',
+                          }}
+                        >
+                          *
+                        </span>
                       </Typography>
                       <ModernTextField
                         value={newItem.item_description}
-                        onChange={(e) => handleChange("item_description", e.target.value)}
+                        onChange={(e) =>
+                          handleChange('item_description', e.target.value)
+                        }
                         fullWidth
                         size="small"
                         error={!!errors.item_description}
@@ -1005,19 +1183,27 @@ const ItemTable = () => {
                     </Grid>
 
                     <Grid item xs={12} sm={6}>
-                      <Typography variant="body2" sx={{ fontWeight: 500, mb: 1, color: accentColor }}>
+                      <Typography
+                        variant="body2"
+                        sx={{ fontWeight: 500, mb: 1, color: accentColor }}
+                      >
                         Item Code
                       </Typography>
                       <ModernTextField
                         value={newItem.item_code}
-                        onChange={(e) => handleChange("item_code", e.target.value)}
+                        onChange={(e) =>
+                          handleChange('item_code', e.target.value)
+                        }
                         fullWidth
                         size="small"
                       />
                     </Grid>
 
                     <Grid item xs={12} sm={6}>
-                      <Typography variant="body2" sx={{ fontWeight: 500, mb: 1, color: accentColor }}>
+                      <Typography
+                        variant="body2"
+                        sx={{ fontWeight: 500, mb: 1, color: accentColor }}
+                      >
                         Salary Grade
                       </Typography>
                       <FormControl fullWidth>
@@ -1026,31 +1212,37 @@ const ItemTable = () => {
                           options={salaryGradeOptions}
                           value={newItem.salary_grade}
                           onChange={(event, newValue) => {
-                            handleChange("salary_grade", newValue || '');
+                            handleChange('salary_grade', newValue || '');
                             // Auto-update effectivity date when salary grade changes
                             if (newValue) {
-                              handleChange("effectivityDate", getYearFromSalaryGrade(newValue));
+                              handleChange(
+                                'effectivityDate',
+                                getYearFromSalaryGrade(newValue)
+                              );
                             }
                           }}
                           onInputChange={(event, newInputValue) => {
-                            handleChange("salary_grade", newInputValue);
+                            handleChange('salary_grade', newInputValue);
                             // Auto-update effectivity date when salary grade changes
                             if (newInputValue) {
-                              handleChange("effectivityDate", getYearFromSalaryGrade(newInputValue));
+                              handleChange(
+                                'effectivityDate',
+                                getYearFromSalaryGrade(newInputValue)
+                              );
                             }
                           }}
                           renderInput={(params) => (
-                            <ModernTextField 
-                              {...params} 
-                              size="small"
-                            />
+                            <ModernTextField {...params} size="small" />
                           )}
                         />
                       </FormControl>
                     </Grid>
 
                     <Grid item xs={12} sm={6}>
-                      <Typography variant="body2" sx={{ fontWeight: 500, mb: 1, color: accentColor }}>
+                      <Typography
+                        variant="body2"
+                        sx={{ fontWeight: 500, mb: 1, color: accentColor }}
+                      >
                         Step
                       </Typography>
                       <FormControl fullWidth>
@@ -1059,28 +1251,30 @@ const ItemTable = () => {
                           options={stepOptions}
                           value={newItem.step}
                           onChange={(event, newValue) =>
-                            handleChange("step", newValue || '')
+                            handleChange('step', newValue || '')
                           }
                           onInputChange={(event, newInputValue) =>
-                            handleChange("step", newInputValue)
+                            handleChange('step', newInputValue)
                           }
                           renderInput={(params) => (
-                            <ModernTextField 
-                              {...params} 
-                              size="small"
-                            />
+                            <ModernTextField {...params} size="small" />
                           )}
                         />
                       </FormControl>
                     </Grid>
 
                     <Grid item xs={12} sm={6}>
-                      <Typography variant="body2" sx={{ fontWeight: 500, mb: 1, color: accentColor }}>
+                      <Typography
+                        variant="body2"
+                        sx={{ fontWeight: 500, mb: 1, color: accentColor }}
+                      >
                         Effectivity Date (Year)
                       </Typography>
                       <ModernTextField
                         value={newItem.effectivityDate}
-                        onChange={(e) => handleChange("effectivityDate", e.target.value)}
+                        onChange={(e) =>
+                          handleChange('effectivityDate', e.target.value)
+                        }
                         fullWidth
                         size="small"
                         placeholder="YYYY"
@@ -1100,7 +1294,7 @@ const ItemTable = () => {
                         color: primaryColor,
                         py: 1.5,
                         fontSize: '1rem',
-                        "&:hover": { 
+                        '&:hover': {
                           backgroundColor: accentDark,
                         },
                       }}
@@ -1116,20 +1310,26 @@ const ItemTable = () => {
           {/* Item Records Section */}
           <Grid item xs={12} lg={6}>
             <Fade in timeout={900}>
-              <GlassCard sx={{ height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
+              <GlassCard
+                sx={{
+                  height: 'calc(100vh - 200px)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
                 <Box
                   sx={{
                     p: 4,
                     background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
                     color: accentColor,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
                     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
                   }}
                 >
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <ReorderIcon sx={{ fontSize: "1.8rem", mr: 2 }} />
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <ReorderIcon sx={{ fontSize: '1.8rem', mr: 2 }} />
                     <Box>
                       <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
                         Item Records
@@ -1139,7 +1339,7 @@ const ItemTable = () => {
                       </Typography>
                     </Box>
                   </Box>
-                  
+
                   <ToggleButtonGroup
                     value={viewMode}
                     exclusive
@@ -1154,9 +1354,9 @@ const ItemTable = () => {
                         padding: '4px 8px',
                         '&.Mui-selected': {
                           backgroundColor: 'rgba(255, 255, 255, 0.3)',
-                          color: accentColor
+                          color: accentColor,
                         },
-                      }
+                      },
                     }}
                   >
                     <ToggleButton value="grid" aria-label="grid view">
@@ -1168,13 +1368,15 @@ const ItemTable = () => {
                   </ToggleButtonGroup>
                 </Box>
 
-                <Box sx={{ 
-                  p: 4, 
-                  flexGrow: 1, 
-                  display: 'flex', 
-                  flexDirection: 'column',
-                  overflow: 'hidden'
-                }}>
+                <Box
+                  sx={{
+                    p: 4,
+                    flexGrow: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden',
+                  }}
+                >
                   <Box sx={{ mb: 3 }}>
                     <ModernTextField
                       size="small"
@@ -1191,9 +1393,9 @@ const ItemTable = () => {
                     />
                   </Box>
 
-                  <Box 
-                    sx={{ 
-                      flexGrow: 1, 
+                  <Box
+                    sx={{
+                      flexGrow: 1,
                       overflowY: 'auto',
                       pr: 1,
                       '&::-webkit-scrollbar': {
@@ -1216,42 +1418,79 @@ const ItemTable = () => {
                             <Card
                               onClick={() => handleOpenModal(item)}
                               sx={{
-                                cursor: "pointer",
-                                border: "1px solid rgba(109, 35, 35, 0.1)",
-                                height: "100%",
+                                cursor: 'pointer',
+                                border: '1px solid rgba(109, 35, 35, 0.1)',
+                                height: '100%',
                                 display: 'flex',
                                 flexDirection: 'column',
-                                "&:hover": { 
+                                '&:hover': {
                                   borderColor: accentColor,
                                   transform: 'translateY(-2px)',
                                   transition: 'all 0.2s ease',
-                                  boxShadow: '0 4px 8px rgba(109,35,35,0.15)'
+                                  boxShadow: '0 4px 8px rgba(109,35,35,0.15)',
                                 },
                               }}
                             >
-                              <CardContent sx={{ p: 2, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                  <FactCheckIcon sx={{ fontSize: 18, color: accentColor, mr: 0.5 }} />
-                                  <Typography variant="caption" sx={{ 
-                                    color: accentColor, 
-                                    px: 0.5, 
-                                    py: 0.2, 
-                                    borderRadius: 0.5,
-                                    fontSize: '0.7rem',
-                                    fontWeight: 'bold'
-                                  }}>
+                              <CardContent
+                                sx={{
+                                  p: 2,
+                                  flexGrow: 1,
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                }}
+                              >
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    mb: 1,
+                                  }}
+                                >
+                                  <FactCheckIcon
+                                    sx={{
+                                      fontSize: 18,
+                                      color: accentColor,
+                                      mr: 0.5,
+                                    }}
+                                  />
+                                  <Typography
+                                    variant="caption"
+                                    sx={{
+                                      color: accentColor,
+                                      px: 0.5,
+                                      py: 0.2,
+                                      borderRadius: 0.5,
+                                      fontSize: '0.7rem',
+                                      fontWeight: 'bold',
+                                    }}
+                                  >
                                     ID: {item.employeeID}
                                   </Typography>
                                 </Box>
-                                
-                                <Typography variant="body2" fontWeight="bold" color="#333" mb={0.5} noWrap>
-                                  {employeeNames[item.employeeID] || item.name || 'Loading...'}
+
+                                <Typography
+                                  variant="body2"
+                                  fontWeight="bold"
+                                  color="#333"
+                                  mb={0.5}
+                                  noWrap
+                                >
+                                  {employeeNames[item.employeeID] ||
+                                    item.name ||
+                                    'Loading...'}
                                 </Typography>
-                                
-                                <Typography variant="body2" fontWeight="bold" color="#333" mb={1} noWrap sx={{ flexGrow: 1 }}>
+
+                                <Typography
+                                  variant="body2"
+                                  fontWeight="bold"
+                                  color="#333"
+                                  mb={1}
+                                  noWrap
+                                  sx={{ flexGrow: 1 }}
+                                >
                                   {item.item_description || 'No Position'}
                                 </Typography>
-                                
+
                                 {item.salary_grade && (
                                   <Box
                                     sx={{
@@ -1259,16 +1498,21 @@ const ItemTable = () => {
                                       px: 1,
                                       py: 0.3,
                                       borderRadius: 0.5,
-                                      backgroundColor: 'rgba(254, 249, 225, 0.5)',
-                                      border: '1px solid rgba(109, 35, 35, 0.2)',
-                                      alignSelf: 'flex-start'
+                                      backgroundColor:
+                                        'rgba(254, 249, 225, 0.5)',
+                                      border:
+                                        '1px solid rgba(109, 35, 35, 0.2)',
+                                      alignSelf: 'flex-start',
                                     }}
                                   >
-                                    <Typography variant="caption" sx={{ 
-                                      color: accentColor, 
-                                      fontSize: '0.7rem',
-                                      fontWeight: 'bold'
-                                    }}>
+                                    <Typography
+                                      variant="caption"
+                                      sx={{
+                                        color: accentColor,
+                                        fontSize: '0.7rem',
+                                        fontWeight: 'bold',
+                                      }}
+                                    >
                                       Grade: {item.salary_grade}
                                     </Typography>
                                   </Box>
@@ -1284,43 +1528,66 @@ const ItemTable = () => {
                           key={item.id}
                           onClick={() => handleOpenModal(item)}
                           sx={{
-                            cursor: "pointer",
-                            border: "1px solid rgba(109, 35, 35, 0.1)",
+                            cursor: 'pointer',
+                            border: '1px solid rgba(109, 35, 35, 0.1)',
                             mb: 1,
-                            "&:hover": { 
+                            '&:hover': {
                               borderColor: accentColor,
-                              backgroundColor: 'rgba(254, 249, 225, 0.3)'
+                              backgroundColor: 'rgba(254, 249, 225, 0.3)',
                             },
                           }}
                         >
                           <Box sx={{ p: 2 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+                            <Box
+                              sx={{ display: 'flex', alignItems: 'flex-start' }}
+                            >
                               <Box sx={{ mr: 1.5, mt: 0.2 }}>
-                                <FactCheckIcon sx={{ fontSize: 20, color: accentColor }} />
+                                <FactCheckIcon
+                                  sx={{ fontSize: 20, color: accentColor }}
+                                />
                               </Box>
-                              
+
                               <Box sx={{ flexGrow: 1 }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                                  <Typography variant="caption" sx={{ 
-                                    color: accentColor, 
-                                    px: 0.5, 
-                                    py: 0.2, 
-                                    borderRadius: 0.5,
-                                    fontSize: '0.7rem',
-                                    fontWeight: 'bold',
-                                    mr: 1
-                                  }}>
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    mb: 0.5,
+                                  }}
+                                >
+                                  <Typography
+                                    variant="caption"
+                                    sx={{
+                                      color: accentColor,
+                                      px: 0.5,
+                                      py: 0.2,
+                                      borderRadius: 0.5,
+                                      fontSize: '0.7rem',
+                                      fontWeight: 'bold',
+                                      mr: 1,
+                                    }}
+                                  >
                                     ID: {item.employeeID}
                                   </Typography>
-                                  <Typography variant="body2" fontWeight="bold" color="#333">
-                                    {employeeNames[item.employeeID] || item.name || 'Loading...'}
+                                  <Typography
+                                    variant="body2"
+                                    fontWeight="bold"
+                                    color="#333"
+                                  >
+                                    {employeeNames[item.employeeID] ||
+                                      item.name ||
+                                      'Loading...'}
                                   </Typography>
                                 </Box>
-                                
-                                <Typography variant="body2" color={grayColor} sx={{ mb: 0.5 }}>
+
+                                <Typography
+                                  variant="body2"
+                                  color={grayColor}
+                                  sx={{ mb: 0.5 }}
+                                >
                                   {item.item_description || 'No Position'}
                                 </Typography>
-                                
+
                                 {item.salary_grade && (
                                   <Box
                                     sx={{
@@ -1328,15 +1595,20 @@ const ItemTable = () => {
                                       px: 1,
                                       py: 0.3,
                                       borderRadius: 0.5,
-                                      backgroundColor: 'rgba(254, 249, 225, 0.5)',
-                                      border: '1px solid rgba(109, 35, 35, 0.2)'
+                                      backgroundColor:
+                                        'rgba(254, 249, 225, 0.5)',
+                                      border:
+                                        '1px solid rgba(109, 35, 35, 0.2)',
                                     }}
                                   >
-                                    <Typography variant="caption" sx={{ 
-                                      color: accentColor, 
-                                      fontSize: '0.7rem',
-                                      fontWeight: 'bold'
-                                    }}>
+                                    <Typography
+                                      variant="caption"
+                                      sx={{
+                                        color: accentColor,
+                                        fontSize: '0.7rem',
+                                        fontWeight: 'bold',
+                                      }}
+                                    >
                                       Grade: {item.salary_grade}
                                     </Typography>
                                   </Box>
@@ -1347,10 +1619,15 @@ const ItemTable = () => {
                         </Card>
                       ))
                     )}
-                    
+
                     {filteredData.length === 0 && (
                       <Box textAlign="center" py={4}>
-                        <Typography variant="h6" color={accentColor} fontWeight="bold" sx={{ mb: 1 }}>
+                        <Typography
+                          variant="h6"
+                          color={accentColor}
+                          fontWeight="bold"
+                          sx={{ mb: 1 }}
+                        >
                           No Records Found
                         </Typography>
                         <Typography variant="body2" color={grayColor}>
@@ -1370,16 +1647,16 @@ const ItemTable = () => {
           open={!!editItem}
           onClose={handleCloseModal}
           sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
           <GlassCard
             sx={{
-              width: "90%",
-              maxWidth: "600px",
-              maxHeight: "90vh",
+              width: '90%',
+              maxWidth: '600px',
+              maxHeight: '90vh',
               overflowY: 'auto',
             }}
           >
@@ -1390,36 +1667,55 @@ const ItemTable = () => {
                     p: 4,
                     background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
                     color: accentColor,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
                   }}
                 >
                   <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                    {isEditing ? "Edit Item Information" : "Item Details"}
+                    {isEditing ? 'Edit Item Information' : 'Item Details'}
                   </Typography>
-                  <IconButton onClick={handleCloseModal} sx={{ color: accentColor }}>
+                  <IconButton
+                    onClick={handleCloseModal}
+                    sx={{ color: accentColor }}
+                  >
                     <Close />
                   </IconButton>
                 </Box>
 
                 <Box sx={{ p: 4 }}>
                   <Box sx={{ mb: 3 }}>
-                    <Typography variant="h5" sx={{ fontWeight: 600, mb: 2, color: accentColor, display: 'flex', alignItems: 'center' }}>
+                    <Typography
+                      variant="h5"
+                      sx={{
+                        fontWeight: 600,
+                        mb: 2,
+                        color: accentColor,
+                        display: 'flex',
+                        alignItems: 'center',
+                      }}
+                    >
                       <PersonIcon sx={{ mr: 2, fontSize: 24 }} />
                       Employee Information
                     </Typography>
-                    
+
                     <Grid container spacing={2}>
                       <Grid item xs={12} sm={6}>
-                        <Typography variant="body2" sx={{ fontWeight: 500, mb: 1, color: accentColor }}>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 500, mb: 1, color: accentColor }}
+                        >
                           Search Employee
                         </Typography>
                         <EmployeeAutocomplete
                           value={editItem?.employeeID || ''}
-                          onChange={isEditing ? handleEditEmployeeChange : () => {}}
+                          onChange={
+                            isEditing ? handleEditEmployeeChange : () => {}
+                          }
                           selectedEmployee={selectedEditEmployee}
-                          onEmployeeSelect={isEditing ? handleEditEmployeeSelect : () => {}}
+                          onEmployeeSelect={
+                            isEditing ? handleEditEmployeeSelect : () => {}
+                          }
                           placeholder="Search and select employee..."
                           required
                           disabled={!isEditing}
@@ -1441,7 +1737,10 @@ const ItemTable = () => {
                       </Grid>
 
                       <Grid item xs={12} sm={6}>
-                        <Typography variant="body2" sx={{ fontWeight: 500, mb: 1, color: accentColor }}>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 500, mb: 1, color: accentColor }}
+                        >
                           Selected Employee
                         </Typography>
                         {selectedEditEmployee ? (
@@ -1455,8 +1754,16 @@ const ItemTable = () => {
                               gap: 1.5,
                             }}
                           >
-                            <PersonIcon sx={{ color: accentColor, fontSize: 20 }} />
-                            <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                            <PersonIcon
+                              sx={{ color: accentColor, fontSize: 20 }}
+                            />
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                flex: 1,
+                              }}
+                            >
                               <Typography
                                 variant="body2"
                                 sx={{
@@ -1509,30 +1816,50 @@ const ItemTable = () => {
 
                   <Divider sx={{ my: 3, borderColor: 'rgba(109,35,35,0.1)' }} />
 
-                  <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, color: accentColor, display: 'flex', alignItems: 'center' }}>
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      fontWeight: 600,
+                      mb: 3,
+                      color: accentColor,
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                  >
                     <FactCheckIcon sx={{ mr: 2, fontSize: 24 }} />
                     Item Details
                   </Typography>
 
                   <Grid container spacing={2}>
                     <Grid item xs={12}>
-                      <Typography variant="body2" sx={{ fontWeight: 500, mb: 1, color: accentColor }}>
+                      <Typography
+                        variant="body2"
+                        sx={{ fontWeight: 500, mb: 1, color: accentColor }}
+                      >
                         Position
                       </Typography>
                       {isEditing ? (
                         <ModernTextField
                           value={editItem.item_description}
-                          onChange={(e) => handleChange("item_description", e.target.value, true)}
+                          onChange={(e) =>
+                            handleChange(
+                              'item_description',
+                              e.target.value,
+                              true
+                            )
+                          }
                           fullWidth
                           size="small"
                         />
                       ) : (
-                        <Box sx={{ 
-                          p: 1.5, 
-                          bgcolor: 'rgba(254, 249, 225, 0.5)', 
-                          borderRadius: 1,
-                          border: '1px solid rgba(109, 35, 35, 0.2)'
-                        }}>
+                        <Box
+                          sx={{
+                            p: 1.5,
+                            bgcolor: 'rgba(254, 249, 225, 0.5)',
+                            borderRadius: 1,
+                            border: '1px solid rgba(109, 35, 35, 0.2)',
+                          }}
+                        >
                           <Typography variant="body2">
                             {editItem.item_description || 'N/A'}
                           </Typography>
@@ -1541,23 +1868,30 @@ const ItemTable = () => {
                     </Grid>
 
                     <Grid item xs={12} sm={6}>
-                      <Typography variant="body2" sx={{ fontWeight: 500, mb: 1, color: accentColor }}>
+                      <Typography
+                        variant="body2"
+                        sx={{ fontWeight: 500, mb: 1, color: accentColor }}
+                      >
                         Item Code
                       </Typography>
                       {isEditing ? (
                         <ModernTextField
                           value={editItem.item_code}
-                          onChange={(e) => handleChange("item_code", e.target.value, true)}
+                          onChange={(e) =>
+                            handleChange('item_code', e.target.value, true)
+                          }
                           fullWidth
                           size="small"
                         />
                       ) : (
-                        <Box sx={{ 
-                          p: 1.5, 
-                          bgcolor: 'rgba(254, 249, 225, 0.5)', 
-                          borderRadius: 1,
-                          border: '1px solid rgba(109, 35, 35, 0.2)'
-                        }}>
+                        <Box
+                          sx={{
+                            p: 1.5,
+                            bgcolor: 'rgba(254, 249, 225, 0.5)',
+                            borderRadius: 1,
+                            border: '1px solid rgba(109, 35, 35, 0.2)',
+                          }}
+                        >
                           <Typography variant="body2">
                             {editItem.item_code || 'N/A'}
                           </Typography>
@@ -1566,7 +1900,10 @@ const ItemTable = () => {
                     </Grid>
 
                     <Grid item xs={12} sm={6}>
-                      <Typography variant="body2" sx={{ fontWeight: 500, mb: 1, color: accentColor }}>
+                      <Typography
+                        variant="body2"
+                        sx={{ fontWeight: 500, mb: 1, color: accentColor }}
+                      >
                         Salary Grade
                       </Typography>
                       {isEditing ? (
@@ -1576,34 +1913,45 @@ const ItemTable = () => {
                             options={salaryGradeOptions}
                             value={editItem.salary_grade}
                             onChange={(event, newValue) => {
-                              handleChange("salary_grade", newValue || '', true);
+                              handleChange(
+                                'salary_grade',
+                                newValue || '',
+                                true
+                              );
                               // Auto-update effectivity date when salary grade changes
                               if (newValue) {
-                                handleChange("effectivityDate", getYearFromSalaryGrade(newValue), true);
+                                handleChange(
+                                  'effectivityDate',
+                                  getYearFromSalaryGrade(newValue),
+                                  true
+                                );
                               }
                             }}
                             onInputChange={(event, newInputValue) => {
-                              handleChange("salary_grade", newInputValue, true);
+                              handleChange('salary_grade', newInputValue, true);
                               // Auto-update effectivity date when salary grade changes
                               if (newInputValue) {
-                                handleChange("effectivityDate", getYearFromSalaryGrade(newInputValue), true);
+                                handleChange(
+                                  'effectivityDate',
+                                  getYearFromSalaryGrade(newInputValue),
+                                  true
+                                );
                               }
                             }}
                             renderInput={(params) => (
-                              <ModernTextField 
-                                {...params} 
-                                size="small"
-                              />
+                              <ModernTextField {...params} size="small" />
                             )}
                           />
                         </FormControl>
                       ) : (
-                        <Box sx={{ 
-                          p: 1.5, 
-                          bgcolor: 'rgba(254, 249, 225, 0.5)', 
-                          borderRadius: 1,
-                          border: '1px solid rgba(109, 35, 35, 0.2)'
-                        }}>
+                        <Box
+                          sx={{
+                            p: 1.5,
+                            bgcolor: 'rgba(254, 249, 225, 0.5)',
+                            borderRadius: 1,
+                            border: '1px solid rgba(109, 35, 35, 0.2)',
+                          }}
+                        >
                           <Typography variant="body2">
                             {editItem.salary_grade || 'N/A'}
                           </Typography>
@@ -1612,7 +1960,10 @@ const ItemTable = () => {
                     </Grid>
 
                     <Grid item xs={12} sm={6}>
-                      <Typography variant="body2" sx={{ fontWeight: 500, mb: 1, color: accentColor }}>
+                      <Typography
+                        variant="body2"
+                        sx={{ fontWeight: 500, mb: 1, color: accentColor }}
+                      >
                         Step
                       </Typography>
                       {isEditing ? (
@@ -1622,26 +1973,25 @@ const ItemTable = () => {
                             options={stepOptions}
                             value={editItem.step}
                             onChange={(event, newValue) =>
-                              handleChange("step", newValue || '', true)
+                              handleChange('step', newValue || '', true)
                             }
                             onInputChange={(event, newInputValue) =>
-                              handleChange("step", newInputValue, true)
+                              handleChange('step', newInputValue, true)
                             }
                             renderInput={(params) => (
-                              <ModernTextField 
-                                {...params} 
-                                size="small"
-                              />
+                              <ModernTextField {...params} size="small" />
                             )}
                           />
                         </FormControl>
                       ) : (
-                        <Box sx={{ 
-                          p: 1.5, 
-                          bgcolor: 'rgba(254, 249, 225, 0.5)', 
-                          borderRadius: 1,
-                          border: '1px solid rgba(109, 35, 35, 0.2)'
-                        }}>
+                        <Box
+                          sx={{
+                            p: 1.5,
+                            bgcolor: 'rgba(254, 249, 225, 0.5)',
+                            borderRadius: 1,
+                            border: '1px solid rgba(109, 35, 35, 0.2)',
+                          }}
+                        >
                           <Typography variant="body2">
                             {editItem.step || 'N/A'}
                           </Typography>
@@ -1650,25 +2000,36 @@ const ItemTable = () => {
                     </Grid>
 
                     <Grid item xs={12} sm={6}>
-                      <Typography variant="body2" sx={{ fontWeight: 500, mb: 1, color: accentColor }}>
+                      <Typography
+                        variant="body2"
+                        sx={{ fontWeight: 500, mb: 1, color: accentColor }}
+                      >
                         Effectivity Date (Year)
                       </Typography>
                       {isEditing ? (
                         <ModernTextField
                           value={editItem.effectivityDate}
-                          onChange={(e) => handleChange("effectivityDate", e.target.value, true)}
+                          onChange={(e) =>
+                            handleChange(
+                              'effectivityDate',
+                              e.target.value,
+                              true
+                            )
+                          }
                           fullWidth
                           size="small"
                           placeholder="YYYY"
                           inputProps={{ maxLength: 4 }}
                         />
                       ) : (
-                        <Box sx={{ 
-                          p: 1.5, 
-                          bgcolor: 'rgba(254, 249, 225, 0.5)', 
-                          borderRadius: 1,
-                          border: '1px solid rgba(109, 35, 35, 0.2)'
-                        }}>
+                        <Box
+                          sx={{
+                            p: 1.5,
+                            bgcolor: 'rgba(254, 249, 225, 0.5)',
+                            borderRadius: 1,
+                            border: '1px solid rgba(109, 35, 35, 0.2)',
+                          }}
+                        >
                           <Typography variant="body2">
                             {editItem.effectivityDate || 'N/A'}
                           </Typography>
@@ -1677,7 +2038,14 @@ const ItemTable = () => {
                     </Grid>
                   </Grid>
 
-                  <Box sx={{ display: 'flex', gap: 2, mt: 4, justifyContent: 'flex-end' }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      gap: 2,
+                      mt: 4,
+                      justifyContent: 'flex-end',
+                    }}
+                  >
                     {!isEditing ? (
                       <>
                         <ProfessionalButton
@@ -1685,12 +2053,12 @@ const ItemTable = () => {
                           variant="outlined"
                           startIcon={<DeleteIcon />}
                           sx={{
-                            color: "#d32f2f",
-                            borderColor: "#d32f2f",
-                            "&:hover": {
-                              backgroundColor: "#d32f2f",
-                              color: "#fff"
-                            }
+                            color: '#d32f2f',
+                            borderColor: '#d32f2f',
+                            '&:hover': {
+                              backgroundColor: '#d32f2f',
+                              color: '#fff',
+                            },
                           }}
                         >
                           Delete
@@ -1699,10 +2067,10 @@ const ItemTable = () => {
                           onClick={handleStartEdit}
                           variant="contained"
                           startIcon={<EditIcon />}
-                          sx={{ 
-                            backgroundColor: accentColor, 
+                          sx={{
+                            backgroundColor: accentColor,
                             color: primaryColor,
-                            "&:hover": { backgroundColor: accentDark }
+                            '&:hover': { backgroundColor: accentDark },
                           }}
                         >
                           Edit
@@ -1717,9 +2085,9 @@ const ItemTable = () => {
                           sx={{
                             color: grayColor,
                             borderColor: grayColor,
-                            "&:hover": {
-                              backgroundColor: 'rgba(108, 117, 125, 0.1)'
-                            }
+                            '&:hover': {
+                              backgroundColor: 'rgba(108, 117, 125, 0.1)',
+                            },
                           }}
                         >
                           Cancel
@@ -1729,16 +2097,20 @@ const ItemTable = () => {
                           variant="contained"
                           startIcon={<SaveIcon />}
                           disabled={!hasChanges()}
-                          sx={{ 
-                            backgroundColor: hasChanges() ? accentColor : grayColor, 
+                          sx={{
+                            backgroundColor: hasChanges()
+                              ? accentColor
+                              : grayColor,
                             color: primaryColor,
-                            "&:hover": { 
-                              backgroundColor: hasChanges() ? accentDark : grayColor
+                            '&:hover': {
+                              backgroundColor: hasChanges()
+                                ? accentDark
+                                : grayColor,
                             },
-                            "&:disabled": {
+                            '&:disabled': {
                               backgroundColor: grayColor,
-                              color: "#999"
-                            }
+                              color: '#999',
+                            },
                           }}
                         >
                           Save
@@ -1753,7 +2125,7 @@ const ItemTable = () => {
         </Modal>
 
         <SuccessfullOverlay open={successOpen} action={successAction} />
-        
+
         <Snackbar
           open={snackbar.open}
           autoHideDuration={3000}

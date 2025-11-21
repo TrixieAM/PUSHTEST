@@ -80,3 +80,4 @@ After organizing, test these endpoints:
 - ✅ `POST /send-2fa-code` → Should work (now in `routes/auth.js`)
 - ⚠️ Other routes → Need to be copied from `index.old.js` or organized
 
+

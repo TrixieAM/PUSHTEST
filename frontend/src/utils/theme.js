@@ -178,3 +178,4 @@ export const createThemedFooter = (settings) => ({
   color: settings.textColor || '#FFFFFF',
 });
 
+

@@ -1,6 +1,6 @@
-import API_BASE_URL from "../../apiConfig";
-import React, { useState, useEffect, useRef } from "react";
-import axios from "axios";
+import API_BASE_URL from '../../apiConfig';
+import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
 import {
   Button,
   Table,
@@ -35,7 +35,7 @@ import {
   ListItem,
   ListItemText,
   ListItemIcon,
-} from "@mui/material";
+} from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -58,7 +58,12 @@ import { useSystemSettings } from '../../hooks/useSystemSettings';
 // Helper function to convert hex to rgb
 const hexToRgb = (hex) => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '109, 35, 35';
+  return result
+    ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(
+        result[3],
+        16
+      )}`
+    : '109, 35, 35';
 };
 
 // Professional styled components - colors will be applied via sx prop
@@ -72,23 +77,29 @@ const GlassCard = styled(Paper)(({ theme }) => ({
   },
 }));
 
-const ProfessionalButton = styled(Button)(({ theme, variant, color = 'primary' }) => ({
-  borderRadius: 12,
-  fontWeight: 600,
-  padding: '12px 24px',
-  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-  textTransform: 'none',
-  fontSize: '0.95rem',
-  letterSpacing: '0.025em',
-  boxShadow: variant === 'contained' ? '0 4px 14px rgba(254, 249, 225, 0.25)' : 'none',
-  '&:hover': {
-    transform: 'translateY(-2px)',
-    boxShadow: variant === 'contained' ? '0 6px 20px rgba(254, 249, 225, 0.35)' : 'none',
-  },
-  '&:active': {
-    transform: 'translateY(0)',
-  },
-}));
+const ProfessionalButton = styled(Button)(
+  ({ theme, variant, color = 'primary' }) => ({
+    borderRadius: 12,
+    fontWeight: 600,
+    padding: '12px 24px',
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    textTransform: 'none',
+    fontSize: '0.95rem',
+    letterSpacing: '0.025em',
+    boxShadow:
+      variant === 'contained' ? '0 4px 14px rgba(254, 249, 225, 0.25)' : 'none',
+    '&:hover': {
+      transform: 'translateY(-2px)',
+      boxShadow:
+        variant === 'contained'
+          ? '0 6px 20px rgba(254, 249, 225, 0.35)'
+          : 'none',
+    },
+    '&:active': {
+      transform: 'translateY(0)',
+    },
+  })
+);
 
 const ModernTextField = styled(TextField)(({ theme }) => ({
   '& .MuiOutlinedInput-root': {
@@ -113,15 +124,15 @@ const ModernTextField = styled(TextField)(({ theme }) => ({
 const DepartmentTable = () => {
   const [data, setData] = useState([]);
   const [newEntry, setNewEntry] = useState({
-    code: "",
-    description: "",
+    code: '',
+    description: '',
   });
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
-  const [successAction, setSuccessAction] = useState("");
+  const [successAction, setSuccessAction] = useState('');
   const [viewMode, setViewMode] = useState('grid');
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState(null);
@@ -167,9 +178,10 @@ const DepartmentTable = () => {
     }
     const checkAccess = async () => {
       try {
+        const authHeaders = getAuthHeaders();
         const response = await fetch(`${API_BASE_URL}/page_access/${userId}`, {
           method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
+          ...authHeaders,
         });
         if (response.ok) {
           const accessData = await response.json();
@@ -195,11 +207,17 @@ const DepartmentTable = () => {
 
   const fetchData = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/department-table`, getAuthHeaders());
+      const response = await axios.get(
+        `${API_BASE_URL}/api/department-table`,
+        getAuthHeaders()
+      );
       setData(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
-      console.error("Error fetching data", error);
-      showSnackbar('Failed to fetch department data. Please try again.', 'error');
+      console.error('Error fetching data', error);
+      showSnackbar(
+        'Failed to fetch department data. Please try again.',
+        'error'
+      );
     }
   };
 
@@ -211,17 +229,21 @@ const DepartmentTable = () => {
 
     setLoading(true);
     try {
-      await axios.post(`${API_BASE_URL}/api/department-table`, newEntry, getAuthHeaders());
-      setNewEntry({ code: "", description: "" });
+      await axios.post(
+        `${API_BASE_URL}/api/department-table`,
+        newEntry,
+        getAuthHeaders()
+      );
+      setNewEntry({ code: '', description: '' });
       fetchData();
       setTimeout(() => {
         setLoading(false);
-        setSuccessAction("adding");
+        setSuccessAction('adding');
         setSuccessOpen(true);
         setTimeout(() => setSuccessOpen(false), 2000);
       }, 300);
     } catch (error) {
-      console.error("Error adding data", error);
+      console.error('Error adding data', error);
       setLoading(false);
       showSnackbar('Failed to add department. Please try again.', 'error');
     }
@@ -253,7 +275,11 @@ const DepartmentTable = () => {
 
   const saveEdit = async () => {
     try {
-      await axios.put(`${API_BASE_URL}/api/department-table/${selectedDepartment.id}`, editData, getAuthHeaders());
+      await axios.put(
+        `${API_BASE_URL}/api/department-table/${selectedDepartment.id}`,
+        editData,
+        getAuthHeaders()
+      );
       setModalOpen(false);
       setSelectedDepartment(null);
       setOriginalDepartment(null);
@@ -263,14 +289,17 @@ const DepartmentTable = () => {
       setSuccessOpen(true);
       setTimeout(() => setSuccessOpen(false), 2000);
     } catch (error) {
-      console.error("Error saving edit", error);
+      console.error('Error saving edit', error);
       showSnackbar('Failed to update department. Please try again.', 'error');
     }
   };
 
   const deleteEntry = async (id) => {
     try {
-      await axios.delete(`${API_BASE_URL}/api/department-table/${id}`, getAuthHeaders());
+      await axios.delete(
+        `${API_BASE_URL}/api/department-table/${id}`,
+        getAuthHeaders()
+      );
       setModalOpen(false);
       setSelectedDepartment(null);
       setOriginalDepartment(null);
@@ -280,7 +309,7 @@ const DepartmentTable = () => {
       setSuccessOpen(true);
       setTimeout(() => setSuccessOpen(false), 2000);
     } catch (error) {
-      console.error("Error deleting entry", error);
+      console.error('Error deleting entry', error);
       showSnackbar('Failed to delete department. Please try again.', 'error');
     }
   };
@@ -297,7 +326,7 @@ const DepartmentTable = () => {
 
   const hasChanges = () => {
     if (!selectedDepartment || !originalDepartment) return false;
-    
+
     return (
       editData.code !== originalDepartment.code ||
       editData.description !== originalDepartment.description
@@ -305,8 +334,8 @@ const DepartmentTable = () => {
   };
 
   const filteredData = data.filter((department) => {
-    const code = department.code?.toLowerCase() || "";
-    const description = department.description?.toLowerCase() || "";
+    const code = department.code?.toLowerCase() || '';
+    const description = department.description?.toLowerCase() || '';
     const search = searchTerm.toLowerCase();
     return code.includes(search) || description.includes(search);
   });
@@ -314,7 +343,13 @@ const DepartmentTable = () => {
   if (hasAccess === null) {
     return (
       <Container maxWidth="md" sx={{ py: 8 }}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+          }}
+        >
           <CircularProgress sx={{ color: '#6d2323', mb: 2 }} />
           <Typography variant="h6" sx={{ color: '#6d2323' }}>
             Loading access information...
@@ -326,7 +361,7 @@ const DepartmentTable = () => {
 
   if (!hasAccess) {
     return (
-      <AccessDenied 
+      <AccessDenied
         title="Access Denied"
         message="You do not have permission to access Department Information. Contact your administrator to request access."
         returnPath="/admin-home"
@@ -336,13 +371,15 @@ const DepartmentTable = () => {
   }
 
   return (
-    <Box sx={{ 
-      py: 4,
-      mt: -5,
-      width: '1600px', // Fixed width
-      mx: 'auto', // Center horizontally
-      overflow: 'hidden', // Prevent horizontal scroll
-    }}>
+    <Box
+      sx={{
+        py: 4,
+        mt: -5,
+        width: '1600px', // Fixed width
+        mx: 'auto', // Center horizontally
+        overflow: 'hidden', // Prevent horizontal scroll
+      }}
+    >
       {/* Container with fixed width */}
       <Box sx={{ px: 6 }}>
         {/* Header */}
@@ -366,7 +403,8 @@ const DepartmentTable = () => {
                     right: -50,
                     width: 200,
                     height: 200,
-                    background: 'radial-gradient(circle, rgba(109,35,35,0.1) 0%, rgba(109,35,35,0) 70%)',
+                    background:
+                      'radial-gradient(circle, rgba(109,35,35,0.1) 0%, rgba(109,35,35,0) 70%)',
                   }}
                 />
                 <Box
@@ -376,48 +414,67 @@ const DepartmentTable = () => {
                     left: '30%',
                     width: 150,
                     height: 150,
-                    background: 'radial-gradient(circle, rgba(109,35,35,0.08) 0%, rgba(109,35,35,0) 70%)',
+                    background:
+                      'radial-gradient(circle, rgba(109,35,35,0.08) 0%, rgba(109,35,35,0) 70%)',
                   }}
                 />
-                
-                <Box display="flex" alignItems="center" justifyContent="space-between" position="relative" zIndex={1}>
+
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="space-between"
+                  position="relative"
+                  zIndex={1}
+                >
                   <Box display="flex" alignItems="center">
-                    <Avatar 
-                      sx={{ 
-                        bgcolor: 'rgba(109,35,35,0.15)', 
-                        mr: 4, 
+                    <Avatar
+                      sx={{
+                        bgcolor: 'rgba(109,35,35,0.15)',
+                        mr: 4,
                         width: 64,
                         height: 64,
-                        boxShadow: '0 8px 24px rgba(109,35,35,0.15)'
+                        boxShadow: '0 8px 24px rgba(109,35,35,0.15)',
                       }}
                     >
-                      <Domain sx={{color: '#6d2323', fontSize: 32 }} />
+                      <Domain sx={{ color: '#6d2323', fontSize: 32 }} />
                     </Avatar>
                     <Box>
-                      <Typography variant="h4" component="h1" sx={{ fontWeight: 700, mb: 1, lineHeight: 1.2, color: '#6d2323' }}>
+                      <Typography
+                        variant="h4"
+                        component="h1"
+                        sx={{
+                          fontWeight: 700,
+                          mb: 1,
+                          lineHeight: 1.2,
+                          color: '#6d2323',
+                        }}
+                      >
                         Department Information Management
                       </Typography>
-                      <Typography variant="body1" sx={{ opacity: 0.8, fontWeight: 400, color: '#8B3333' }}>
+                      <Typography
+                        variant="body1"
+                        sx={{ opacity: 0.8, fontWeight: 400, color: '#8B3333' }}
+                      >
                         Add and manage department records
                       </Typography>
                     </Box>
                   </Box>
                   <Box display="flex" alignItems="center" gap={2}>
-                    <Chip 
-                      label="Enterprise Grade" 
-                      size="small" 
-                      sx={{ 
-                        bgcolor: 'rgba(109,35,35,0.15)', 
+                    <Chip
+                      label="Enterprise Grade"
+                      size="small"
+                      sx={{
+                        bgcolor: 'rgba(109,35,35,0.15)',
                         color: '#6d2323',
                         fontWeight: 500,
-                        '& .MuiChip-label': { px: 1 }
-                      }} 
+                        '& .MuiChip-label': { px: 1 },
+                      }}
                     />
                     <Tooltip title="Refresh Data">
-                      <IconButton 
+                      <IconButton
                         onClick={() => window.location.reload()}
-                        sx={{ 
-                          bgcolor: 'rgba(109,35,35,0.1)', 
+                        sx={{
+                          bgcolor: 'rgba(109,35,35,0.1)',
                           '&:hover': { bgcolor: 'rgba(109,35,35,0.2)' },
                           color: '#6d2323',
                           width: 48,
@@ -452,18 +509,24 @@ const DepartmentTable = () => {
           {/* Add New Department Section */}
           <Grid item xs={12} lg={6}>
             <Fade in timeout={700}>
-              <GlassCard sx={{ height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
+              <GlassCard
+                sx={{
+                  height: 'calc(100vh - 200px)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
                 <Box
                   sx={{
                     p: 4,
                     background: `linear-gradient(135deg, #FEF9E1 0%, #FFF8E7 100%)`,
                     color: '#6d2323',
-                    display: "flex",
-                    alignItems: "center",
+                    display: 'flex',
+                    alignItems: 'center',
                     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
                   }}
                 >
-                  <Domain sx={{ fontSize: "1.8rem", mr: 2 }} />
+                  <Domain sx={{ fontSize: '1.8rem', mr: 2 }} />
                   <Box>
                     <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
                       Add New Department
@@ -474,34 +537,60 @@ const DepartmentTable = () => {
                   </Box>
                 </Box>
 
-                <Box sx={{ 
-                  p: 4, 
-                  flexGrow: 1, 
-                  display: 'flex', 
-                  flexDirection: 'column',
-                  overflowY: 'auto'
-                }}>
+                <Box
+                  sx={{
+                    p: 4,
+                    flexGrow: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflowY: 'auto',
+                  }}
+                >
                   <Box sx={{ mb: 3 }}>
-                    <Typography variant="h5" sx={{ fontWeight: 600, mb: 2, color: '#6d2323', display: 'flex', alignItems: 'center' }}>
+                    <Typography
+                      variant="h5"
+                      sx={{
+                        fontWeight: 600,
+                        mb: 2,
+                        color: '#6d2323',
+                        display: 'flex',
+                        alignItems: 'center',
+                      }}
+                    >
                       <Domain sx={{ mr: 2, fontSize: 24 }} />
-                      Department Information <span style={{ marginLeft: '12px', fontWeight: 400, opacity: 0.7, color: 'red' }}>*</span>
+                      Department Information{' '}
+                      <span
+                        style={{
+                          marginLeft: '12px',
+                          fontWeight: 400,
+                          opacity: 0.7,
+                          color: 'red',
+                        }}
+                      >
+                        *
+                      </span>
                     </Typography>
-                    
+
                     <Grid container spacing={2}>
                       <Grid item xs={12} sm={6}>
-                        <Typography variant="body2" sx={{ fontWeight: 500, mb: 1, color: '#6d2323' }}>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 500, mb: 1, color: '#6d2323' }}
+                        >
                           Department Code
                         </Typography>
                         <ModernTextField
                           value={newEntry.code}
-                          onChange={(e) => setNewEntry({ ...newEntry, code: e.target.value })}
+                          onChange={(e) =>
+                            setNewEntry({ ...newEntry, code: e.target.value })
+                          }
                           fullWidth
                           size="small"
                           sx={{
                             '& .MuiOutlinedInput-root': {
                               '& fieldset': {
                                 borderColor: '#6d2323',
-                                borderWidth: '1.5px'
+                                borderWidth: '1.5px',
                               },
                               '&:hover fieldset': {
                                 borderColor: '#6d2323',
@@ -515,19 +604,27 @@ const DepartmentTable = () => {
                       </Grid>
 
                       <Grid item xs={12} sm={6}>
-                        <Typography variant="body2" sx={{ fontWeight: 500, mb: 1, color: '#6d2323' }}>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 500, mb: 1, color: '#6d2323' }}
+                        >
                           Department Description
                         </Typography>
                         <ModernTextField
                           value={newEntry.description}
-                          onChange={(e) => setNewEntry({ ...newEntry, description: e.target.value })}
+                          onChange={(e) =>
+                            setNewEntry({
+                              ...newEntry,
+                              description: e.target.value,
+                            })
+                          }
                           fullWidth
                           size="small"
                           sx={{
                             '& .MuiOutlinedInput-root': {
                               '& fieldset': {
                                 borderColor: '#6d2323',
-                                borderWidth: '1.5px'
+                                borderWidth: '1.5px',
                               },
                               '&:hover fieldset': {
                                 borderColor: '#6d2323',
@@ -553,7 +650,7 @@ const DepartmentTable = () => {
                         color: '#FEF9E1',
                         py: 1.5,
                         fontSize: '1rem',
-                        "&:hover": { 
+                        '&:hover': {
                           backgroundColor: '#8B3333',
                         },
                       }}
@@ -569,20 +666,26 @@ const DepartmentTable = () => {
           {/* Department Records Section */}
           <Grid item xs={12} lg={6}>
             <Fade in timeout={900}>
-              <GlassCard sx={{ height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
+              <GlassCard
+                sx={{
+                  height: 'calc(100vh - 200px)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
                 <Box
                   sx={{
                     p: 4,
                     background: `linear-gradient(135deg, #FEF9E1 0%, #FFF8E7 100%)`,
                     color: '#6d2323',
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
                     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
                   }}
                 >
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <Domain sx={{ fontSize: "1.8rem", mr: 2 }} />
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Domain sx={{ fontSize: '1.8rem', mr: 2 }} />
                     <Box>
                       <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
                         Department Records
@@ -592,7 +695,7 @@ const DepartmentTable = () => {
                       </Typography>
                     </Box>
                   </Box>
-                  
+
                   <ToggleButtonGroup
                     value={viewMode}
                     exclusive
@@ -607,9 +710,9 @@ const DepartmentTable = () => {
                         padding: '4px 8px',
                         '&.Mui-selected': {
                           backgroundColor: 'rgba(255, 255, 255, 0.3)',
-                          color: '#6d2323'
+                          color: '#6d2323',
                         },
-                      }
+                      },
                     }}
                   >
                     <ToggleButton value="grid" aria-label="grid view">
@@ -621,13 +724,15 @@ const DepartmentTable = () => {
                   </ToggleButtonGroup>
                 </Box>
 
-                <Box sx={{ 
-                  p: 4, 
-                  flexGrow: 1, 
-                  display: 'flex', 
-                  flexDirection: 'column',
-                  overflow: 'hidden'
-                }}>
+                <Box
+                  sx={{
+                    p: 4,
+                    flexGrow: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden',
+                  }}
+                >
                   <Box sx={{ mb: 3 }}>
                     <ModernTextField
                       size="small"
@@ -644,9 +749,9 @@ const DepartmentTable = () => {
                     />
                   </Box>
 
-                  <Box 
-                    sx={{ 
-                      flexGrow: 1, 
+                  <Box
+                    sx={{
+                      flexGrow: 1,
                       overflowY: 'auto',
                       pr: 1,
                       '&::-webkit-scrollbar': {
@@ -669,39 +774,72 @@ const DepartmentTable = () => {
                             <Card
                               onClick={() => startEditing(department)}
                               sx={{
-                                cursor: "pointer",
-                                border: "1px solid rgba(109, 35, 35, 0.1)",
-                                height: "100%",
+                                cursor: 'pointer',
+                                border: '1px solid rgba(109, 35, 35, 0.1)',
+                                height: '100%',
                                 display: 'flex',
                                 flexDirection: 'column',
-                                "&:hover": { 
-                                  borderColor: "#6d2323",
+                                '&:hover': {
+                                  borderColor: '#6d2323',
                                   transform: 'translateY(-2px)',
                                   transition: 'all 0.2s ease',
-                                  boxShadow: '0 4px 8px rgba(109, 35, 35, 0.15)'
+                                  boxShadow:
+                                    '0 4px 8px rgba(109, 35, 35, 0.15)',
                                 },
                               }}
                             >
-                              <CardContent sx={{ p: 2, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                  <Domain sx={{ fontSize: 18, color: '#6d2323', mr: 0.5 }} />
-                                  <Typography variant="caption" sx={{ 
-                                    color: '#6d2323', 
-                                    px: 0.5, 
-                                    py: 0.2, 
-                                    borderRadius: 0.5,
-                                    fontSize: '0.7rem',
-                                    fontWeight: 'bold'
-                                  }}>
+                              <CardContent
+                                sx={{
+                                  p: 2,
+                                  flexGrow: 1,
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                }}
+                              >
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    mb: 1,
+                                  }}
+                                >
+                                  <Domain
+                                    sx={{
+                                      fontSize: 18,
+                                      color: '#6d2323',
+                                      mr: 0.5,
+                                    }}
+                                  />
+                                  <Typography
+                                    variant="caption"
+                                    sx={{
+                                      color: '#6d2323',
+                                      px: 0.5,
+                                      py: 0.2,
+                                      borderRadius: 0.5,
+                                      fontSize: '0.7rem',
+                                      fontWeight: 'bold',
+                                    }}
+                                  >
                                     ID: {department.id}
                                   </Typography>
                                 </Box>
-                                
-                                <Typography variant="body2" fontWeight="bold" color="#333" mb={0.5} noWrap>
+
+                                <Typography
+                                  variant="body2"
+                                  fontWeight="bold"
+                                  color="#333"
+                                  mb={0.5}
+                                  noWrap
+                                >
                                   {department.description || 'No Description'}
                                 </Typography>
-                                
-                                <Typography variant="body2" color="#666" sx={{ flexGrow: 1 }}>
+
+                                <Typography
+                                  variant="body2"
+                                  color="#666"
+                                  sx={{ flexGrow: 1 }}
+                                >
                                   {department.code}
                                 </Typography>
                               </CardContent>
@@ -715,40 +853,61 @@ const DepartmentTable = () => {
                           key={department.id}
                           onClick={() => startEditing(department)}
                           sx={{
-                            cursor: "pointer",
-                            border: "1px solid rgba(109, 35, 35, 0.1)",
+                            cursor: 'pointer',
+                            border: '1px solid rgba(109, 35, 35, 0.1)',
                             mb: 1,
-                            "&:hover": { 
-                              borderColor: "#6d2323",
-                              backgroundColor: 'rgba(254, 249, 225, 0.3)'
+                            '&:hover': {
+                              borderColor: '#6d2323',
+                              backgroundColor: 'rgba(254, 249, 225, 0.3)',
                             },
                           }}
                         >
                           <Box sx={{ p: 2 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+                            <Box
+                              sx={{ display: 'flex', alignItems: 'flex-start' }}
+                            >
                               <Box sx={{ mr: 1.5, mt: 0.2 }}>
-                                <Domain sx={{ fontSize: 20, color: '#6d2323' }} />
+                                <Domain
+                                  sx={{ fontSize: 20, color: '#6d2323' }}
+                                />
                               </Box>
-                              
+
                               <Box sx={{ flexGrow: 1 }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                                  <Typography variant="caption" sx={{ 
-                                    color: '#6d2323', 
-                                    px: 0.5, 
-                                    py: 0.2, 
-                                    borderRadius: 0.5,
-                                    fontSize: '0.7rem',
-                                    fontWeight: 'bold',
-                                    mr: 1
-                                  }}>
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    mb: 0.5,
+                                  }}
+                                >
+                                  <Typography
+                                    variant="caption"
+                                    sx={{
+                                      color: '#6d2323',
+                                      px: 0.5,
+                                      py: 0.2,
+                                      borderRadius: 0.5,
+                                      fontSize: '0.7rem',
+                                      fontWeight: 'bold',
+                                      mr: 1,
+                                    }}
+                                  >
                                     ID: {department.id}
                                   </Typography>
-                                  <Typography variant="body2" fontWeight="bold" color="#333">
+                                  <Typography
+                                    variant="body2"
+                                    fontWeight="bold"
+                                    color="#333"
+                                  >
                                     {department.description || 'No Description'}
                                   </Typography>
                                 </Box>
-                                
-                                <Typography variant="body2" color="#666" sx={{ mb: 0.5 }}>
+
+                                <Typography
+                                  variant="body2"
+                                  color="#666"
+                                  sx={{ mb: 0.5 }}
+                                >
                                   {department.code}
                                 </Typography>
                               </Box>
@@ -757,13 +916,22 @@ const DepartmentTable = () => {
                         </Card>
                       ))
                     )}
-                    
+
                     {filteredData.length === 0 && (
                       <Box textAlign="center" py={4}>
-                        <Typography variant="h6" color="#6d2323" fontWeight="bold" sx={{ mb: 1 }}>
+                        <Typography
+                          variant="h6"
+                          color="#6d2323"
+                          fontWeight="bold"
+                          sx={{ mb: 1 }}
+                        >
                           No Records Found
                         </Typography>
-                        <Typography variant="body2" color="#666" sx={{ mt: 0.5 }}>
+                        <Typography
+                          variant="body2"
+                          color="#666"
+                          sx={{ mt: 0.5 }}
+                        >
                           Try adjusting your search criteria
                         </Typography>
                       </Box>
@@ -780,16 +948,16 @@ const DepartmentTable = () => {
           open={modalOpen}
           onClose={() => setModalOpen(false)}
           sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
           <GlassCard
             sx={{
-              width: "90%",
-              maxWidth: "600px",
-              maxHeight: "90vh",
+              width: '90%',
+              maxWidth: '600px',
+              maxHeight: '90vh',
               overflowY: 'auto',
             }}
           >
@@ -801,119 +969,161 @@ const DepartmentTable = () => {
                     p: 4,
                     background: `linear-gradient(135deg, #FEF9E1 0%, #FFF8E7 100%)`,
                     color: '#6d2323',
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
                     position: 'sticky',
                     top: 0,
                     zIndex: 10,
                   }}
                 >
                   <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                    {isEditing ? "Edit Department Information" : "Department Details"}
+                    {isEditing
+                      ? 'Edit Department Information'
+                      : 'Department Details'}
                   </Typography>
-                  <IconButton onClick={() => setModalOpen(false)} sx={{ color: '#6d2323' }}>
+                  <IconButton
+                    onClick={() => setModalOpen(false)}
+                    sx={{ color: '#6d2323' }}
+                  >
                     <Close />
                   </IconButton>
                 </Box>
 
                 {/* Modal Content with Scroll */}
-                <Box sx={{ 
-                  p: 4, 
-                  flexGrow: 1, 
-                  overflowY: 'auto',
-                  maxHeight: 'calc(90vh - 140px)', // Account for header and sticky footer
-                  '&::-webkit-scrollbar': {
-                    width: '6px',
-                  },
-                  '&::-webkit-scrollbar-track': {
-                    background: '#f1f1f1',
-                    borderRadius: '3px',
-                  },
-                  '&::-webkit-scrollbar-thumb': {
-                    background: '#6d2323',
-                    borderRadius: '3px',
-                  },
-                }}>
+                <Box
+                  sx={{
+                    p: 4,
+                    flexGrow: 1,
+                    overflowY: 'auto',
+                    maxHeight: 'calc(90vh - 140px)', // Account for header and sticky footer
+                    '&::-webkit-scrollbar': {
+                      width: '6px',
+                    },
+                    '&::-webkit-scrollbar-track': {
+                      background: '#f1f1f1',
+                      borderRadius: '3px',
+                    },
+                    '&::-webkit-scrollbar-thumb': {
+                      background: '#6d2323',
+                      borderRadius: '3px',
+                    },
+                  }}
+                >
                   <Grid container spacing={2}>
                     <Grid item xs={12}>
-                      <Typography variant="h5" sx={{ fontWeight: 600, mb: 2, color: '#6d2323', display: 'flex', alignItems: 'center' }}>
+                      <Typography
+                        variant="h5"
+                        sx={{
+                          fontWeight: 600,
+                          mb: 2,
+                          color: '#6d2323',
+                          display: 'flex',
+                          alignItems: 'center',
+                        }}
+                      >
                         <Domain sx={{ mr: 2, fontSize: 24 }} />
                         Department Information
                       </Typography>
-                    
-                    <Grid container spacing={2}>
-                      <Grid item xs={12} sm={6}>
-                        <Typography variant="body2" sx={{ fontWeight: 500, mb: 1, color: '#6d2323' }}>
-                          Department Code
-                        </Typography>
-                        {isEditing ? (
-                          <ModernTextField
-                            value={editData.code}
-                            onChange={(e) => handleChange('code', e.target.value)}
-                            fullWidth
-                            size="small"
-                            sx={{
-                              '& .MuiOutlinedInput-root': {
-                                '& fieldset': {
-                                  borderColor: '#6d2323',
-                                },
-                                '&:hover fieldset': {
-                                  borderColor: '#6d2323',
-                                },
-                                '&.Mui-focused fieldset': {
-                                  borderColor: '#6d2323',
-                                },
-                              },
-                            }}
-                          />
-                        ) : (
-                          <Typography variant="body2" sx={{ p: 1.5, bgcolor: 'rgba(254, 249, 225, 0.5)', borderRadius: 1 }}>
-                            {selectedDepartment.code}
-                          </Typography>
-                        )}
-                      </Grid>
 
-                      <Grid item xs={12} sm={6}>
-                        <Typography variant="body2" sx={{ fontWeight: 500, mb: 1, color: '#6d2323' }}>
-                          Department Description
-                        </Typography>
-                        {isEditing ? (
-                          <ModernTextField
-                            value={editData.description}
-                            onChange={(e) => handleChange('description', e.target.value)}
-                            fullWidth
-                            size="small"
-                            sx={{
-                              '& .MuiOutlinedInput-root': {
-                                '& fieldset': {
-                                  borderColor: '#6d2323',
-                                },
-                                '&:hover fieldset': {
-                                  borderColor: '#6d2323',
-                                },
-                                '&.Mui-focused fieldset': {
-                                  borderColor: '#6d2323',
-                                },
-                              },
-                            }}
-                          />
-                        ) : (
-                          <Typography variant="body2" sx={{ p: 1.5, bgcolor: 'rgba(254, 249, 225, 0.5)', borderRadius: 1 }}>
-                            {selectedDepartment.description}
+                      <Grid container spacing={2}>
+                        <Grid item xs={12} sm={6}>
+                          <Typography
+                            variant="body2"
+                            sx={{ fontWeight: 500, mb: 1, color: '#6d2323' }}
+                          >
+                            Department Code
                           </Typography>
-                        )}
+                          {isEditing ? (
+                            <ModernTextField
+                              value={editData.code}
+                              onChange={(e) =>
+                                handleChange('code', e.target.value)
+                              }
+                              fullWidth
+                              size="small"
+                              sx={{
+                                '& .MuiOutlinedInput-root': {
+                                  '& fieldset': {
+                                    borderColor: '#6d2323',
+                                  },
+                                  '&:hover fieldset': {
+                                    borderColor: '#6d2323',
+                                  },
+                                  '&.Mui-focused fieldset': {
+                                    borderColor: '#6d2323',
+                                  },
+                                },
+                              }}
+                            />
+                          ) : (
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                p: 1.5,
+                                bgcolor: 'rgba(254, 249, 225, 0.5)',
+                                borderRadius: 1,
+                              }}
+                            >
+                              {selectedDepartment.code}
+                            </Typography>
+                          )}
+                        </Grid>
+
+                        <Grid item xs={12} sm={6}>
+                          <Typography
+                            variant="body2"
+                            sx={{ fontWeight: 500, mb: 1, color: '#6d2323' }}
+                          >
+                            Department Description
+                          </Typography>
+                          {isEditing ? (
+                            <ModernTextField
+                              value={editData.description}
+                              onChange={(e) =>
+                                handleChange('description', e.target.value)
+                              }
+                              fullWidth
+                              size="small"
+                              sx={{
+                                '& .MuiOutlinedInput-root': {
+                                  '& fieldset': {
+                                    borderColor: '#6d2323',
+                                  },
+                                  '&:hover fieldset': {
+                                    borderColor: '#6d2323',
+                                  },
+                                  '&.Mui-focused fieldset': {
+                                    borderColor: '#6d2323',
+                                  },
+                                },
+                              }}
+                            />
+                          ) : (
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                p: 1.5,
+                                bgcolor: 'rgba(254, 249, 225, 0.5)',
+                                borderRadius: 1,
+                              }}
+                            >
+                              {selectedDepartment.description}
+                            </Typography>
+                          )}
+                        </Grid>
                       </Grid>
                     </Grid>
                   </Grid>
-                  </Grid>
                   {/* Sticky Action Buttons */}
-                  <Box sx={{ 
-                    display: 'flex', 
-                    gap: 2, 
-                    mt: 4, 
-                    justifyContent: 'flex-end'
-                  }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      gap: 2,
+                      mt: 4,
+                      justifyContent: 'flex-end',
+                    }}
+                  >
                     {!isEditing ? (
                       <>
                         <ProfessionalButton
@@ -921,12 +1131,12 @@ const DepartmentTable = () => {
                           variant="outlined"
                           startIcon={<DeleteIcon />}
                           sx={{
-                            color: "#d32f2f",
-                            borderColor: "#d32f2f",
-                            "&:hover": {
-                              backgroundColor: "#d32f2f",
-                              color: "#fff"
-                            }
+                            color: '#d32f2f',
+                            borderColor: '#d32f2f',
+                            '&:hover': {
+                              backgroundColor: '#d32f2f',
+                              color: '#fff',
+                            },
                           }}
                         >
                           Delete
@@ -935,10 +1145,10 @@ const DepartmentTable = () => {
                           onClick={handleStartEdit}
                           variant="contained"
                           startIcon={<EditIcon />}
-                          sx={{ 
-                            backgroundColor: "#6d2323", 
-                            color: "#FEF9E1",
-                            "&:hover": { backgroundColor: "#8B3333" }
+                          sx={{
+                            backgroundColor: '#6d2323',
+                            color: '#FEF9E1',
+                            '&:hover': { backgroundColor: '#8B3333' },
                           }}
                         >
                           Edit
@@ -951,11 +1161,11 @@ const DepartmentTable = () => {
                           variant="outlined"
                           startIcon={<CancelIcon />}
                           sx={{
-                            color: "#666",
-                            borderColor: "#666",
-                            "&:hover": {
-                              backgroundColor: "#f5f5f5"
-                            }
+                            color: '#666',
+                            borderColor: '#666',
+                            '&:hover': {
+                              backgroundColor: '#f5f5f5',
+                            },
                           }}
                         >
                           Cancel
@@ -965,16 +1175,18 @@ const DepartmentTable = () => {
                           variant="contained"
                           startIcon={<SaveIcon />}
                           disabled={!hasChanges()}
-                          sx={{ 
-                            backgroundColor: hasChanges() ? "#6d2323" : "#ccc", 
-                            color: "#FEF9E1",
-                            "&:hover": { 
-                              backgroundColor: hasChanges() ? "#8B3333" : "#ccc"
+                          sx={{
+                            backgroundColor: hasChanges() ? '#6d2323' : '#ccc',
+                            color: '#FEF9E1',
+                            '&:hover': {
+                              backgroundColor: hasChanges()
+                                ? '#8B3333'
+                                : '#ccc',
                             },
-                            "&:disabled": {
-                              backgroundColor: "#ccc",
-                              color: "#999"
-                            }
+                            '&:disabled': {
+                              backgroundColor: '#ccc',
+                              color: '#999',
+                            },
                           }}
                         >
                           Save
@@ -989,7 +1201,7 @@ const DepartmentTable = () => {
         </Modal>
 
         <SuccessfullOverlay open={successOpen} action={successAction} />
-        
+
         <Snackbar
           open={snackbar.open}
           autoHideDuration={3000}

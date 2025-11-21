@@ -51,3 +51,4 @@ router.delete('/api/events/:id', async (req, res) => {
 
 module.exports = router;
 
+

@@ -35,7 +35,7 @@ import {
   AccordionDetails,
   Divider,
   Badge,
-} from "@mui/material";
+} from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -53,19 +53,24 @@ import {
   Refresh,
   Group as GroupIcon,
   People as PeopleIcon,
-} from "@mui/icons-material";
+} from '@mui/icons-material';
 
 import ReorderIcon from '@mui/icons-material/Reorder';
 import LoadingOverlay from '../LoadingOverlay';
 import AccessDenied from '../AccessDenied';
-import { useNavigate } from "react-router-dom";
-import { styled, alpha } from "@mui/material/styles";
+import { useNavigate } from 'react-router-dom';
+import { styled, alpha } from '@mui/material/styles';
 import { useSystemSettings } from '../../hooks/useSystemSettings';
 
 // Helper function to convert hex to rgb
 const hexToRgb = (hex) => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '109, 35, 35';
+  return result
+    ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(
+        result[3],
+        16
+      )}`
+    : '109, 35, 35';
 };
 
 // Professional styled components - colors will be applied via sx prop
@@ -79,23 +84,29 @@ const GlassCard = styled(Paper)(({ theme }) => ({
   },
 }));
 
-const ProfessionalButton = styled(Button)(({ theme, variant, color = 'primary' }) => ({
-  borderRadius: 12,
-  fontWeight: 600,
-  padding: '12px 24px',
-  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-  textTransform: 'none',
-  fontSize: '0.95rem',
-  letterSpacing: '0.025em',
-  boxShadow: variant === 'contained' ? '0 4px 14px rgba(254, 249, 225, 0.25)' : 'none',
-  '&:hover': {
-    transform: 'translateY(-2px)',
-    boxShadow: variant === 'contained' ? '0 6px 20px rgba(254, 249, 225, 0.35)' : 'none',
-  },
-  '&:active': {
-    transform: 'translateY(0)',
-  },
-}));
+const ProfessionalButton = styled(Button)(
+  ({ theme, variant, color = 'primary' }) => ({
+    borderRadius: 12,
+    fontWeight: 600,
+    padding: '12px 24px',
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    textTransform: 'none',
+    fontSize: '0.95rem',
+    letterSpacing: '0.025em',
+    boxShadow:
+      variant === 'contained' ? '0 4px 14px rgba(254, 249, 225, 0.25)' : 'none',
+    '&:hover': {
+      transform: 'translateY(-2px)',
+      boxShadow:
+        variant === 'contained'
+          ? '0 6px 20px rgba(254, 249, 225, 0.35)'
+          : 'none',
+    },
+    '&:active': {
+      transform: 'translateY(0)',
+    },
+  })
+);
 
 const ModernTextField = styled(TextField)(({ theme }) => ({
   '& .MuiOutlinedInput-root': {
@@ -166,7 +177,9 @@ const EmployeeAutocomplete = ({
     setIsLoading(true);
     try {
       const response = await axios.get(
-        `${API_BASE_URL}/Remittance/employees/search?q=${encodeURIComponent(searchQuery)}`,
+        `${API_BASE_URL}/Remittance/employees/search?q=${encodeURIComponent(
+          searchQuery
+        )}`,
         getAuthHeaders()
       );
       setEmployees(response.data);
@@ -291,7 +304,7 @@ const EmployeeAutocomplete = ({
               onClick={dropdownDisabled ? undefined : handleDropdownClick}
               size="small"
               disabled={dropdownDisabled}
-              sx={{ color: textPrimaryColor }}
+              sx={{ color: 'primary.main' }}
             >
               {showDropdown ? <ExpandLessIcon /> : <ExpandMoreIcon />}
             </IconButton>
@@ -377,7 +390,7 @@ const getAuthHeaders = () => {
 
 const DepartmentAssignment = () => {
   const { settings } = useSystemSettings();
-  
+
   // Get colors from system settings
   const primaryColor = settings.accentColor || '#FEF9E1'; // Cards color
   const secondaryColor = settings.backgroundColor || '#FFF8E7'; // Background
@@ -405,7 +418,7 @@ const DepartmentAssignment = () => {
   const [selectedDepartment, setSelectedDepartment] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [departmentModalOpen, setDepartmentModalOpen] = useState(false);
-  
+
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
@@ -418,11 +431,11 @@ const DepartmentAssignment = () => {
 
   const [hasAccess, setHasAccess] = useState(null);
   const navigate = useNavigate();
-  
+
   // Employee selection states
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [selectedEditEmployee, setSelectedEditEmployee] = useState(null);
-  
+
   useEffect(() => {
     const userId = localStorage.getItem('employeeNumber');
     const pageId = 11; // Different page ID for department assignment
@@ -432,14 +445,16 @@ const DepartmentAssignment = () => {
     }
     const checkAccess = async () => {
       try {
+        const authHeaders = getAuthHeaders();
         const response = await fetch(`${API_BASE_URL}/page_access/${userId}`, {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
+          method: 'GET',
+          ...authHeaders,
         });
         if (response.ok) {
           const accessData = await response.json();
-          const hasPageAccess = accessData.some(access => 
-            access.page_id === pageId && String(access.page_privilege) === '1'
+          const hasPageAccess = accessData.some(
+            (access) =>
+              access.page_id === pageId && String(access.page_privilege) === '1'
           );
           setHasAccess(hasPageAccess);
         } else {
@@ -465,13 +480,13 @@ const DepartmentAssignment = () => {
       if (!acc[deptCode]) {
         acc[deptCode] = {
           code: deptCode,
-          employees: []
+          employees: [],
         };
       }
       acc[deptCode].employees.push(assignment);
       return acc;
     }, {});
-    
+
     const departmentArray = Object.values(grouped);
     setDepartmentData(departmentArray);
   }, [data]);
@@ -485,7 +500,10 @@ const DepartmentAssignment = () => {
       setData(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error fetching data', error);
-      showSnackbar('Failed to fetch department assignments. Please try again.', 'error');
+      showSnackbar(
+        'Failed to fetch department assignments. Please try again.',
+        'error'
+      );
     }
   };
 
@@ -502,11 +520,14 @@ const DepartmentAssignment = () => {
   };
 
   const handleAdd = async () => {
-    if (!newAssignment.employeeNumber || newAssignment.employeeNumber.trim() === '') {
+    if (
+      !newAssignment.employeeNumber ||
+      newAssignment.employeeNumber.trim() === ''
+    ) {
       showSnackbar('Please select an employee', 'error');
       return;
     }
-    
+
     setLoading(true);
     try {
       // Filter out empty fields
@@ -531,7 +552,10 @@ const DepartmentAssignment = () => {
     } catch (error) {
       console.error('Error adding entry', error);
       setLoading(false);
-      showSnackbar('Failed to add department assignment. Please try again.', 'error');
+      showSnackbar(
+        'Failed to add department assignment. Please try again.',
+        'error'
+      );
     }
   };
 
@@ -552,7 +576,10 @@ const DepartmentAssignment = () => {
       showSnackbar('Department assignment updated successfully!', 'success');
     } catch (error) {
       console.error('Error updating entry', error);
-      showSnackbar('Failed to update department assignment. Please try again.', 'error');
+      showSnackbar(
+        'Failed to update department assignment. Please try again.',
+        'error'
+      );
     }
   };
 
@@ -574,7 +601,10 @@ const DepartmentAssignment = () => {
       showSnackbar('Department assignment deleted successfully!', 'success');
     } catch (error) {
       console.error('Error deleting entry', error);
-      showSnackbar('Failed to delete department assignment. Please try again.', 'error');
+      showSnackbar(
+        'Failed to delete department assignment. Please try again.',
+        'error'
+      );
     }
   };
 
@@ -591,7 +621,7 @@ const DepartmentAssignment = () => {
     setOriginalAssignment({ ...assignment });
     setIsEditing(directEdit);
     setModalOpen(true);
-    
+
     // Fetch employee details for edit modal
     if (assignment.employeeNumber) {
       fetchEmployeeById(assignment.employeeNumber, (employee) => {
@@ -671,7 +701,7 @@ const DepartmentAssignment = () => {
 
   const hasChanges = () => {
     if (!editAssignment || !originalAssignment) return false;
-    
+
     return (
       editAssignment.code !== originalAssignment.code ||
       editAssignment.name !== originalAssignment.name ||
@@ -682,7 +712,13 @@ const DepartmentAssignment = () => {
   if (hasAccess === null) {
     return (
       <Container maxWidth="md" sx={{ py: 8 }}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+          }}
+        >
           <CircularProgress sx={{ color: textPrimaryColor, mb: 2 }} />
           <Typography variant="h6" sx={{ color: textPrimaryColor }}>
             Loading access information...
@@ -691,10 +727,10 @@ const DepartmentAssignment = () => {
       </Container>
     );
   }
-  
+
   if (!hasAccess) {
     return (
-      <AccessDenied 
+      <AccessDenied
         title="Access Denied"
         message="You do not have permission to access Department Assignment. Contact your administrator to request access."
         returnPath="/admin-home"
@@ -704,38 +740,42 @@ const DepartmentAssignment = () => {
   }
 
   const filteredDepartmentData = departmentData.filter((department) => {
-    const code = department.code?.toLowerCase() || "";
+    const code = department.code?.toLowerCase() || '';
     const search = searchTerm.toLowerCase();
-    
+
     // Apply department filter if selected
     if (departmentFilter && code !== departmentFilter) {
       return false;
     }
-    
+
     return code.includes(search);
   });
 
   return (
-    <Box sx={{ 
-      py: 4,
-      mt: -5,
-      width: '1600px', // Fixed width
-      mx: 'auto', // Center horizontally
-      overflow: 'hidden', // Prevent horizontal scroll
-    }}>
+    <Box
+      sx={{
+        py: 4,
+        mt: -5,
+        width: '1600px', // Fixed width
+        mx: 'auto', // Center horizontally
+        overflow: 'hidden', // Prevent horizontal scroll
+      }}
+    >
       {/* Container with fixed width */}
       <Box sx={{ px: 6 }}>
         {/* Header */}
         <Fade in timeout={500}>
           <Box sx={{ mb: 4 }}>
-            <GlassCard sx={{
-              background: `rgba(${hexToRgb(primaryColor)}, 0.95)`,
-              boxShadow: `0 8px 40px ${alpha(accentColor, 0.08)}`,
-              border: `1px solid ${alpha(accentColor, 0.1)}`,
-              '&:hover': {
-                boxShadow: `0 12px 48px ${alpha(accentColor, 0.15)}`,
-              },
-            }}>
+            <GlassCard
+              sx={{
+                background: `rgba(${hexToRgb(primaryColor)}, 0.95)`,
+                boxShadow: `0 8px 40px ${alpha(accentColor, 0.08)}`,
+                border: `1px solid ${alpha(accentColor, 0.1)}`,
+                '&:hover': {
+                  boxShadow: `0 12px 48px ${alpha(accentColor, 0.15)}`,
+                },
+              }}
+            >
               <Box
                 sx={{
                   p: 5,
@@ -753,7 +793,10 @@ const DepartmentAssignment = () => {
                     right: -50,
                     width: 200,
                     height: 200,
-                    background: `radial-gradient(circle, ${alpha(accentColor, 0.1)} 0%, ${alpha(accentColor, 0)} 70%)`,
+                    background: `radial-gradient(circle, ${alpha(
+                      accentColor,
+                      0.1
+                    )} 0%, ${alpha(accentColor, 0)} 70%)`,
                   }}
                 />
                 <Box
@@ -763,48 +806,71 @@ const DepartmentAssignment = () => {
                     left: '30%',
                     width: 150,
                     height: 150,
-                    background: `radial-gradient(circle, ${alpha(accentColor, 0.08)} 0%, ${alpha(accentColor, 0)} 70%)`,
+                    background: `radial-gradient(circle, ${alpha(
+                      accentColor,
+                      0.08
+                    )} 0%, ${alpha(accentColor, 0)} 70%)`,
                   }}
                 />
-                
-                <Box display="flex" alignItems="center" justifyContent="space-between" position="relative" zIndex={1}>
+
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="space-between"
+                  position="relative"
+                  zIndex={1}
+                >
                   <Box display="flex" alignItems="center">
-                    <Avatar 
-                      sx={{ 
-                        bgcolor: alpha(accentColor, 0.15), 
-                        mr: 4, 
+                    <Avatar
+                      sx={{
+                        bgcolor: alpha(accentColor, 0.15),
+                        mr: 4,
                         width: 64,
                         height: 64,
-                        boxShadow: `0 8px 24px ${alpha(accentColor, 0.15)}`
+                        boxShadow: `0 8px 24px ${alpha(accentColor, 0.15)}`,
                       }}
                     >
-                      <DomainIcon sx={{color: textPrimaryColor, fontSize: 32 }} />
+                      <DomainIcon
+                        sx={{ color: textPrimaryColor, fontSize: 32 }}
+                      />
                     </Avatar>
                     <Box>
-                      <Typography variant="h4" component="h1" sx={{ fontWeight: 700, mb: 1, lineHeight: 1.2, color: textPrimaryColor }}>
+                      <Typography
+                        variant="h4"
+                        component="h1"
+                        sx={{
+                          fontWeight: 700,
+                          mb: 1,
+                          lineHeight: 1.2,
+                          color: textPrimaryColor,
+                        }}
+                      >
                         Department Assignment Management
                       </Typography>
-                      <Typography variant="body1" sx={{ opacity: 0.8, fontWeight: 400, color: '#8B3333' }}>
+                      <Typography
+                        variant="body1"
+                        sx={{ opacity: 0.8, fontWeight: 400, color: '#8B3333' }}
+                      >
                         View departments and their assigned employees
                       </Typography>
                     </Box>
                   </Box>
                   <Box display="flex" alignItems="center" gap={2}>
-                    <Chip 
-                      label="Enterprise Grade" 
-                      size="small" 
-                      sx={{ 
-                        bgcolor: alpha(accentColor, 0.15), 
+                    <Chip
+                      label="Enterprise Grade"
+                      size="small"
+                      sx={{
+                        bgcolor: alpha(accentColor, 0.15),
                         color: textPrimaryColor,
                         fontWeight: 500,
-                        '& .MuiChip-label': { px: 1 }
-                      }} 
+                        '& .MuiChip-label': { px: 1 },
+                      }}
                     />
                     <Tooltip title="Refresh Data">
-                      <IconButton 
+                      <IconButton
                         onClick={() => window.location.reload()}
-                        sx={{ 
-                          bgcolor: alpha(accentColor, 0.1), 
+                        sx={{
+                          bgcolor: alpha(accentColor, 0.1),
                           '&:hover': { bgcolor: alpha(accentColor, 0.2) },
                           color: textPrimaryColor,
                           width: 48,
@@ -826,18 +892,24 @@ const DepartmentAssignment = () => {
           {/* Add New Assignment Section */}
           <Grid item xs={12} lg={6}>
             <Fade in timeout={700}>
-              <GlassCard sx={{ height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
+              <GlassCard
+                sx={{
+                  height: 'calc(100vh - 200px)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
                 <Box
                   sx={{
                     p: 4,
                     background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
                     color: textPrimaryColor,
-                    display: "flex",
-                    alignItems: "center",
+                    display: 'flex',
+                    alignItems: 'center',
                     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
                   }}
                 >
-                  <DomainIcon sx={{ fontSize: "1.8rem", mr: 2 }} />
+                  <DomainIcon sx={{ fontSize: '1.8rem', mr: 2 }} />
                   <Box>
                     <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
                       Assign Employee to Department
@@ -848,34 +920,61 @@ const DepartmentAssignment = () => {
                   </Box>
                 </Box>
 
-                <Box sx={{ 
-                  p: 4, 
-                  flexGrow: 1, 
-                  display: 'flex', 
-                  flexDirection: 'column',
-                  overflowY: 'auto'
-                }}>
+                <Box
+                  sx={{
+                    p: 4,
+                    flexGrow: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflowY: 'auto',
+                  }}
+                >
                   <Box sx={{ mb: 3 }}>
-                    <Typography variant="h5" sx={{ fontWeight: 600, mb: 2, color: '#6d2323', display: 'flex', alignItems: 'center' }}>
+                    <Typography
+                      variant="h5"
+                      sx={{
+                        fontWeight: 600,
+                        mb: 2,
+                        color: '#6d2323',
+                        display: 'flex',
+                        alignItems: 'center',
+                      }}
+                    >
                       <PersonIcon sx={{ mr: 2, fontSize: 24 }} />
-                      Assignment Information <span style={{ marginLeft: '12px', fontWeight: 400, opacity: 0.7, color: 'red' }}>*</span>
+                      Assignment Information{' '}
+                      <span
+                        style={{
+                          marginLeft: '12px',
+                          fontWeight: 400,
+                          opacity: 0.7,
+                          color: 'red',
+                        }}
+                      >
+                        *
+                      </span>
                     </Typography>
-                    
+
                     <Grid container spacing={2}>
                       <Grid item xs={12}>
-                        <Typography variant="body2" sx={{ fontWeight: 500, mb: 1, color: '#6d2323' }}>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 500, mb: 1, color: '#6d2323' }}
+                        >
                           Department Code
                         </Typography>
                         <FormControl fullWidth>
                           <Select
                             value={newAssignment.code}
-                            onChange={(e) => handleChange('code', e.target.value)}
+                            onChange={(e) =>
+                              handleChange('code', e.target.value)
+                            }
                             displayEmpty
                             size="small"
                             sx={{
                               '& .MuiOutlinedInput-root': {
                                 borderRadius: 12,
-                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                transition:
+                                  'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                 backgroundColor: 'rgba(255, 255, 255, 0.8)',
                                 '&:hover': {
                                   transform: 'translateY(-1px)',
@@ -883,16 +982,17 @@ const DepartmentAssignment = () => {
                                 },
                                 '&.Mui-focused': {
                                   transform: 'translateY(-1px)',
-                                  boxShadow: '0 4px 20px rgba(254, 249, 225, 0.25)',
+                                  boxShadow:
+                                    '0 4px 20px rgba(254, 249, 225, 0.25)',
                                   backgroundColor: 'rgba(255, 255, 255, 1)',
                                   '& fieldset': {
                                     borderColor: '#6d2323',
-                                    borderWidth: '1.5px'
+                                    borderWidth: '1.5px',
                                   },
                                 },
                                 '& fieldset': {
                                   borderColor: '#6d2323',
-                                  borderWidth: '1.5px'
+                                  borderWidth: '1.5px',
                                 },
                               },
                             }}
@@ -908,7 +1008,10 @@ const DepartmentAssignment = () => {
                       </Grid>
 
                       <Grid item xs={12}>
-                        <Typography variant="body2" sx={{ fontWeight: 500, mb: 1, color: '#6d2323' }}>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 500, mb: 1, color: '#6d2323' }}
+                        >
                           Search Employee
                         </Typography>
                         <EmployeeAutocomplete
@@ -922,7 +1025,10 @@ const DepartmentAssignment = () => {
                       </Grid>
 
                       <Grid item xs={12}>
-                        <Typography variant="body2" sx={{ fontWeight: 500, mb: 1, color: '#6d2323' }}>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 500, mb: 1, color: '#6d2323' }}
+                        >
                           Selected Employee
                         </Typography>
                         {selectedEmployee ? (
@@ -937,8 +1043,16 @@ const DepartmentAssignment = () => {
                               gap: 1.5,
                             }}
                           >
-                            <PersonIcon sx={{ color: '#6d2323', fontSize: 20 }} />
-                            <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                            <PersonIcon
+                              sx={{ color: '#6d2323', fontSize: 20 }}
+                            />
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                flex: 1,
+                              }}
+                            >
                               <Typography
                                 variant="body2"
                                 sx={{
@@ -997,12 +1111,12 @@ const DepartmentAssignment = () => {
                       startIcon={<AddIcon />}
                       fullWidth
                       sx={{
-                        backgroundColor: "#6d2323",
-                        color: "#FEF9E1",
+                        backgroundColor: '#6d2323',
+                        color: '#FEF9E1',
                         py: 1.5,
                         fontSize: '1rem',
-                        "&:hover": { 
-                          backgroundColor: "#8B3333",
+                        '&:hover': {
+                          backgroundColor: '#8B3333',
                         },
                       }}
                     >
@@ -1017,20 +1131,26 @@ const DepartmentAssignment = () => {
           {/* Department Records Section */}
           <Grid item xs={12} lg={6}>
             <Fade in timeout={900}>
-              <GlassCard sx={{ height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
+              <GlassCard
+                sx={{
+                  height: 'calc(100vh - 200px)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
                 <Box
                   sx={{
                     p: 4,
                     background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
                     color: textPrimaryColor,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
                     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
                   }}
                 >
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <GroupIcon sx={{ fontSize: "1.8rem", mr: 2 }} />
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <GroupIcon sx={{ fontSize: '1.8rem', mr: 2 }} />
                     <Box>
                       <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
                         Departments
@@ -1040,7 +1160,7 @@ const DepartmentAssignment = () => {
                       </Typography>
                     </Box>
                   </Box>
-                  
+
                   <ToggleButtonGroup
                     value={viewMode}
                     exclusive
@@ -1055,9 +1175,9 @@ const DepartmentAssignment = () => {
                         padding: '4px 8px',
                         '&.Mui-selected': {
                           backgroundColor: 'rgba(255, 255, 255, 0.3)',
-                          color: textPrimaryColor
+                          color: textPrimaryColor,
                         },
-                      }
+                      },
                     }}
                   >
                     <ToggleButton value="grid" aria-label="grid view">
@@ -1069,13 +1189,15 @@ const DepartmentAssignment = () => {
                   </ToggleButtonGroup>
                 </Box>
 
-                <Box sx={{ 
-                  p: 4, 
-                  flexGrow: 1, 
-                  display: 'flex', 
-                  flexDirection: 'column',
-                  overflow: 'hidden'
-                }}>
+                <Box
+                  sx={{
+                    p: 4,
+                    flexGrow: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden',
+                  }}
+                >
                   <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>
                     <ModernTextField
                       size="small"
@@ -1086,11 +1208,11 @@ const DepartmentAssignment = () => {
                       fullWidth
                       InputProps={{
                         startAdornment: (
-                          <SearchIcon sx={{ color: "#6d2323", mr: 1 }} />
+                          <SearchIcon sx={{ color: '#6d2323', mr: 1 }} />
                         ),
                       }}
                     />
-                    
+
                     <FormControl sx={{ minWidth: 150 }}>
                       <Select
                         value={departmentFilter}
@@ -1112,12 +1234,12 @@ const DepartmentAssignment = () => {
                               backgroundColor: 'rgba(255, 255, 255, 1)',
                               '& fieldset': {
                                 borderColor: '#6d2323',
-                                borderWidth: '1.5px'
+                                borderWidth: '1.5px',
                               },
                             },
                             '& fieldset': {
                               borderColor: '#6d2323',
-                              borderWidth: '1.5px'
+                              borderWidth: '1.5px',
                             },
                           },
                         }}
@@ -1132,9 +1254,9 @@ const DepartmentAssignment = () => {
                     </FormControl>
                   </Box>
 
-                  <Box 
-                    sx={{ 
-                      flexGrow: 1, 
+                  <Box
+                    sx={{
+                      flexGrow: 1,
                       overflowY: 'auto',
                       pr: 1,
                       '&::-webkit-scrollbar': {
@@ -1153,71 +1275,119 @@ const DepartmentAssignment = () => {
                     {viewMode === 'grid' ? (
                       <Grid container spacing={2}>
                         {filteredDepartmentData.map((department) => (
-                          <Grid item xs={12} sm={6} md={4} key={department.code}>
+                          <Grid
+                            item
+                            xs={12}
+                            sm={6}
+                            md={4}
+                            key={department.code}
+                          >
                             <Card
-                              onClick={() => handleOpenDepartmentModal(department)}
+                              onClick={() =>
+                                handleOpenDepartmentModal(department)
+                              }
                               sx={{
-                                cursor: "pointer",
-                                border: "1px solid rgba(109, 35, 35, 0.1)",
-                                height: "100%",
+                                cursor: 'pointer',
+                                border: '1px solid rgba(109, 35, 35, 0.1)',
+                                height: '100%',
                                 display: 'flex',
                                 flexDirection: 'column',
-                                "&:hover": { 
-                                  borderColor: "#6d2323",
+                                '&:hover': {
+                                  borderColor: '#6d2323',
                                   transform: 'translateY(-2px)',
                                   transition: 'all 0.2s ease',
-                                  boxShadow: '0 4px 8px rgba(109, 35, 35, 0.15)'
+                                  boxShadow:
+                                    '0 4px 8px rgba(109, 35, 35, 0.15)',
                                 },
                               }}
                             >
-                              <CardContent sx={{ p: 2, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                  <DomainIcon sx={{ fontSize: 18, color: '#6d2323', mr: 0.5 }} />
-                                  <Typography variant="caption" sx={{ 
-                                    color: textPrimaryColor, 
-                                    px: 0.5, 
-                                    py: 0.2, 
-                                    borderRadius: 0.5,
-                                    fontSize: '0.7rem',
-                                    fontWeight: 'bold'
-                                  }}>
+                              <CardContent
+                                sx={{
+                                  p: 2,
+                                  flexGrow: 1,
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                }}
+                              >
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    mb: 1,
+                                  }}
+                                >
+                                  <DomainIcon
+                                    sx={{
+                                      fontSize: 18,
+                                      color: '#6d2323',
+                                      mr: 0.5,
+                                    }}
+                                  />
+                                  <Typography
+                                    variant="caption"
+                                    sx={{
+                                      color: textPrimaryColor,
+                                      px: 0.5,
+                                      py: 0.2,
+                                      borderRadius: 0.5,
+                                      fontSize: '0.7rem',
+                                      fontWeight: 'bold',
+                                    }}
+                                  >
                                     {department.code}
                                   </Typography>
                                 </Box>
-                                
-                                <Typography variant="body2" fontWeight="bold" color="#333" mb={0.5}>
+
+                                <Typography
+                                  variant="body2"
+                                  fontWeight="bold"
+                                  color="#333"
+                                  mb={0.5}
+                                >
                                   Department
                                 </Typography>
-                                
-                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                  <PeopleIcon sx={{ fontSize: 16, color: '#666', mr: 0.5 }} />
+
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    mb: 1,
+                                  }}
+                                >
+                                  <PeopleIcon
+                                    sx={{
+                                      fontSize: 16,
+                                      color: '#666',
+                                      mr: 0.5,
+                                    }}
+                                  />
                                   <Typography variant="body2" color="#666">
                                     {department.employees.length} Employees
                                   </Typography>
                                 </Box>
-                                
+
                                 <Box sx={{ mt: 'auto' }}>
-                                  <Badge 
-                                    badgeContent={department.employees.length} 
+                                  <Badge
+                                    badgeContent={department.employees.length}
                                     color="primary"
                                     sx={{
                                       '& .MuiBadge-badge': {
                                         backgroundColor: '#6d2323',
                                         color: '#FEF9E1',
-                                      }
+                                      },
                                     }}
                                   >
-                                    <Chip 
-                                      label="View Employees" 
-                                      size="small" 
-                                      sx={{ 
-                                        bgcolor: 'rgba(109,35,35,0.1)', 
+                                    <Chip
+                                      label="View Employees"
+                                      size="small"
+                                      sx={{
+                                        bgcolor: 'rgba(109,35,35,0.1)',
                                         color: textPrimaryColor,
                                         fontWeight: 500,
                                         '&:hover': {
                                           bgcolor: alpha(accentColor, 0.2),
-                                        }
-                                      }} 
+                                        },
+                                      }}
                                     />
                                   </Badge>
                                 </Box>
@@ -1232,40 +1402,66 @@ const DepartmentAssignment = () => {
                           key={department.code}
                           onClick={() => handleOpenDepartmentModal(department)}
                           sx={{
-                            cursor: "pointer",
-                            border: "1px solid rgba(109, 35, 35, 0.1)",
+                            cursor: 'pointer',
+                            border: '1px solid rgba(109, 35, 35, 0.1)',
                             mb: 1,
-                            "&:hover": { 
-                              borderColor: "#6d2323",
-                              backgroundColor: 'rgba(254, 249, 225, 0.3)'
+                            '&:hover': {
+                              borderColor: '#6d2323',
+                              backgroundColor: 'rgba(254, 249, 225, 0.3)',
                             },
                           }}
                         >
                           <Box sx={{ p: 2 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <DomainIcon sx={{ fontSize: 20, color: '#6d2323', mr: 1.5 }} />
-                                <Typography variant="body2" fontWeight="bold" color="#333">
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                              }}
+                            >
+                              <Box
+                                sx={{ display: 'flex', alignItems: 'center' }}
+                              >
+                                <DomainIcon
+                                  sx={{
+                                    fontSize: 20,
+                                    color: '#6d2323',
+                                    mr: 1.5,
+                                  }}
+                                />
+                                <Typography
+                                  variant="body2"
+                                  fontWeight="bold"
+                                  color="#333"
+                                >
                                   {department.code}
                                 </Typography>
                               </Box>
-                              
-                              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <PeopleIcon sx={{ fontSize: 16, color: '#666', mr: 0.5 }} />
-                                <Typography variant="body2" color="#666" sx={{ mr: 1 }}>
+
+                              <Box
+                                sx={{ display: 'flex', alignItems: 'center' }}
+                              >
+                                <PeopleIcon
+                                  sx={{ fontSize: 16, color: '#666', mr: 0.5 }}
+                                />
+                                <Typography
+                                  variant="body2"
+                                  color="#666"
+                                  sx={{ mr: 1 }}
+                                >
                                   {department.employees.length}
                                 </Typography>
-                                <Chip 
-                                  label="View" 
-                                  size="small" 
-                                  sx={{ 
-                                    bgcolor: 'rgba(109,35,35,0.1)', 
+                                <Chip
+                                  label="View"
+                                  size="small"
+                                  sx={{
+                                    bgcolor: 'rgba(109,35,35,0.1)',
                                     color: textPrimaryColor,
                                     fontWeight: 500,
                                     '&:hover': {
                                       bgcolor: alpha(accentColor, 0.2),
-                                    }
-                                  }} 
+                                    },
+                                  }}
                                 />
                               </Box>
                             </Box>
@@ -1273,14 +1469,24 @@ const DepartmentAssignment = () => {
                         </Card>
                       ))
                     )}
-                    
+
                     {filteredDepartmentData.length === 0 && (
                       <Box textAlign="center" py={4}>
-                        <Typography variant="h6" color="#6d2323" fontWeight="bold" sx={{ mb: 1 }}>
+                        <Typography
+                          variant="h6"
+                          color="#6d2323"
+                          fontWeight="bold"
+                          sx={{ mb: 1 }}
+                        >
                           No Departments Found
                         </Typography>
-                        <Typography variant="body2" color="#666" sx={{ mt: 0.5 }}>
-                          Try adjusting your search criteria or department filter
+                        <Typography
+                          variant="body2"
+                          color="#666"
+                          sx={{ mt: 0.5 }}
+                        >
+                          Try adjusting your search criteria or department
+                          filter
                         </Typography>
                       </Box>
                     )}
@@ -1296,18 +1502,18 @@ const DepartmentAssignment = () => {
           open={departmentModalOpen}
           onClose={handleCloseDepartmentModal}
           sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
           <GlassCard
             sx={{
-              width: "90%",
-              maxWidth: "800px",
-              maxHeight: "90vh",
-              display: "flex",
-              flexDirection: "column",
+              width: '90%',
+              maxWidth: '800px',
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column',
               borderRadius: 2,
               boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
               overflow: 'hidden',
@@ -1321,16 +1527,16 @@ const DepartmentAssignment = () => {
                     p: 4,
                     background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
                     color: textPrimaryColor,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
                     position: 'sticky',
                     top: 0,
                     zIndex: 10,
                   }}
                 >
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <DomainIcon sx={{ fontSize: "1.8rem", mr: 2 }} />
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <DomainIcon sx={{ fontSize: '1.8rem', mr: 2 }} />
                     <Box>
                       <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
                         {selectedDepartment.code} Department
@@ -1340,79 +1546,118 @@ const DepartmentAssignment = () => {
                       </Typography>
                     </Box>
                   </Box>
-                  <IconButton onClick={handleCloseDepartmentModal} sx={{ color: '#6d2323' }}>
+                  <IconButton
+                    onClick={handleCloseDepartmentModal}
+                    sx={{ color: '#6d2323' }}
+                  >
                     <Close />
                   </IconButton>
                 </Box>
 
                 {/* Modal Content */}
-                <Box sx={{ 
-                  p: 4, 
-                  flexGrow: 1, 
-                  overflowY: 'auto',
-                  maxHeight: 'calc(90vh - 140px)', // Account for header and sticky footer
-                  '&::-webkit-scrollbar': {
-                    width: '6px',
-                  },
-                  '&::-webkit-scrollbar-track': {
-                    background: '#f1f1f1',
-                    borderRadius: '3px',
-                  },
-                  '&::-webkit-scrollbar-thumb': {
-                    background: '#6d2323',
-                    borderRadius: '3px',
-                  },
-                }}>
+                <Box
+                  sx={{
+                    p: 4,
+                    flexGrow: 1,
+                    overflowY: 'auto',
+                    maxHeight: 'calc(90vh - 140px)', // Account for header and sticky footer
+                    '&::-webkit-scrollbar': {
+                      width: '6px',
+                    },
+                    '&::-webkit-scrollbar-track': {
+                      background: '#f1f1f1',
+                      borderRadius: '3px',
+                    },
+                    '&::-webkit-scrollbar-thumb': {
+                      background: '#6d2323',
+                      borderRadius: '3px',
+                    },
+                  }}
+                >
                   {viewMode === 'grid' ? (
                     <Grid container spacing={2}>
                       {selectedDepartment.employees.map((employee) => (
                         <Grid item xs={12} sm={6} md={4} key={employee.id}>
                           <Card
                             sx={{
-                              border: "1px solid rgba(109, 35, 35, 0.1)",
-                              height: "100%",
+                              border: '1px solid rgba(109, 35, 35, 0.1)',
+                              height: '100%',
                               display: 'flex',
                               flexDirection: 'column',
-                              "&:hover": { 
-                                borderColor: "#6d2323",
+                              '&:hover': {
+                                borderColor: '#6d2323',
                                 transform: 'translateY(-2px)',
                                 transition: 'all 0.2s ease',
-                                boxShadow: '0 4px 8px rgba(109, 35, 35, 0.15)'
+                                boxShadow: '0 4px 8px rgba(109, 35, 35, 0.15)',
                               },
                             }}
                           >
-                            <CardContent sx={{ p: 2, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                <PersonIcon sx={{ fontSize: 18, color: '#6d2323', mr: 0.5 }} />
-                                <Typography variant="caption" sx={{ 
-                                  color: textPrimaryColor, 
-                                  px: 0.5, 
-                                  py: 0.2, 
-                                  borderRadius: 0.5,
-                                  fontSize: '0.7rem',
-                                  fontWeight: 'bold'
-                                }}>
+                            <CardContent
+                              sx={{
+                                p: 2,
+                                flexGrow: 1,
+                                display: 'flex',
+                                flexDirection: 'column',
+                              }}
+                            >
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  mb: 1,
+                                }}
+                              >
+                                <PersonIcon
+                                  sx={{
+                                    fontSize: 18,
+                                    color: '#6d2323',
+                                    mr: 0.5,
+                                  }}
+                                />
+                                <Typography
+                                  variant="caption"
+                                  sx={{
+                                    color: textPrimaryColor,
+                                    px: 0.5,
+                                    py: 0.2,
+                                    borderRadius: 0.5,
+                                    fontSize: '0.7rem',
+                                    fontWeight: 'bold',
+                                  }}
+                                >
                                   ID: {employee.employeeNumber}
                                 </Typography>
                               </Box>
-                              
-                              <Typography variant="body2" fontWeight="bold" color="#333" mb={0.5} noWrap>
+
+                              <Typography
+                                variant="body2"
+                                fontWeight="bold"
+                                color="#333"
+                                mb={0.5}
+                                noWrap
+                              >
                                 {employee.name || 'No Name'}
                               </Typography>
-                              
-                              <Box sx={{ mt: 'auto', display: 'flex', justifyContent: 'space-between' }}>
-                                <Chip 
-                                  label={employee.code} 
-                                  size="small" 
-                                  sx={{ 
-                                    bgcolor: 'rgba(109,35,35,0.1)', 
+
+                              <Box
+                                sx={{
+                                  mt: 'auto',
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                }}
+                              >
+                                <Chip
+                                  label={employee.code}
+                                  size="small"
+                                  sx={{
+                                    bgcolor: 'rgba(109,35,35,0.1)',
                                     color: textPrimaryColor,
                                     fontWeight: 500,
-                                  }} 
+                                  }}
                                 />
                                 <Box>
-                                  <IconButton 
-                                    size="small" 
+                                  <IconButton
+                                    size="small"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handleOpenModal(employee, true); // Direct edit mode
@@ -1421,8 +1666,8 @@ const DepartmentAssignment = () => {
                                   >
                                     <EditIcon fontSize="small" />
                                   </IconButton>
-                                  <IconButton 
-                                    size="small" 
+                                  <IconButton
+                                    size="small"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handleDelete(employee.id);
@@ -1444,31 +1689,56 @@ const DepartmentAssignment = () => {
                         <Card
                           key={employee.id}
                           sx={{
-                            border: "1px solid rgba(109, 35, 35, 0.1)",
+                            border: '1px solid rgba(109, 35, 35, 0.1)',
                             mb: 1,
-                            "&:hover": { 
-                              borderColor: "#6d2323",
-                              backgroundColor: 'rgba(254, 249, 225, 0.3)'
+                            '&:hover': {
+                              borderColor: '#6d2323',
+                              backgroundColor: 'rgba(254, 249, 225, 0.3)',
                             },
                           }}
                         >
                           <Box sx={{ p: 2 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <PersonIcon sx={{ fontSize: 20, color: '#6d2323', mr: 1.5 }} />
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                              }}
+                            >
+                              <Box
+                                sx={{ display: 'flex', alignItems: 'center' }}
+                              >
+                                <PersonIcon
+                                  sx={{
+                                    fontSize: 20,
+                                    color: '#6d2323',
+                                    mr: 1.5,
+                                  }}
+                                />
                                 <Box>
-                                  <Typography variant="body2" fontWeight="bold" color="#333">
+                                  <Typography
+                                    variant="body2"
+                                    fontWeight="bold"
+                                    color="#333"
+                                  >
                                     {employee.name || 'No Name'}
                                   </Typography>
-                                  <Typography variant="caption" color="#666" sx={{ mt: 0.2 }}>
-                                    ID: {employee.employeeNumber} • {employee.code}
+                                  <Typography
+                                    variant="caption"
+                                    color="#666"
+                                    sx={{ mt: 0.2 }}
+                                  >
+                                    ID: {employee.employeeNumber} •{' '}
+                                    {employee.code}
                                   </Typography>
                                 </Box>
                               </Box>
-                              
-                              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <IconButton 
-                                  size="small" 
+
+                              <Box
+                                sx={{ display: 'flex', alignItems: 'center' }}
+                              >
+                                <IconButton
+                                  size="small"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleOpenModal(employee, true); // Direct edit mode
@@ -1477,8 +1747,8 @@ const DepartmentAssignment = () => {
                                 >
                                   <EditIcon fontSize="small" />
                                 </IconButton>
-                                <IconButton 
-                                  size="small" 
+                                <IconButton
+                                  size="small"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleDelete(employee.id);
@@ -1494,10 +1764,15 @@ const DepartmentAssignment = () => {
                       ))}
                     </List>
                   )}
-                  
+
                   {selectedDepartment.employees.length === 0 && (
                     <Box textAlign="center" py={4}>
-                      <Typography variant="h6" color="#6d2323" fontWeight="bold" sx={{ mb: 1 }}>
+                      <Typography
+                        variant="h6"
+                        color="#6d2323"
+                        fontWeight="bold"
+                        sx={{ mb: 1 }}
+                      >
                         No Employees Found
                       </Typography>
                       <Typography variant="body2" color="#666" sx={{ mt: 0.5 }}>
@@ -1516,18 +1791,18 @@ const DepartmentAssignment = () => {
           open={modalOpen}
           onClose={handleCloseModal}
           sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
           <GlassCard
             sx={{
-              width: "90%",
-              maxWidth: "600px",
-              maxHeight: "90vh",
-              display: "flex",
-              flexDirection: "column",
+              width: '90%',
+              maxWidth: '600px',
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column',
               borderRadius: 2,
               boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
               overflow: 'hidden',
@@ -1541,78 +1816,102 @@ const DepartmentAssignment = () => {
                     p: 4,
                     background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
                     color: textPrimaryColor,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
                     position: 'sticky',
                     top: 0,
                     zIndex: 10,
                   }}
                 >
                   <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                    {isEditing ? "Edit Department Assignment" : "Assignment Details"}
+                    {isEditing
+                      ? 'Edit Department Assignment'
+                      : 'Assignment Details'}
                   </Typography>
-                  <IconButton onClick={handleCloseModal} sx={{ color: '#6d2323' }}>
+                  <IconButton
+                    onClick={handleCloseModal}
+                    sx={{ color: '#6d2323' }}
+                  >
                     <Close />
                   </IconButton>
                 </Box>
 
                 {/* Modal Content with Scroll */}
-                <Box sx={{ 
-                  p: 4, 
-                  flexGrow: 1, 
-                  overflowY: 'auto',
-                  maxHeight: 'calc(90vh - 140px)', // Account for header and sticky footer
-                  '&::-webkit-scrollbar': {
-                    width: '6px',
-                  },
-                  '&::-webkit-scrollbar-track': {
-                    background: '#f1f1f1',
-                    borderRadius: '3px',
-                  },
-                  '&::-webkit-scrollbar-thumb': {
-                    background: '#6d2323',
-                    borderRadius: '3px',
-                  },
-                }}>
+                <Box
+                  sx={{
+                    p: 4,
+                    flexGrow: 1,
+                    overflowY: 'auto',
+                    maxHeight: 'calc(90vh - 140px)', // Account for header and sticky footer
+                    '&::-webkit-scrollbar': {
+                      width: '6px',
+                    },
+                    '&::-webkit-scrollbar-track': {
+                      background: '#f1f1f1',
+                      borderRadius: '3px',
+                    },
+                    '&::-webkit-scrollbar-thumb': {
+                      background: '#6d2323',
+                      borderRadius: '3px',
+                    },
+                  }}
+                >
                   <Box sx={{ mb: 3 }}>
-                    <Typography variant="h5" sx={{ fontWeight: 600, mb: 2, color: '#6d2323', display: 'flex', alignItems: 'center' }}>
+                    <Typography
+                      variant="h5"
+                      sx={{
+                        fontWeight: 600,
+                        mb: 2,
+                        color: '#6d2323',
+                        display: 'flex',
+                        alignItems: 'center',
+                      }}
+                    >
                       <PersonIcon sx={{ mr: 2, fontSize: 24 }} />
                       Assignment Information
                     </Typography>
-                    
+
                     <Grid container spacing={2}>
                       <Grid item xs={12}>
-                        <Typography variant="body2" sx={{ fontWeight: 500, mb: 1, color: '#6d2323' }}>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 500, mb: 1, color: '#6d2323' }}
+                        >
                           Department Code
                         </Typography>
                         {isEditing ? (
                           <FormControl fullWidth>
                             <Select
                               value={editAssignment.code || ''}
-                              onChange={(e) => handleChange('code', e.target.value, true)}
+                              onChange={(e) =>
+                                handleChange('code', e.target.value, true)
+                              }
                               size="small"
                               sx={{
                                 '& .MuiOutlinedInput-root': {
                                   borderRadius: 12,
-                                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                  transition:
+                                    'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                   backgroundColor: 'rgba(255, 255, 255, 0.8)',
                                   '&:hover': {
                                     transform: 'translateY(-1px)',
-                                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                    backgroundColor:
+                                      'rgba(255, 255, 255, 0.95)',
                                   },
                                   '&.Mui-focused': {
                                     transform: 'translateY(-1px)',
-                                    boxShadow: '0 4px 20px rgba(254, 249, 225, 0.25)',
+                                    boxShadow:
+                                      '0 4px 20px rgba(254, 249, 225, 0.25)',
                                     backgroundColor: 'rgba(255, 255, 255, 1)',
                                     '& fieldset': {
                                       borderColor: '#6d2323',
-                                      borderWidth: '1.5px'
+                                      borderWidth: '1.5px',
                                     },
                                   },
                                   '& fieldset': {
                                     borderColor: '#6d2323',
-                                    borderWidth: '1.5px'
+                                    borderWidth: '1.5px',
                                   },
                                 },
                               }}
@@ -1626,14 +1925,24 @@ const DepartmentAssignment = () => {
                             </Select>
                           </FormControl>
                         ) : (
-                          <Typography variant="body2" sx={{ p: 1.5, bgcolor: 'rgba(254, 249, 225, 0.5)', borderRadius: 1 }}>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              p: 1.5,
+                              bgcolor: 'rgba(254, 249, 225, 0.5)',
+                              borderRadius: 1,
+                            }}
+                          >
                             {editAssignment.code || 'N/A'}
                           </Typography>
                         )}
                       </Grid>
 
                       <Grid item xs={12}>
-                        <Typography variant="body2" sx={{ fontWeight: 500, mb: 1, color: '#6d2323' }}>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 500, mb: 1, color: '#6d2323' }}
+                        >
                           Search Employee
                         </Typography>
                         {isEditing ? (
@@ -1657,8 +1966,16 @@ const DepartmentAssignment = () => {
                               gap: 1.5,
                             }}
                           >
-                            <PersonIcon sx={{ color: '#6d2323', fontSize: 20 }} />
-                            <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                            <PersonIcon
+                              sx={{ color: '#6d2323', fontSize: 20 }}
+                            />
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                flex: 1,
+                              }}
+                            >
                               <Typography
                                 variant="body2"
                                 sx={{
@@ -1691,11 +2008,11 @@ const DepartmentAssignment = () => {
                 {/* Sticky Action Buttons */}
                 <Box
                   sx={{
-                    backgroundColor: "#ffffff",
-                    borderTop: "1px solid #e0e0e0",
+                    backgroundColor: '#ffffff',
+                    borderTop: '1px solid #e0e0e0',
                     p: 2,
-                    display: "flex",
-                    justifyContent: "flex-end",
+                    display: 'flex',
+                    justifyContent: 'flex-end',
                     gap: 2,
                     position: 'sticky',
                     bottom: 0,
@@ -1710,12 +2027,12 @@ const DepartmentAssignment = () => {
                         variant="outlined"
                         startIcon={<DeleteIcon />}
                         sx={{
-                          color: "#d32f2f",
-                          borderColor: "#d32f2f",
-                          "&:hover": {
-                            backgroundColor: "#d32f2f",
-                            color: "#fff"
-                          }
+                          color: '#d32f2f',
+                          borderColor: '#d32f2f',
+                          '&:hover': {
+                            backgroundColor: '#d32f2f',
+                            color: '#fff',
+                          },
                         }}
                       >
                         Delete
@@ -1724,10 +2041,10 @@ const DepartmentAssignment = () => {
                         onClick={handleStartEdit}
                         variant="contained"
                         startIcon={<EditIcon />}
-                        sx={{ 
-                          backgroundColor: "#6d2323", 
-                          color: "#FEF9E1",
-                          "&:hover": { backgroundColor: "#8B3333" }
+                        sx={{
+                          backgroundColor: '#6d2323',
+                          color: '#FEF9E1',
+                          '&:hover': { backgroundColor: '#8B3333' },
                         }}
                       >
                         Edit
@@ -1740,11 +2057,11 @@ const DepartmentAssignment = () => {
                         variant="outlined"
                         startIcon={<CancelIcon />}
                         sx={{
-                          color: "#666",
-                          borderColor: "#666",
-                          "&:hover": {
-                            backgroundColor: "#f5f5f5"
-                          }
+                          color: '#666',
+                          borderColor: '#666',
+                          '&:hover': {
+                            backgroundColor: '#f5f5f5',
+                          },
                         }}
                       >
                         Cancel
@@ -1754,16 +2071,16 @@ const DepartmentAssignment = () => {
                         variant="contained"
                         startIcon={<SaveIcon />}
                         disabled={!hasChanges()}
-                        sx={{ 
-                          backgroundColor: hasChanges() ? "#6d2323" : "#ccc", 
-                          color: "#FEF9E1",
-                          "&:hover": { 
-                            backgroundColor: hasChanges() ? "#8B3333" : "#ccc"
+                        sx={{
+                          backgroundColor: hasChanges() ? '#6d2323' : '#ccc',
+                          color: '#FEF9E1',
+                          '&:hover': {
+                            backgroundColor: hasChanges() ? '#8B3333' : '#ccc',
                           },
-                          "&:disabled": {
-                            backgroundColor: "#ccc",
-                            color: "#999"
-                          }
+                          '&:disabled': {
+                            backgroundColor: '#ccc',
+                            color: '#999',
+                          },
                         }}
                       >
                         Save
@@ -1784,7 +2101,7 @@ const DepartmentAssignment = () => {
           sx={{
             '& .MuiSnackbar-root': {
               zIndex: 9999,
-            }
+            },
           }}
         >
           <Alert
