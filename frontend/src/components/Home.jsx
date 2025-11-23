@@ -47,7 +47,9 @@ import {
   Note,
   Edit,
   Delete,
-  Save
+  Save,
+  Flag,
+  ArrowForward
 } from '@mui/icons-material';
 
 const API_BASE_URL = 'http://localhost:5000';
@@ -75,6 +77,9 @@ const HAHAHA = () => {
   const [holidays, setHolidays] = useState([]);
   const [payrollData, setPayrollData] = useState(null);
   const [notifModalOpen, setNotifModalOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [announcementDetails, setAnnouncementDetails] = useState({}); // Store announcement details by notification id
  
   // New states for notes and events
   const [notes, setNotes] = useState([]);
@@ -121,6 +126,143 @@ const HAHAHA = () => {
     
     fetchNotesAndEvents();
   }, [employeeNumber]);
+
+  // Fetch notifications
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (!employeeNumber) {
+        console.log('No employeeNumber, skipping notification fetch');
+        return;
+      }
+      
+      // Ensure employeeNumber is a string
+      const empNum = String(employeeNumber).trim();
+      if (!empNum) return;
+      
+      try {
+        console.log(`Fetching notifications for employeeNumber: ${empNum}`);
+        const [notifRes, unreadRes] = await Promise.all([
+          axios.get(`${API_BASE_URL}/api/notifications/${empNum}`),
+          axios.get(`${API_BASE_URL}/api/notifications/${empNum}/unread-count`)
+        ]);
+        
+        // Filter notifications to ensure they belong to the logged-in employee
+        const filteredNotifications = Array.isArray(notifRes.data) 
+          ? notifRes.data.filter(notif => String(notif.employeeNumber).trim() === empNum)
+          : [];
+        
+        console.log(`Found ${filteredNotifications.length} notifications for employee ${empNum}`);
+        setNotifications(filteredNotifications);
+        setUnreadCount(unreadRes.data?.count || 0);
+
+        // Fetch announcement details for announcement notifications
+        const announcementNotifs = filteredNotifications.filter(n => n.notification_type === 'announcement' && n.announcement_id);
+        if (announcementNotifs.length > 0) {
+          try {
+            const annRes = await axios.get(`${API_BASE_URL}/api/announcements`);
+            const announcementList = Array.isArray(annRes.data) ? annRes.data : [];
+            const detailsMap = {};
+            announcementNotifs.forEach(notif => {
+              const announcement = announcementList.find(ann => 
+                ann.id === notif.announcement_id || ann.id === parseInt(notif.announcement_id)
+              );
+              if (announcement) {
+                detailsMap[notif.id] = announcement;
+              }
+            });
+            setAnnouncementDetails(detailsMap);
+          } catch (err) {
+            console.error('Error fetching announcement details:', err);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching notifications:', err);
+        setNotifications([]);
+        setUnreadCount(0);
+      }
+    };
+    
+    fetchNotifications();
+    // Refresh notifications every 5 seconds for near real-time updates
+    const interval = setInterval(fetchNotifications, 5000);
+    return () => clearInterval(interval);
+  }, [employeeNumber]);
+
+  const handleNotificationClick = async (notification) => {
+    // Mark as read in database
+    if (notification.read_status === 0) {
+      try {
+        const token = localStorage.getItem('token');
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        
+        // Update database
+        await axios.put(
+          `${API_BASE_URL}/api/notifications/${notification.id}/read`,
+          {},
+          { headers }
+        );
+        
+        // Update local state immediately for better UX
+        setNotifications(prev =>
+          prev.map(n => n.id === notification.id ? { ...n, read_status: 1 } : n)
+        );
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      } catch (err) {
+        console.error('Error marking notification as read:', err);
+        // Still allow navigation even if marking as read fails
+      }
+    }
+
+    // Handle based on notification type
+    if (notification.notification_type === 'payslip' || 
+        (notification.action_link && notification.action_link.includes('payslip'))) {
+      setNotifModalOpen(false);
+      navigate('/payslip');
+    } else if (notification.notification_type === 'announcement' || 
+               (notification.action_link && notification.action_link.includes('announcement'))) {
+      // Fetch the announcement details
+      try {
+        const annRes = await axios.get(`${API_BASE_URL}/api/announcements`);
+        const announcementList = Array.isArray(annRes.data) ? annRes.data : [];
+        
+        // Try to find by announcement_id first, then fallback to title matching
+        let matchingAnnouncement = null;
+        if (notification.announcement_id) {
+          matchingAnnouncement = announcementList.find(
+            ann => ann.id === notification.announcement_id || ann.id === parseInt(notification.announcement_id)
+          );
+        }
+        
+        // If not found by ID, try to get from announcementDetails state
+        if (!matchingAnnouncement && notification.announcement_id) {
+          const cachedAnnouncement = announcementDetails[notification.id];
+          if (cachedAnnouncement) {
+            matchingAnnouncement = cachedAnnouncement;
+          }
+        }
+        
+        // If still not found, get the most recent announcement
+        if (!matchingAnnouncement && announcementList.length > 0) {
+          matchingAnnouncement = announcementList[0]; // Most recent
+        }
+        
+        if (matchingAnnouncement) {
+          setNotifModalOpen(false);
+          setSelectedAnnouncement(matchingAnnouncement);
+          setOpenModal(true);
+        } else {
+          // If not found, just close notification modal
+          setNotifModalOpen(false);
+        }
+      } catch (err) {
+        console.error('Error fetching announcement:', err);
+        setNotifModalOpen(false);
+      }
+    } else if (notification.action_link) {
+      setNotifModalOpen(false);
+      navigate(notification.action_link);
+    }
+  };
 
   const getUserInfo = () => {
     const token = localStorage.getItem('token');
@@ -437,10 +579,6 @@ const HAHAHA = () => {
     { icon: <WorkHistory />, label: 'Attendance', link: '/attendance-user-state', color: COLORS.primary },
   ];
 
-  const allNotifications = [
-    ...announcements.map(a => ({ type: 'announcement', data: a, date: a.date })),
-    ...getUpcomingEvents().map(e => ({ type: 'event', data: e, date: e.date }))
-  ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
   return (
     <Box sx={{
@@ -499,7 +637,29 @@ const HAHAHA = () => {
                 </Typography>
               </Box>
               <IconButton
-                onClick={() => setNotifModalOpen(true)}
+                onClick={async () => {
+                  // Immediately fetch latest notifications when opening modal
+                  if (employeeNumber) {
+                    try {
+                      const empNum = String(employeeNumber).trim();
+                      const [notifRes, unreadRes] = await Promise.all([
+                        axios.get(`${API_BASE_URL}/api/notifications/${empNum}`),
+                        axios.get(`${API_BASE_URL}/api/notifications/${empNum}/unread-count`)
+                      ]);
+                      
+                      // Filter notifications to ensure they belong to the logged-in employee
+                      const filteredNotifications = Array.isArray(notifRes.data) 
+                        ? notifRes.data.filter(notif => String(notif.employeeNumber).trim() === empNum)
+                        : [];
+                      
+                      setNotifications(filteredNotifications);
+                      setUnreadCount(unreadRes.data?.count || 0);
+                    } catch (err) {
+                      console.error('Error fetching notifications:', err);
+                    }
+                  }
+                  setNotifModalOpen(true);
+                }}
                 sx={{
                   color: COLORS.white,
                   backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -510,7 +670,7 @@ const HAHAHA = () => {
                   transition: 'all 0.3s'
                 }}
               >
-                <Badge badgeContent={allNotifications.length} color="error">
+                <Badge badgeContent={unreadCount} color="error">
                   <NotificationsIcon />
                 </Badge>
               </IconButton>
@@ -1300,46 +1460,211 @@ const HAHAHA = () => {
             </IconButton>
           </Box>
 
-          {allNotifications.length > 0 ? (
-            allNotifications.map((notif, idx) => (
-              <Box
-                key={idx}
-                sx={{
-                  mb: 2,
-                  p: 2,
-                  backgroundColor: notif.type === 'event' ? '#e8f5e9' : COLORS.secondary,
-                  borderRadius: 2,
-                  borderLeft: `4px solid ${notif.type === 'event' ? '#4caf50' : COLORS.primary}`,
-                  cursor: 'pointer',
-                  transition: 'all 0.3s',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                  '&:hover': {
-                    transform: 'translateX(8px)',
-                    boxShadow: '0 4px 16px rgba(0,0,0,0.15)'
-                  }
-                }}
-                onClick={() => {
-                  if (notif.type === 'announcement') {
-                    setSelectedAnnouncement(notif.data);
-                    setNotifModalOpen(false);
-                    setOpenModal(true);
-                  }
-                }}
-              >
-                <Typography fontWeight={600} fontSize="0.9rem" sx={{ color: notif.type === 'event' ? '#2e7d32' : COLORS.primary, mb: 0.5 }}>
-                  {notif.type === 'event' ? '📅' : '📢'} {notif.type === 'event' ? notif.data.title : notif.data.title}
-                </Typography>
-                <Typography fontSize="0.75rem" color="textSecondary">
-                  {new Date(notif.date).toLocaleDateString()}
-                </Typography>
-                {notif.type === 'event' && (
-                  <Typography fontSize="0.8rem" sx={{ mt: 1 }}>
-                    {notif.data.description}
-                  </Typography>
-                )}
-              </Box>
-            ))
-          ) : (
+          {/* System Notifications (Payslip, Announcements, etc.) */}
+          {Array.isArray(notifications) && notifications.length > 0 && (
+            <>
+              {notifications.slice(0, 10).map((notif) => {
+                const announcement = notif.notification_type === 'announcement' 
+                  ? announcementDetails[notif.id] 
+                  : null;
+                
+                // For announcement notifications, show full image with overlaid title
+                if (notif.notification_type === 'announcement' && announcement) {
+                  return (
+                    <Box
+                      key={`notif-${notif.id}`}
+                      sx={{
+                        mb: 2,
+                        borderRadius: 2,
+                        overflow: 'hidden',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                        opacity: notif.read_status === 1 ? 0.7 : 1,
+                        position: 'relative',
+                        height: 200,
+                        '&:hover': {
+                          transform: 'translateY(-4px)',
+                          boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+                          opacity: 1
+                        }
+                      }}
+                      onClick={() => handleNotificationClick(notif)}
+                    >
+                      <Box
+                        component="img"
+                        src={announcement.image ? `${API_BASE_URL}${announcement.image}` : '/api/placeholder/400/200'}
+                        alt={announcement.title}
+                        sx={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                        }}
+                      />
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 50%, transparent 100%)',
+                          p: 2,
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                          <Flag 
+                            sx={{ 
+                              color: '#ff69b4',
+                              fontSize: 18,
+                            }} 
+                          />
+                          <Typography 
+                            fontSize="0.75rem"
+                            sx={{ 
+                              color: '#fff',
+                              fontWeight: 600,
+                              textTransform: 'uppercase',
+                              letterSpacing: 0.5
+                            }}
+                          >
+                            New Announcement
+                          </Typography>
+                        </Box>
+                        <Typography 
+                          fontWeight={700} 
+                          fontSize="1.1rem" 
+                          sx={{ 
+                            color: '#fff',
+                            mb: 0.5,
+                            lineHeight: 1.3,
+                            textShadow: '0 2px 8px rgba(0,0,0,0.5)'
+                          }}
+                        >
+                          {announcement.title}
+                        </Typography>
+                        <Typography 
+                          fontSize="0.75rem" 
+                          sx={{ 
+                            color: 'rgba(255,255,255,0.9)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.5
+                          }}
+                        >
+                          <AccessTime sx={{ fontSize: 12 }} />
+                          {notif.created_at
+                            ? new Date(notif.created_at).toLocaleDateString('en-GB', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                              })
+                            : ''}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  );
+                }
+                
+                // For other notifications (payslip, etc.), use the regular style
+                return (
+                  <Box
+                    key={`notif-${notif.id}`}
+                    sx={{
+                      mb: 2,
+                      p: 2.5,
+                      backgroundColor: notif.read_status === 0 
+                        ? (notif.notification_type === 'payslip' 
+                            ? '#e8f5e9' 
+                            : COLORS.secondary)
+                        : COLORS.lightGray,
+                      borderRadius: 2,
+                      borderLeft: `4px solid ${
+                        notif.notification_type === 'payslip' 
+                          ? '#4caf50' 
+                          : COLORS.primary
+                      }`,
+                      cursor: 'pointer',
+                      transition: 'all 0.3s',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                      opacity: notif.read_status === 1 ? 0.7 : 1,
+                      position: 'relative',
+                      '&:hover': {
+                        transform: 'translateX(8px)',
+                        boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+                        opacity: 1
+                      }
+                    }}
+                    onClick={() => handleNotificationClick(notif)}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+                      <Box
+                        sx={{
+                          width: 12,
+                          height: 12,
+                          borderRadius: "50%",
+                          background: notif.notification_type === 'payslip'
+                            ? `linear-gradient(135deg, #4caf50, #2e7d32)`
+                            : `linear-gradient(135deg, ${COLORS.primary}, ${COLORS.secondary})`,
+                          mt: 0.5,
+                          flexShrink: 0,
+                          opacity: notif.read_status === 0 ? 1 : 0.5,
+                        }}
+                      />
+                      <Box sx={{ flex: 1 }}>
+                        <Typography 
+                          fontWeight={700} 
+                          fontSize="1rem" 
+                          sx={{ 
+                            color: notif.notification_type === 'payslip' 
+                              ? '#2e7d32' 
+                              : COLORS.primary, 
+                            mb: 0.5,
+                            lineHeight: 1.4
+                          }}
+                        >
+                          {notif.notification_type === 'payslip' 
+                            ? '💰 Payslip Available' 
+                            : '📢 Notification'}
+                        </Typography>
+                        <Typography fontSize="0.85rem" color="textSecondary" sx={{ mb: 0.5 }}>
+                          {notif.description}
+                        </Typography>
+                        <Typography 
+                          fontSize="0.8rem" 
+                          color="textSecondary"
+                          sx={{ 
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.5
+                          }}
+                        >
+                          <AccessTime sx={{ fontSize: 12 }} />
+                          {notif.created_at
+                            ? new Date(notif.created_at).toLocaleDateString('en-GB', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                              })
+                            : ''}
+                        </Typography>
+                      </Box>
+                      <ArrowForward
+                        sx={{
+                          color: COLORS.primary,
+                          fontSize: 20,
+                          transition: "transform 0.3s",
+                          mt: 0.5,
+                          flexShrink: 0
+                        }}
+                      />
+                    </Box>
+                  </Box>
+                );
+              })}
+            </>
+          )}
+
+          {(!Array.isArray(notifications) || notifications.length === 0) && (
             <Box sx={{ textAlign: 'center', py: 4 }}>
               <NotificationsIcon sx={{ fontSize: 48, color: COLORS.darkGray, opacity: 0.3, mb: 2 }} />
               <Typography color="textSecondary">No notifications at the moment</Typography>

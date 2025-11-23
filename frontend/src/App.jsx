@@ -24,6 +24,7 @@ import API_BASE_URL from './apiConfig';
 
 import Login from './components/Login';
 import Register from './components/Register';
+import ResetPassword from './components/ResetPassword';
 import LoadingOverlay from './components/LoadingOverlay';
 import SuccessfulOverlay from './components/SuccessfulOverlay';
 import AccessDenied from './components/AccessDenied';
@@ -37,6 +38,8 @@ import AnnouncementForm from './components/Announcement';
 import Profile from './components/DASHBOARD/Profile';
 import BulkRegister from './components/BulkRegister';
 import Registration from './components/Registration';
+import Reports from './components/Reports';
+import EmployeeReports from './components/EmployeeReports';
 
 
 import PersonalTable from './components/DASHBOARD/PersonTable';
@@ -361,7 +364,22 @@ function App() {
             <Route path="/registration" element={<Registration />} />
             <Route path="/" element={<Login />} />
             <Route path='/forgot-password' element={<ForgotPassword />}/>
-            <Route path='/settings' element={<Settings/>}/>
+            <Route
+              path="/reset-password"
+              element={
+                <ProtectedRoute allowedRoles={['administrator', 'superadmin']}>
+                  <ResetPassword />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute allowedRoles={['staff', 'administrator', 'superadmin']}>
+                  <Settings />
+                </ProtectedRoute>
+              }
+            />
 
             <Route
               path="/home"
@@ -990,6 +1008,24 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={['administrator', 'superadmin']}>
                   <AuditLogs />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/reports"
+              element={
+                <ProtectedRoute allowedRoles={['administrator', 'superadmin']}>
+                  <Reports />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/employee-reports"
+              element={
+                <ProtectedRoute allowedRoles={['staff', 'administrator', 'superadmin']}>
+                  <EmployeeReports />
                 </ProtectedRoute>
               }
             />

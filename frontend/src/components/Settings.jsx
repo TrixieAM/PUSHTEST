@@ -16,9 +16,13 @@ import {
   Stepper,
   Step,
   StepLabel,
-  Avatar,
-  Divider,
-  Grid,
+  Switch,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Card,
+  CardContent,
+  Chip,
 } from "@mui/material";
 import {
   LockOutlined,
@@ -30,20 +34,20 @@ import {
   CheckCircleOutline,
   ErrorOutline,
   MarkEmailReadOutlined,
-  Person as PersonIcon,
-  Badge as BadgeIcon,
   Email as EmailOutlined,
   Security as SecurityOutlined,
-  Notifications as NotificationsOutlined,
-  History as HistoryOutlined,
-  PrivacyTip as PrivacyTipOutlined,
+  HelpOutline as HelpOutlineIcon,
+  Info as InfoIcon,
+  ExpandMore as ExpandMoreIcon,
+  Settings as SettingsIcon,
 } from "@mui/icons-material";
 import LoadingOverlay from "./LoadingOverlay";
-import logo from "../assets/logo.PNG";
-import bg from "../assets/EaristBG.PNG";
+import { useSystemSettings } from "../contexts/SystemSettingsContext";
 
 const Settings = () => {
+  const { settings: systemSettings } = useSystemSettings();
   const [currentStep, setCurrentStep] = useState(0);
+  const [activeTab, setActiveTab] = useState('password');
   const [formData, setFormData] = useState({
     currentPassword: "",
     verificationCode: "",
@@ -53,26 +57,30 @@ const Settings = () => {
   const [showPassword, setShowPassword] = useState({ current: false, new: false, confirm: false });
   const [loading, setLoading] = useState(false);
   const [errMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [passwordConfirmed, setPasswordConfirmed] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
-  const [person, setPerson] = useState(null);
-  const [profilePicture, setProfilePicture] = useState(null);
   const [newEmail, setNewEmail] = useState("");
   const [confirmEmail, setConfirmEmail] = useState("");
+  const [enableMFA, setEnableMFA] = useState(true);
+  const [faqs, setFaqs] = useState([]);
+  const [aboutUs, setAboutUs] = useState(null);
 
-  const steps = ["Request Code", "Verify Code", "New Password"];
-
-  const primaryGradient = "linear-gradient(135deg, #800020, #A52A2A)";
-  const primaryHoverGradient = "linear-gradient(135deg, #A52A2A, #800020)";
-  const darkText = "#4B0000";
-  const mediumText = "#800020";
+  const steps = ["Step 1: Verify Identity", "Step 2: Enter Code", "Step 3: New Password"];
 
   const employeeNumber = localStorage.getItem('employeeNumber');
 
-  // Get user email from token and fetch profile data
+  // Get colors from system settings
+  const primaryColor = systemSettings?.primaryColor || '#894444';
+  const secondaryColor = systemSettings?.secondaryColor || '#6d2323';
+  const accentColor = systemSettings?.accentColor || '#FEF9E1';
+  const textPrimaryColor = systemSettings?.textPrimaryColor || '#6D2323';
+  const backgroundColor = systemSettings?.backgroundColor || '#FFFFFF';
+
+  // Get user email from token
   useEffect(() => {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     if (!token) {
@@ -90,23 +98,46 @@ const Settings = () => {
       setTimeout(() => (window.location.href = "/"), 2000);
     }
 
-    // Fetch person data
-    const fetchPersonData = async () => {
+    // Fetch user preferences (MFA)
+    const fetchUserPreferences = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/personalinfo/person_table`);
-        const match = response.data.find(p => p.agencyEmployeeNum === employeeNumber);
-        setPerson(match);
-        if (match) {
-          setProfilePicture(match.profile_picture);
-        }
+        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+        const response = await axios.get(
+          `${API_BASE_URL}/api/user-preferences/${employeeNumber}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setEnableMFA(response.data.enable_mfa === 1 || response.data.enable_mfa === true);
       } catch (err) {
-        console.error('Error loading profile:', err);
+        console.error('Error loading user preferences:', err);
+        setEnableMFA(true);
+      }
+    };
+
+    // Fetch FAQs
+    const fetchFAQs = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/api/faqs`);
+        setFaqs(response.data);
+      } catch (err) {
+        console.error('Error loading FAQs:', err);
+      }
+    };
+
+    // Fetch About Us
+    const fetchAboutUs = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/api/about-us`);
+        setAboutUs(response.data);
+      } catch (err) {
+        console.error('Error loading About Us:', err);
       }
     };
 
     if (employeeNumber) {
-      fetchPersonData();
+      fetchUserPreferences();
     }
+    fetchFAQs();
+    fetchAboutUs();
   }, [employeeNumber]);
 
   const handleChanges = (e) => {
@@ -120,41 +151,68 @@ const Settings = () => {
   };
 
   const handleUpdateEmail = async () => {
-  if (!newEmail || !confirmEmail) {
-    setErrorMessage("Please fill in all fields.");
-    return;
-  }
-  if (newEmail !== confirmEmail) {
-    setErrorMessage("Emails do not match!");
-    return;
-  }
-
-  setLoading(true);
-  setErrorMessage("");
-
-  try {
-    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-    const res = await axios.post(
-      `${API_BASE_URL}/update-email`,
-      { email: newEmail },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    if (res.status === 200) {
-      setUserEmail(newEmail);
-      setNewEmail("");
-      setConfirmEmail("");
-      alert("Email updated successfully!");
-    } else {
-      setErrorMessage("Failed to update email.");
+    if (!newEmail || !confirmEmail) {
+      setErrorMessage("Please fill in all fields.");
+      return;
     }
-  } catch (err) {
-    console.error(err);
-    setErrorMessage("Connection error. Please try again.");
-  } finally {
-    setLoading(false);
-  }
-};
+    if (newEmail !== confirmEmail) {
+      setErrorMessage("Emails do not match!");
+      return;
+    }
+
+    setLoading(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    try {
+      const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+      const res = await axios.post(
+        `${API_BASE_URL}/update-email`,
+        { email: newEmail },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (res.status === 200) {
+        setUserEmail(newEmail);
+        setNewEmail("");
+        setConfirmEmail("");
+        setSuccessMessage("Email updated successfully!");
+        setTimeout(() => setSuccessMessage(""), 5000);
+      } else {
+        setErrorMessage("Failed to update email.");
+      }
+    } catch (err) {
+      console.error(err);
+      setErrorMessage("Connection error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggleMFA = async (event) => {
+    const newValue = event.target.checked;
+    setLoading(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    try {
+      const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+      await axios.put(
+        `${API_BASE_URL}/api/user-preferences/${employeeNumber}`,
+        { enable_mfa: newValue },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setEnableMFA(newValue);
+      setSuccessMessage(`MFA ${newValue ? 'enabled' : 'disabled'} successfully!`);
+      setTimeout(() => setSuccessMessage(""), 5000);
+    } catch (err) {
+      console.error('Error updating MFA preference:', err);
+      setErrorMessage("Failed to update MFA setting. Please try again.");
+      setEnableMFA(!newValue);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Step 1: Send verification code (with current password check)
   const handleRequestCode = async (e) => {
@@ -313,14 +371,14 @@ const Settings = () => {
       case 0:
         return (
           <Box component="form" onSubmit={handleRequestCode}>
-            <Typography sx={{ mb: 3, color: mediumText, fontSize: "14px", textAlign: "center" }}>
-              For security purposes, please enter your current password and we'll send a verification code to: <strong>{userEmail}</strong>
+            <Typography sx={{ mb: 3, color: textPrimaryColor, fontSize: "15px", textAlign: "center", lineHeight: 1.6 }}>
+              To change your password, we need to verify your identity. Enter your current password below, and we'll send a verification code to your email: <strong>{userEmail}</strong>
             </Typography>
             
             <TextField
               type={showPassword.current ? "text" : "password"}
               name="currentPassword"
-              placeholder="Current Password"
+              label="Current Password"
               value={formData.currentPassword}
               onChange={handleChanges}
               fullWidth
@@ -328,16 +386,23 @@ const Settings = () => {
                 mb: 3,
                 "& .MuiOutlinedInput-root": {
                   borderRadius: 2,
-                  background: "rgba(128,0,32,0.1)",
-                  "& fieldset": { borderColor: mediumText },
-                  "&.Mui-focused fieldset": { borderColor: mediumText },
+                  backgroundColor: accentColor,
+                  "& fieldset": { borderColor: primaryColor },
+                  "&.Mui-focused fieldset": { borderColor: primaryColor },
                 },
               }}
               required
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <LockOutlined sx={{ color: mediumText }} />
+                    <LockOutlined sx={{ color: primaryColor }} />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => togglePasswordVisibility('current')} edge="end">
+                      {showPassword.current ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
                   </InputAdornment>
                 ),
               }}
@@ -353,8 +418,9 @@ const Settings = () => {
                 py: 1.8,
                 fontSize: "1rem",
                 fontWeight: "bold",
-                background: primaryGradient,
-                "&:hover": { background: primaryHoverGradient, transform: "scale(1.05)" },
+                bgcolor: primaryColor,
+                color: accentColor,
+                "&:hover": { bgcolor: secondaryColor, transform: "scale(1.02)" },
                 transition: "transform 0.2s ease-in-out",
               }}
             >
@@ -366,26 +432,28 @@ const Settings = () => {
       case 1:
         return (
           <Box component="form" onSubmit={handleVerifyCode}>
-            <Typography sx={{ mb: 3, color: mediumText, fontSize: "14px", textAlign: "center" }}>
-              Enter the 6-digit verification code sent to <strong>{userEmail}</strong>
+            <Typography sx={{ mb: 3, color: textPrimaryColor, fontSize: "15px", textAlign: "center", lineHeight: 1.6 }}>
+              We've sent a 6-digit verification code to <strong>{userEmail}</strong>. Please check your email and enter the code below.
             </Typography>
             <TextField
               type="text"
               name="verificationCode"
-              placeholder="• • • • • •"
+              label="Verification Code"
+              placeholder="Enter 6-digit code"
               fullWidth
               value={formData.verificationCode}
               onChange={handleChanges}
               inputProps={{
                 maxLength: 6,
-                style: { textAlign: "center", fontSize: "2rem", letterSpacing: "1rem" },
+                style: { textAlign: "center", fontSize: "1.5rem", letterSpacing: "0.5rem" },
               }}
               sx={{
                 mb: 3,
                 "& .MuiOutlinedInput-root": {
                   borderRadius: 2,
-                  "& fieldset": { borderColor: mediumText },
-                  "&.Mui-focused fieldset": { borderColor: mediumText },
+                  backgroundColor: accentColor,
+                  "& fieldset": { borderColor: primaryColor },
+                  "&.Mui-focused fieldset": { borderColor: primaryColor },
                 },
               }}
               required
@@ -398,10 +466,10 @@ const Settings = () => {
                 startIcon={<ArrowBack />}
                 sx={{
                   py: 1.8,
-                  color: mediumText,
-                  borderColor: mediumText,
+                  color: primaryColor,
+                  borderColor: primaryColor,
                   fontWeight: "bold",
-                  "&:hover": { borderColor: mediumText, backgroundColor: "rgba(128,0,32,0.1)" },
+                  "&:hover": { borderColor: secondaryColor, backgroundColor: accentColor },
                 }}
               >
                 Back
@@ -415,8 +483,9 @@ const Settings = () => {
                 sx={{
                   py: 1.8,
                   fontWeight: "bold",
-                  background: primaryGradient,
-                  "&:hover": { background: primaryHoverGradient, transform: "scale(1.05)" },
+                  bgcolor: primaryColor,
+                  color: accentColor,
+                  "&:hover": { bgcolor: secondaryColor, transform: "scale(1.02)" },
                   transition: "transform 0.2s ease-in-out",
                 }}
               >
@@ -433,32 +502,38 @@ const Settings = () => {
             onSubmit={handleResetPassword}
             sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}
           >
-            <Typography sx={{ mb: 3, color: mediumText, fontSize: "14px", textAlign: "center" }}>
-              Create a new password for your account.
+            <Typography sx={{ mb: 3, color: textPrimaryColor, fontSize: "15px", textAlign: "center", lineHeight: 1.6 }}>
+              Create a strong password for your account. Make sure it's at least 6 characters long.
             </Typography>
 
             <TextField
               type={showPassword.new ? "text" : "password"}
               name="newPassword"
-              placeholder="New Password"
+              label="New Password"
               value={formData.newPassword}
               onChange={handleChanges}
               sx={{
                 mb: 2,
                 width: "100%",
-                maxWidth: 400,
                 "& .MuiOutlinedInput-root": {
                   borderRadius: 2,
-                  background: "rgba(128,0,32,0.1)",
-                  "& fieldset": { borderColor: mediumText },
-                  "&.Mui-focused fieldset": { borderColor: mediumText },
+                  backgroundColor: accentColor,
+                  "& fieldset": { borderColor: primaryColor },
+                  "&.Mui-focused fieldset": { borderColor: primaryColor },
                 },
               }}
               required
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <LockOutlined sx={{ color: mediumText }} />
+                    <LockOutlined sx={{ color: primaryColor }} />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => togglePasswordVisibility('new')} edge="end">
+                      {showPassword.new ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
                   </InputAdornment>
                 ),
               }}
@@ -467,25 +542,31 @@ const Settings = () => {
             <TextField
               type={showPassword.confirm ? "text" : "password"}
               name="confirmPassword"
-              placeholder="Confirm New Password"
+              label="Confirm New Password"
               value={formData.confirmPassword}
               onChange={handleChanges}
               sx={{
                 mb: 2,
                 width: "100%",
-                maxWidth: 400,
                 "& .MuiOutlinedInput-root": {
                   borderRadius: 2,
-                  background: "rgba(128,0,32,0.1)",
-                  "& fieldset": { borderColor: mediumText },
-                  "&.Mui-focused fieldset": { borderColor: mediumText },
+                  backgroundColor: accentColor,
+                  "& fieldset": { borderColor: primaryColor },
+                  "&.Mui-focused fieldset": { borderColor: primaryColor },
                 },
               }}
               required
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <LockOutlined sx={{ color: mediumText }} />
+                    <LockOutlined sx={{ color: primaryColor }} />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => togglePasswordVisibility('confirm')} edge="end">
+                      {showPassword.confirm ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
                   </InputAdornment>
                 ),
               }}
@@ -496,14 +577,14 @@ const Settings = () => {
                 <Checkbox
                   checked={passwordConfirmed}
                   onChange={(e) => setPasswordConfirmed(e.target.checked)}
-                  sx={{ color: mediumText, "&.Mui-checked": { color: mediumText } }}
+                  sx={{ color: primaryColor, "&.Mui-checked": { color: primaryColor } }}
                 />
               }
               label="I confirm that I want to change my password"
-              sx={{ mb: 3, textAlign: "center" }}
+              sx={{ mb: 3, textAlign: "center", width: "100%" }}
             />
 
-            <Box sx={{ display: "flex", gap: 2, width: "100%", maxWidth: 400 }}>
+            <Box sx={{ display: "flex", gap: 2, width: "100%" }}>
               <Button
                 onClick={() => setCurrentStep(1)}
                 variant="outlined"
@@ -511,10 +592,10 @@ const Settings = () => {
                 startIcon={<ArrowBack />}
                 sx={{
                   py: 1.8,
-                  color: mediumText,
-                  borderColor: mediumText,
+                  color: primaryColor,
+                  borderColor: primaryColor,
                   fontWeight: "bold",
-                  "&:hover": { borderColor: mediumText, backgroundColor: "rgba(128,0,32,0.1)" },
+                  "&:hover": { borderColor: secondaryColor, backgroundColor: accentColor },
                 }}
               >
                 Back
@@ -528,8 +609,9 @@ const Settings = () => {
                 sx={{
                   py: 1.8,
                   fontWeight: "bold",
-                  background: primaryGradient,
-                  "&:hover": { background: primaryHoverGradient, transform: "scale(1.05)" },
+                  bgcolor: primaryColor,
+                  color: accentColor,
+                  "&:hover": { bgcolor: secondaryColor, transform: "scale(1.02)" },
                   transition: "transform 0.2s ease-in-out",
                   "&:disabled": { bgcolor: "#cccccc" },
                 }}
@@ -545,379 +627,482 @@ const Settings = () => {
     }
   };
 
-  const InfoField = ({ label, value }) => (
-    <Box sx={{ mb: 2 }}>
-      <Typography variant="caption" sx={{ color: "#666", fontSize: "11px", fontWeight: 600, display: "block", mb: 0.5 }}>
-        {label}
-      </Typography>
-      <Typography variant="body2" sx={{ color: darkText, fontSize: "13px" }}>
-        {value || "..."}
-      </Typography>
-    </Box>
-  );
+  const tabs = [
+    { id: 'password', label: 'Change Password', icon: <LockOutlined size={18} /> },
+    { id: 'email', label: 'Email', icon: <EmailOutlined size={18} /> },
+    { id: 'mfa', label: 'MFA/OTP', icon: <VerifiedUserOutlined size={18} /> },
+    { id: 'about', label: 'About', icon: <InfoIcon size={18} /> },
+    { id: 'faqs', label: 'FAQs', icon: <HelpOutlineIcon size={18} /> },
+  ];
 
   return (
-    <>
-      {/* Backgrounds */}
-      <Box
-        sx={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          width: "100vw",
-          height: "100vh",
-          backgroundImage: `url(${bg})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
-          animation: "zoomPulse 20s ease-in-out infinite",
-          "@keyframes zoomPulse": { "0%, 100%": { transform: "scale(1)" }, "50%": { transform: "scale(1.05)" } },
-        }}
-      />
-      <Box
-        sx={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          width: "100vw",
-          height: "100vh",
-          backgroundColor: "rgba(0, 0, 0, 0.9)",
-          animation: "subtlePulse 8s ease-in-out infinite",
-          "@keyframes subtlePulse": { "0%, 100%": { opacity: 0.75 }, "50%": { opacity: 0.7 } },
-        }}
-      />
+    <Box
+      sx={{
+        minHeight: "100vh",
+        backgroundColor: backgroundColor,
+        py: 4,
+        px: 3,
+      }}
+    >
+      <LoadingOverlay open={loading} message="Processing..." />
+      <Container maxWidth="lg">
+        {/* Header */}
+        <Box sx={{ mb: 4 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}>
+            <SettingsIcon sx={{ fontSize: 28, color: primaryColor }} />
+            <Typography variant="h4" sx={{ margin: 0, color: textPrimaryColor, fontSize: "28px", fontWeight: 600 }}>
+              Settings
+            </Typography>
+          </Box>
+          <Typography variant="body2" sx={{ margin: "5px 0 0 0", color: textPrimaryColor, opacity: 0.7, fontSize: "14px" }}>
+            Manage your account settings and preferences
+          </Typography>
+        </Box>
 
-      {/* Main Container */}
-      <Box
-        sx={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100vw",
-          height: "100vh",
-          zIndex: 10,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          overflow: "auto",
-          py: 10,
-        }}
-      >
-        <LoadingOverlay open={loading} message="Processing..." />
-        <Container maxWidth="xl" sx={{ position: "relative" }}>
-          <Grid container spacing={3}>
-            {/* Profile Sidebar */}
-            {person && (
-              <Grid item xs={12} md={4}>
-                <Paper
-                  elevation={24}
-                  sx={{
-                    padding: 3,
-                    borderRadius: 4,
-                    background: "rgba(255,248,231,0.85)",
-                    backdropFilter: "blur(15px)",
-                    boxShadow: "0 15px 40px rgba(128,0,32,0.2)",
-                    border: "1px solid rgba(128,0,32,0.15)",
-                    maxHeight: "89vh",
-                     overflowY: "auto",
-                    "&::-webkit-scrollbar": {
-                      width: "10px",
-                    },
-                    "&::-webkit-scrollbar-track": {
-                      background: "#f1f1f1",
-                    },
-                    "&::-webkit-scrollbar-thumb": {
-                      backgroundColor: "#6d2323",
-                      borderRadius: "10px",
-                      border: "2px solid #f1f1f1",
-                    },
-                    "&::-webkit-scrollbar-thumb:hover": {
-                      backgroundColor: "#a31d1d",
-                    },
-                  }}
-                >
-                  {/* Profile Picture */}
-                  <Box sx={{ textAlign: "center", mb: 3 }}>
-                    <Avatar
-                      src={profilePicture ? `${API_BASE_URL}${profilePicture}?t=${Date.now()}` : undefined}
-                      sx={{
-                        width: 100,
-                        height: 100,
-                        margin: "0 auto",
-                        border: `3px solid ${mediumText}`,
-                        boxShadow: "0 4px 12px rgba(109, 35, 35, 0.2)",
+        {errMessage && (
+          <Alert icon={<ErrorOutline fontSize="inherit" />} sx={{ mb: 2 }} severity="error">
+            {errMessage}
+          </Alert>
+        )}
+
+        {successMessage && (
+          <Alert icon={<CheckCircleOutline fontSize="inherit" />} sx={{ mb: 2 }} severity="success">
+            {successMessage}
+          </Alert>
+        )}
+
+        {/* Tabs */}
+        <Box
+          sx={{
+            display: "flex",
+            gap: 0,
+            mb: 0,
+            borderBottom: `2px solid ${primaryColor}30`,
+            backgroundColor: backgroundColor,
+            borderRadius: "8px 8px 0 0",
+            px: 2.5,
+            overflowX: "auto",
+          }}
+        >
+          {tabs.map((tab) => (
+            <Button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              sx={{
+                padding: "16px 24px",
+                border: "none",
+                background: "transparent",
+                borderBottom: activeTab === tab.id ? `3px solid ${primaryColor}` : "3px solid transparent",
+                color: activeTab === tab.id ? primaryColor : textPrimaryColor,
+                opacity: activeTab === tab.id ? 1 : 0.7,
+                fontWeight: activeTab === tab.id ? 600 : 400,
+                cursor: "pointer",
+                fontSize: "16px",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                transition: "all 0.2s",
+                textTransform: "none",
+                borderRadius: 0,
+                minWidth: "auto",
+                "&:hover": {
+                  backgroundColor: `${primaryColor}10`,
+                  opacity: 1,
+                },
+              }}
+            >
+              {tab.icon}
+              {tab.label}
+            </Button>
+          ))}
+        </Box>
+
+        {/* Tab Content */}
+        <Paper
+          sx={{
+            backgroundColor: backgroundColor,
+            borderRadius: "0 8px 8px 8px",
+            minHeight: "500px",
+            boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+            overflow: "hidden",
+            p: 4,
+          }}
+        >
+          {/* Password Tab */}
+          {activeTab === 'password' && (
+            <Box>
+              <Typography variant="h5" sx={{ color: textPrimaryColor, fontWeight: "bold", mb: 2 }}>
+                Change Password
+              </Typography>
+              <Typography variant="body2" sx={{ color: textPrimaryColor, mb: 3, opacity: 0.8 }}>
+                Keep your account secure by regularly updating your password. Follow the steps below to change it.
+              </Typography>
+              <Stepper activeStep={currentStep} sx={{ mb: 4 }}>
+                {steps.map((label) => (
+                  <Step key={label}>
+                    <StepLabel
+                      StepIconProps={{
+                        sx: { "&.Mui-active": { color: primaryColor }, "&.Mui-completed": { color: primaryColor } },
                       }}
                     >
-                      {!profilePicture && <PersonIcon sx={{ fontSize: 50, color: mediumText }} />}
-                    </Avatar>
-                    <Typography variant="h6" sx={{ mt: 2, fontWeight: 700, color: darkText }}>
-                      {person.firstName} {person.lastName}
+                      {label}
+                    </StepLabel>
+                  </Step>
+                ))}
+              </Stepper>
+              {renderStepContent()}
+
+              {/* Verification Modal */}
+              {showVerificationModal && (
+                <Box
+                  sx={{
+                    position: "fixed",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    height: "100%",
+                    bgcolor: "rgba(0,0,0,0.5)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    zIndex: 1300,
+                  }}
+                >
+                  <Paper
+                    sx={{
+                      width: "90%",
+                      maxWidth: 500,
+                      p: 4,
+                      textAlign: "center",
+                      borderRadius: 3,
+                      backgroundColor: accentColor,
+                    }}
+                  >
+                    <MarkEmailReadOutlined sx={{ fontSize: 80, color: primaryColor, mb: 2 }} />
+                    <Typography variant="h5" sx={{ fontWeight: "bold", mb: 2, color: textPrimaryColor }}>
+                      Verification Code Sent
                     </Typography>
-                    <Typography variant="body2" sx={{ color: mediumText }}>
-                      EmployeeNum: <b>{person.agencyEmployeeNum}</b>
+                    <Typography sx={{ color: textPrimaryColor, mb: 3, lineHeight: 1.5 }}>
+                      A verification code has been sent to <strong>{userEmail}</strong>. Please check your inbox and enter the code to proceed.
                     </Typography>
-                  </Box>
-
-                  <Divider sx={{ mb: 3 }} />
-
-                  {/* Personal Information */}
-                  <Box sx={{ mb: 3 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: mediumText, mb: 2, display: "flex", alignItems: "center" }}>
-                      <PersonIcon sx={{ fontSize: 18, mr: 0.5 }} /> Personal Information
-                    </Typography>
-                    <InfoField label="Full Name" value={`${person.firstName} ${person.middleName || ''} ${person.lastName} ${person.nameExtension || ''}`.trim()} />
-                    <InfoField label="Date of Birth" value={person.birthDate} />
-                    <InfoField label="Sex" value={person.sex} />
-                    <InfoField label="Civil Status" value={person.civilStatus} />
-                    <InfoField label="Citizenship" value={person.citizenship} />
-                    <InfoField label="Blood Type" value={person.bloodType} />
-                  </Box>
-
-                  <Divider sx={{ mb: 3 }} />
-
-                  {/* Government Identification */}
-                  <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: mediumText, mb: 2, display: "flex", alignItems: "center" }}>
-                      <BadgeIcon sx={{ fontSize: 18, mr: 0.5 }} /> Government IDs
-                    </Typography>
-                    <InfoField label="GSIS Number" value={person.gsisNum} />
-                    <InfoField label="Pag-IBIG Number" value={person.pagibigNum} />
-                    <InfoField label="PhilHealth Number" value={person.philhealthNum} />
-                    <InfoField label="SSS Number" value={person.sssNum} />
-                    <InfoField label="TIN Number" value={person.tinNum} />
-                  </Box>
-                </Paper>
-              </Grid>
-            )}
-
-            {/* Change Password Form */}
-            <Grid item xs={12} md={person ? 7 : 12}>
-              <Paper
-                elevation={24}
-                sx={{
-                  padding: { xs: 3, md: 4 },
-                  width: "100%",
-                  borderRadius: 4,
-                  textAlign: "center",
-                  background: "rgba(255,248,231,0.85)",
-                  backdropFilter: "blur(15px)",
-                  boxShadow: "0 15px 40px rgba(128,0,32,0.2)",
-                  border: "1px solid rgba(128,0,32,0.15)",
-                  transition: "transform 0.6s ease, box-shadow 0.6s ease",
-                  "&:hover": { transform: "scale(1.03)", boxShadow: "0 25px 50px rgba(128,0,32,0.35)" },
-                }}
-              >
-                <Box sx={{ width: 100, height: 100, margin: "0 auto 20px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <img src={logo} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                    <Button
+                      onClick={() => setShowVerificationModal(false)}
+                      variant="contained"
+                      fullWidth
+                      sx={{
+                        py: 1.8,
+                        fontSize: "1rem",
+                        fontWeight: "bold",
+                        bgcolor: primaryColor,
+                        color: accentColor,
+                        "&:hover": { bgcolor: secondaryColor },
+                      }}
+                    >
+                      Okay
+                    </Button>
+                  </Paper>
                 </Box>
-                <Typography variant="h5" sx={{ color: darkText, fontWeight: "bold", mb: 1 }}>
-                  {currentStep === 0 && "Change Your Password"}
-                  {currentStep === 1 && "Enter Verification Code"}
-                  {currentStep === 2 && "Create New Password"}
-                </Typography>
-                <Stepper activeStep={currentStep} sx={{ mb: 3, mt: 2 }}>
-                  {steps.map((label) => (
-                    <Step key={label}>
-                      <StepLabel
-                        StepIconProps={{
-                          sx: { "&.Mui-active": { color: mediumText }, "&.Mui-completed": { color: mediumText } },
-                        }}
-                      >
-                        {label}
-                      </StepLabel>
-                    </Step>
-                  ))}
-                </Stepper>
-                {errMessage && <Alert icon={<ErrorOutline fontSize="inherit" />} sx={{ mb: 2 }} severity="error">{errMessage}</Alert>}
-                {renderStepContent()}
+              )}
 
-                {/* Verification Modal */}
-                {showVerificationModal && (
-                  <Box
+              {/* Success Modal */}
+              {showSuccessModal && (
+                <Box
+                  sx={{
+                    position: "fixed",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    height: "100%",
+                    bgcolor: "rgba(0,0,0,0.5)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    zIndex: 1300,
+                  }}
+                >
+                  <Paper
                     sx={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      width: "100%",
-                      height: "100%",
-                      bgcolor: "rgba(0,0,0,0.4)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      borderRadius: 4,
-                      zIndex: 20,
+                      width: "90%",
+                      maxWidth: 500,
+                      p: 4,
+                      textAlign: "center",
+                      borderRadius: 3,
+                      backgroundColor: accentColor,
                     }}
                   >
-                    <Box
+                    <CheckCircleOutline sx={{ fontSize: 80, color: primaryColor, mb: 2 }} />
+                    <Typography variant="h5" sx={{ fontWeight: "bold", mb: 2, color: textPrimaryColor }}>
+                      Password Changed Successfully!
+                    </Typography>
+                    <Typography sx={{ color: textPrimaryColor, mb: 3, lineHeight: 1.5 }}>
+                      Your password has been successfully updated. You will be logged out shortly for security purposes.
+                    </Typography>
+                    <Button
+                      onClick={handleSuccessClose}
+                      variant="contained"
+                      fullWidth
+                      startIcon={<LockOutlined />}
                       sx={{
-                        width: "90%",
-                        maxWidth: 500,
-                        bgcolor: "rgba(255,248,231,0.95)",
-                        borderRadius: 4,
-                        p: 4,
-                        textAlign: "center",
-                        boxShadow: "0 20px 50px rgba(128,0,32,0.3)",
-                        backdropFilter: "blur(10px)",
+                        py: 1.8,
+                        fontSize: "1rem",
+                        fontWeight: "bold",
+                        bgcolor: primaryColor,
+                        color: accentColor,
+                        "&:hover": { bgcolor: secondaryColor },
                       }}
                     >
-                      <MarkEmailReadOutlined sx={{ fontSize: 80, color: mediumText, mb: 2 }} />
-                      <Typography variant="h5" sx={{ fontWeight: "bold", mb: 2, color: darkText }}>
-                        Verification Code Sent
-                      </Typography>
-                      <Typography sx={{ color: mediumText, mb: 3, lineHeight: 1.5 }}>
-                        A verification code has been sent to <strong>{userEmail}</strong>. Please check your inbox and enter the code to proceed.
-                      </Typography>
-                      <Button
-                        onClick={() => setShowVerificationModal(false)}
-                        variant="contained"
-                        fullWidth
-                        sx={{
-                          py: 1.8,
-                          fontSize: "1rem",
-                          fontWeight: "bold",
-                          background: primaryGradient,
-                          "&:hover": { background: primaryHoverGradient, transform: "scale(1.05)" },
-                          transition: "transform 0.2s ease-in-out",
-                        }}
-                      >
-                        Okay
-                      </Button>
-                    </Box>
-                  </Box>
-                )}
+                      Continue
+                    </Button>
+                  </Paper>
+                </Box>
+              )}
+            </Box>
+          )}
 
-                {/* Success Modal */}
-                {showSuccessModal && (
-                  <Box
-                    sx={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      width: "100%",
-                      height: "100%",
-                      bgcolor: "rgba(0,0,0,0.4)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      borderRadius: 4,
-                      zIndex: 20,
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        width: "90%",
-                        maxWidth: 500,
-                        bgcolor: "rgba(255,248,231,0.95)",
-                        borderRadius: 4,
-                        p: 4,
-                        textAlign: "center",
-                        boxShadow: "0 20px 50px rgba(128,0,32,0.3)",
-                        backdropFilter: "blur(10px)",
-                      }}
-                    >A
-                      <CheckCircleOutline sx={{ fontSize: 80, color: "#6d2323", mb: 2 }} />
-                      <Typography variant="h5" sx={{ fontWeight: "bold", mb: 2, color: darkText }}>
-                        Password Changed Successfully!
-                      </Typography>
-                      <Typography sx={{ color: mediumText, mb: 3, lineHeight: 1.5 }}>
-                        Your password has been successfully updated. You will be logged out shortly for security purposes.
-                      </Typography>
-                      <Button
-                        onClick={handleSuccessClose}
-                        variant="contained"
-                        fullWidth
-                        startIcon={<LockOutlined />}
-                        sx={{
-                          py: 1.8,
-                          fontSize: "1rem",
-                          fontWeight: "bold",
-                          background: primaryGradient,
-                          "&:hover": { background: primaryHoverGradient, transform: "scale(1.05)" },
-                          transition: "transform 0.2s ease-in-out",
-                        }}
-                      >
-                        Continue
-                      </Button>
-                    </Box>
-                  </Box>
-                )}
-              </Paper>
-              {/* EMAIL SETTINGS FORM BELOW CHANGE PASSWORD */}
-              <Paper
-                elevation={24}
-                 sx={{
-                  padding: { xs: 3, md: 4 },
-                  width: "100%",
-                  mt: 4,
-                  borderRadius: 4,
-                  textAlign: "center",
-                  background: "rgba(255,248,231,0.85)",
-                  backdropFilter: "blur(15px)",
-                  boxShadow: "0 15px 40px rgba(128,0,32,0.2)",
-                  border: "1px solid rgba(128,0,32,0.15)",
-                  transition: "transform 0.6s ease, box-shadow 0.6s ease",
-                  "&:hover": { transform: "scale(1.03)", boxShadow: "0 25px 50px rgba(128,0,32,0.35)" },
+          {/* Email Tab */}
+          {activeTab === 'email' && (
+            <Box>
+              <Typography variant="h5" sx={{ color: textPrimaryColor, fontWeight: "bold", mb: 2 }}>
+                Email Settings
+              </Typography>
+              <Typography variant="body2" sx={{ color: textPrimaryColor, mb: 3, opacity: 0.8 }}>
+                Update your email address. You'll receive important notifications and verification codes at this address.
+              </Typography>
+
+              <TextField
+                fullWidth
+                label="Current Email"
+                value={userEmail}
+                disabled
+                sx={{ mb: 2 }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <EmailOutlined sx={{ color: primaryColor }} />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+
+              <TextField
+                fullWidth
+                label="New Email Address"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                placeholder="Enter your new email"
+                sx={{ mb: 2 }}
+                required
+                helperText="Enter the email address you want to use"
+              />
+
+              <TextField
+                fullWidth
+                label="Confirm New Email Address"
+                value={confirmEmail}
+                onChange={(e) => setConfirmEmail(e.target.value)}
+                placeholder="Re-enter your new email"
+                sx={{ mb: 3 }}
+                required
+                helperText="Re-enter the same email to confirm"
+              />
+
+              <Button
+                fullWidth
+                variant="contained"
+                sx={{
+                  py: 1.8,
+                  fontSize: "1rem",
+                  fontWeight: "bold",
+                  bgcolor: primaryColor,
+                  color: accentColor,
+                  "&:hover": { bgcolor: secondaryColor, transform: "scale(1.02)" },
+                  transition: "transform 0.2s ease-in-out",
+                }}
+                onClick={handleUpdateEmail}
+                disabled={loading}
+              >
+                {loading ? "Updating..." : "Update Email"}
+              </Button>
+            </Box>
+          )}
+
+          {/* MFA/OTP Tab */}
+          {activeTab === 'mfa' && (
+            <Box>
+              <Typography variant="h5" sx={{ color: textPrimaryColor, fontWeight: "bold", mb: 2 }}>
+                Multi-Factor Authentication (MFA/OTP)
+              </Typography>
+              <Typography variant="body2" sx={{ color: textPrimaryColor, mb: 3, opacity: 0.8 }}>
+                Multi-Factor Authentication adds an extra layer of security to your account. When enabled, you'll receive a verification code via email every time you log in.
+              </Typography>
+
+              <Card
+                sx={{
+                  mb: 3,
+                  backgroundColor: accentColor,
+                  border: `2px solid ${primaryColor}40`,
                 }}
               >
-                <Typography variant="h5" sx={{ fontWeight: "bold", mb: 2, color: darkText }}>
-                  Email Settings
+                <CardContent>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <Box>
+                      <Typography variant="h6" sx={{ color: textPrimaryColor, fontWeight: 600, mb: 1 }}>
+                        Enable MFA/OTP on Login
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: textPrimaryColor, opacity: 0.7 }}>
+                        {enableMFA
+                          ? "MFA is currently enabled. You'll receive a verification code when logging in."
+                          : "MFA is currently disabled. You can log in without a verification code."}
+                      </Typography>
+                    </Box>
+                    <Switch
+                      checked={enableMFA}
+                      onChange={handleToggleMFA}
+                      disabled={loading}
+                      sx={{
+                        "& .MuiSwitch-switchBase.Mui-checked": {
+                          color: primaryColor,
+                        },
+                        "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+                          backgroundColor: primaryColor,
+                        },
+                      }}
+                    />
+                  </Box>
+                </CardContent>
+              </Card>
+
+              <Box
+                sx={{
+                  p: 2,
+                  borderRadius: 2,
+                  backgroundColor: accentColor,
+                  border: `1px solid ${primaryColor}30`,
+                }}
+              >
+                <Typography variant="subtitle2" sx={{ color: textPrimaryColor, fontWeight: 600, mb: 1 }}>
+                  How it works:
                 </Typography>
+                <Typography variant="body2" sx={{ color: textPrimaryColor, opacity: 0.8 }}>
+                  • When MFA is enabled, after entering your password, you'll receive a 6-digit code via email
+                  <br />
+                  • Enter this code to complete your login
+                  <br />
+                  • The code expires after 15 minutes
+                  <br />• You can disable MFA anytime from this page
+                </Typography>
+              </Box>
+            </Box>
+          )}
 
-                <TextField
-                  fullWidth
-                  label="Current Email"
-                  value={userEmail}
-                  disabled
-                  sx={{ mb: 2 }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <EmailOutlined sx={{ color: mediumText }} />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-
-                <TextField
-                  fullWidth
-                  label="New Email"
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                  sx={{ mb: 2 }}
-                  required
-                />
-
-                <TextField
-                  fullWidth
-                  label="Confirm New Email"
-                  value={confirmEmail}
-                  onChange={(e) => setConfirmEmail(e.target.value)}
-                  sx={{ mb: 3 }}
-                  required
-                />
-
-                <Button
-                  fullWidth
-                  variant="contained"
+          {/* About Us Tab */}
+          {activeTab === 'about' && (
+            <Box>
+              <Typography variant="h5" sx={{ color: textPrimaryColor, fontWeight: "bold", mb: 2 }}>
+                About Us
+              </Typography>
+              {aboutUs ? (
+                <Box
                   sx={{
-                    py: 1.8,
-                    fontSize: "1rem",
-                    fontWeight: "bold",
-                    background: primaryGradient,
-                    "&:hover": { background: primaryHoverGradient, transform: "scale(1.05)" },
-                    transition: "transform 0.2s ease-in-out",
+                    p: 3,
+                    borderRadius: 2,
+                    backgroundColor: accentColor,
+                    border: `1px solid ${primaryColor}30`,
                   }}
-                  onClick={handleUpdateEmail}
                 >
-                  Update Email
-                </Button>
-              </Paper>
+                  <Typography variant="h4" sx={{ color: textPrimaryColor, fontWeight: 700, mb: 2 }}>
+                    {aboutUs.title}
+                  </Typography>
+                  <Box
+                    sx={{
+                      color: textPrimaryColor,
+                      "& h2": { color: textPrimaryColor, mt: 2, mb: 1 },
+                      "& h3": { color: textPrimaryColor, mt: 2, mb: 1 },
+                      "& p": { mb: 1.5, lineHeight: 1.8 },
+                      "& ul": { pl: 3, mb: 2 },
+                      "& li": { mb: 0.5 },
+                    }}
+                    dangerouslySetInnerHTML={{ __html: aboutUs.content }}
+                  />
+                  {aboutUs.version && (
+                    <Typography variant="caption" sx={{ color: textPrimaryColor, opacity: 0.6, display: "block", mt: 2 }}>
+                      Version: {aboutUs.version}
+                    </Typography>
+                  )}
+                </Box>
+              ) : (
+                <Typography variant="body2" sx={{ color: textPrimaryColor, opacity: 0.7 }}>
+                  Loading About Us content...
+                </Typography>
+              )}
+            </Box>
+          )}
 
-            </Grid>
-            
-          </Grid>
-        </Container>
-      </Box>
+          {/* FAQs Tab */}
+          {activeTab === 'faqs' && (
+            <Box>
+              <Typography variant="h5" sx={{ color: textPrimaryColor, fontWeight: "bold", mb: 2 }}>
+                Frequently Asked Questions (FAQs)
+              </Typography>
+              <Typography variant="body2" sx={{ color: textPrimaryColor, mb: 3, opacity: 0.8 }}>
+                Find answers to common questions about using the system.
+              </Typography>
+
+              {faqs.length > 0 ? (
+                <Box>
+                  {faqs.map((faq) => (
+                    <Accordion
+                      key={faq.id}
+                      sx={{
+                        mb: 2,
+                        backgroundColor: accentColor,
+                        border: `1px solid ${primaryColor}30`,
+                        "&:before": { display: "none" },
+                      }}
+                    >
+                      <AccordionSummary
+                        expandIcon={<ExpandMoreIcon sx={{ color: primaryColor }} />}
+                        sx={{
+                          "& .MuiAccordionSummary-content": {
+                            alignItems: "center",
+                          },
+                        }}
+                      >
+                        <Box sx={{ display: "flex", alignItems: "center", width: "100%" }}>
+                          <HelpOutlineIcon sx={{ color: primaryColor, mr: 2 }} />
+                          <Typography variant="h6" sx={{ color: textPrimaryColor, fontWeight: 600, flex: 1 }}>
+                            {faq.question}
+                          </Typography>
+                          {faq.category && (
+                            <Chip
+                              label={faq.category}
+                              size="small"
+                              sx={{
+                                bgcolor: `${primaryColor}20`,
+                                color: primaryColor,
+                                fontWeight: 600,
+                              }}
+                            />
+                          )}
+                        </Box>
+                      </AccordionSummary>
+                      <AccordionDetails>
+                        <Typography variant="body2" sx={{ color: textPrimaryColor, lineHeight: 1.8, pl: 5 }}>
+                          {faq.answer}
+                        </Typography>
+                      </AccordionDetails>
+                    </Accordion>
+                  ))}
+                </Box>
+              ) : (
+                <Typography variant="body2" sx={{ color: textPrimaryColor, opacity: 0.7 }}>
+                  No FAQs available at the moment.
+                </Typography>
+              )}
+            </Box>
+          )}
+        </Paper>
+      </Container>
 
       {/* Logout Animation Dialog */}
       {logoutOpen && (
@@ -937,24 +1122,6 @@ const Settings = () => {
             flexDirection: "column",
           }}
         >
-          {[0, 1, 2, 3].map((i) => (
-            <Box
-              key={i}
-              sx={{
-                width: 20,
-                height: 20,
-                borderRadius: "50%",
-                background: i % 2 === 0 ? "rgba(163,29,29,0.8)" : "rgba(255,248,225,0.8)",
-                position: "absolute",
-                top: "50%",
-                left: "50%",
-                transformOrigin: "-60px 0px",
-                animation: `orbit${i} ${3 + i}s linear infinite`,
-                boxShadow: "0 0 15px rgba(163,29,29,0.5), 0 0 8px rgba(255,248,225,0.5)",
-              }}
-            />
-          ))}
-
           <Box
             sx={{
               position: "relative",
@@ -967,8 +1134,8 @@ const Settings = () => {
                 width: 120,
                 height: 120,
                 borderRadius: "50%",
-                background: "radial-gradient(circle at 30% 30%, #A31D1D, #700000)",
-                boxShadow: "0 0 40px rgba(163,29,29,0.7), 0 0 80px rgba(163,29,29,0.5)",
+                background: `radial-gradient(circle at 30% 30%, ${primaryColor}, ${secondaryColor})`,
+                boxShadow: `0 0 40px ${primaryColor}70, 0 0 80px ${primaryColor}50`,
                 position: "absolute",
                 top: "50%",
                 left: "50%",
@@ -982,7 +1149,7 @@ const Settings = () => {
               <LockResetOutlined
                 sx={{
                   fontSize: 60,
-                  color: "#FFF8E1",
+                  color: accentColor,
                   animation: "heartbeat 1s infinite",
                 }}
               />
@@ -994,8 +1161,8 @@ const Settings = () => {
             sx={{
               mt: 3,
               fontWeight: "bold",
-              color: "#FFF8E1",
-              textShadow: "0 0 10px #A31D1D",
+              color: accentColor,
+              textShadow: `0 0 10px ${primaryColor}`,
               animation: "pulse 1.5s infinite",
             }}
           >
@@ -1018,14 +1185,10 @@ const Settings = () => {
               50% { transform: translate(-50%, -50%) translateY(-15px); }
               100% { transform: translate(-50%, -50%) translateY(0); }
             }
-            @keyframes orbit0 { 0% { transform: rotate(0deg) translateX(60px); } 100% { transform: rotate(360deg) translateX(60px); } }
-            @keyframes orbit1 { 0% { transform: rotate(90deg) translateX(60px); } 100% { transform: rotate(450deg) translateX(60px); } }
-            @keyframes orbit2 { 0% { transform: rotate(180deg) translateX(60px); } 100% { transform: rotate(540deg) translateX(60px); } }
-            @keyframes orbit3 { 0% { transform: rotate(270deg) translateX(60px); } 100% { transform: rotate(630deg) translateX(60px); } }
           `}</style>
         </Box>
       )}
-    </>
+    </Box>
   );
 };
 

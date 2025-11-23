@@ -804,6 +804,65 @@ router.get('/users', authenticateToken, async (req, res) => {
   }
 });
 
+// GET: Search users for password reset (with filtering)
+// NOTE: This route must come BEFORE /users/:employeeNumber to avoid route conflicts
+router.get('/users/search', authenticateToken, (req, res) => {
+  const { q } = req.query; // Search query parameter
+
+  try {
+    let query = `
+      SELECT 
+        u.employeeNumber,
+        u.email,
+        u.role,
+        p.firstName,
+        p.middleName,
+        p.lastName,
+        p.nameExtension,
+        CONCAT_WS(' ', p.firstName, p.middleName, p.lastName, p.nameExtension) as fullName
+      FROM users u
+      LEFT JOIN person_table p ON u.employeeNumber = p.agencyEmployeeNum
+      WHERE 1=1
+    `;
+
+    let queryParams = [];
+
+    // If search query is provided, filter by name, email, or employee number
+    if (q && q.trim() !== '') {
+      query += ` AND (
+        CONCAT_WS(' ', p.firstName, p.middleName, p.lastName, p.nameExtension) LIKE ?
+        OR p.firstName LIKE ?
+        OR p.lastName LIKE ?
+        OR u.employeeNumber LIKE ?
+        OR u.email LIKE ?
+      )`;
+      const searchTerm = `%${q.trim()}%`;
+      queryParams = [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm];
+    }
+
+    query += ` ORDER BY p.lastName, p.firstName ASC LIMIT 100`;
+
+    db.query(query, queryParams, (err, results) => {
+      if (err) {
+        console.error('Error searching users:', err);
+        return res.status(500).json({ error: 'Failed to search users' });
+      }
+
+      // Log audit
+      try {
+        logAudit(req.user, 'Search', 'users', null, null);
+      } catch (e) {
+        console.error('Audit log error:', e);
+      }
+
+      res.status(200).json(results);
+    });
+  } catch (err) {
+    console.error('Error during user search:', err);
+    res.status(500).json({ error: 'Failed to search users' });
+  }
+});
+
 // GET SINGLE USER WITH PAGE ACCESS
 router.get('/users/:employeeNumber', authenticateToken, async (req, res) => {
   const { employeeNumber } = req.params;
@@ -942,6 +1001,191 @@ router.put('/users/:employeeNumber/role', authenticateToken, (req, res) => {
       });
     });
   });
+});
+
+// POST: Reset password to surname and send email notification
+router.post('/users/reset-password', authenticateToken, async (req, res) => {
+  const { employeeNumber } = req.body;
+
+  if (!employeeNumber) {
+    return res.status(400).json({ error: 'Employee number is required' });
+  }
+
+  try {
+    // First, get user info and surname
+    const userQuery = `
+      SELECT 
+        u.employeeNumber,
+        u.email,
+        u.username,
+        p.firstName,
+        p.middleName,
+        p.lastName,
+        p.nameExtension,
+        CONCAT_WS(' ', p.firstName, p.middleName, p.lastName, p.nameExtension) as fullName
+      FROM users u
+      LEFT JOIN person_table p ON u.employeeNumber = p.agencyEmployeeNum
+      WHERE u.employeeNumber = ?
+    `;
+
+    db.query(userQuery, [employeeNumber], async (err, results) => {
+      if (err) {
+        console.error('Error fetching user:', err);
+        return res.status(500).json({ error: 'Failed to fetch user' });
+      }
+
+      if (results.length === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const user = results[0];
+      const surname = user.lastName;
+
+      if (!surname) {
+        return res.status(400).json({ error: 'User does not have a surname (lastName) in the system' });
+      }
+
+      if (!user.email) {
+        return res.status(400).json({ error: 'User does not have an email address' });
+      }
+
+      // Convert surname to ALL CAPS for the password
+      const surnameUpperCase = surname.toUpperCase();
+
+      // Hash the surname (in uppercase) as the new password
+      const hashedPassword = await bcrypt.hash(surnameUpperCase, 10);
+
+      // Update password in database
+      const updateQuery = 'UPDATE users SET password = ? WHERE employeeNumber = ?';
+      db.query(updateQuery, [hashedPassword, employeeNumber], async (updateErr) => {
+        if (updateErr) {
+          console.error('Error updating password:', updateErr);
+          return res.status(500).json({ error: 'Failed to update password' });
+        }
+
+        // Send email notification
+        try {
+          const mailOptions = {
+            from: `"HRIS System" <${process.env.GMAIL_USER}>`,
+            to: user.email,
+            subject: 'Password Reset Notification - HRIS System',
+            html: `
+              <!DOCTYPE html>
+              <html lang="en">
+              <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Password Reset Notification</title>
+                <style>
+                  * { margin: 0; padding: 0; box-sizing: border-box; }
+                  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f4; color: #333333; line-height: 1.6; }
+                  .email-wrapper { width: 100%; background-color: #f4f4f4; padding: 30px 15px; }
+                  .email-container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }
+                  .email-header { background: linear-gradient(135deg, #A31D1D 0%, #8a4747 100%); padding: 30px; text-align: center; }
+                  .email-header h1 { color: #ffffff; font-size: 24px; font-weight: 600; margin: 0; }
+                  .email-body { padding: 35px 30px; }
+                  .greeting { font-size: 15px; color: #333333; margin-bottom: 15px; }
+                  .greeting strong { color: #A31D1D; }
+                  .intro-text { font-size: 14px; color: #555555; margin-bottom: 25px; line-height: 1.7; }
+                  .credentials-box { background: #fafafa; border: 2px solid #f5e6e6; border-radius: 6px; padding: 25px; margin: 25px 0; }
+                  .credential-row { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #eeeeee; }
+                  .credential-row:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+                  .credential-label { font-size: 12px; color: #A31D1D; font-weight: 600; text-transform: uppercase; margin-bottom: 5px; letter-spacing: 0.5px; }
+                  .credential-value { font-size: 15px; color: #2c3e50; font-weight: 500; }
+                  .credential-value.highlight { background: #fff8e1; padding: 10px 15px; border-radius: 4px; font-family: 'Courier New', Courier, monospace; font-size: 16px; letter-spacing: 1px; color: #856404; border: 2px solid #ffc107; display: inline-block; margin-top: 5px; font-weight: 700; }
+                  .credential-value.empnum { font-family: 'Courier New', Courier, monospace; font-size: 16px; color: #A31D1D; font-weight: 700; }
+                  .note-box { background: #fff8e1; border-left: 4px solid #A31D1D; padding: 15px 20px; margin: 25px 0; border-radius: 4px; }
+                  .note-box p { font-size: 13px; color: #555555; margin: 0; line-height: 1.6; }
+                  .note-box strong { color: #A31D1D; }
+                  .action-section { text-align: center; margin: 30px 0 25px; }
+                  .action-button { display: inline-block; background: linear-gradient(135deg, #A31D1D 0%, #8a4747 100%); color: #ffffff !important; padding: 14px 40px; text-decoration: none; border-radius: 5px; font-weight: 600; font-size: 15px; box-shadow: 0 4px 12px rgba(163, 29, 29, 0.25); transition: all 0.3s ease; }
+                  .action-button:hover { background: linear-gradient(135deg, #8a1a1a 0%, #6d2323 100%); transform: translateY(-2px); }
+                  .support-text { font-size: 13px; color: #777777; text-align: center; margin-top: 25px; padding-top: 20px; border-top: 1px solid #eeeeee; }
+                  .email-footer { background: linear-gradient(135deg, #A31D1D 0%, #8a4747 100%); padding: 25px; text-align: center; }
+                  .footer-text { font-size: 12px; color: #f5e6e6; margin: 5px 0; }
+                  @media only screen and (max-width: 600px) { .email-wrapper { padding: 20px 10px; } .email-body { padding: 25px 20px; } .email-header h1 { font-size: 22px; } .credentials-box { padding: 20px; } }
+                </style>
+              </head>
+              <body>
+                <div class="email-wrapper">
+                  <div class="email-container">
+                    <div class="email-header">
+                      <h1>Password Reset Notification</h1>
+                    </div>
+                    <div class="email-body">
+                      <p class="greeting">Hello <strong>${user.fullName || user.username}</strong>,</p>
+                      <p class="intro-text">
+                        Your password has been reset by an administrator. Your account password has been set to your surname (last name).
+                      </p>
+                      <div class="credentials-box">
+                        <div class="credential-row">
+                          <div class="credential-label">Employee Number</div>
+                          <div class="credential-value empnum">${user.employeeNumber}</div>
+                        </div>
+                        <div class="credential-row">
+                          <div class="credential-label">New Password</div>
+                          <div class="credential-value highlight">${surnameUpperCase}</div>
+                        </div>
+                      </div>
+                      <div class="note-box">
+                        <p>
+                          <strong>Important:</strong> For security reasons, please change your password after logging in. 
+                          This is a temporary password set to your surname.
+                        </p>
+                      </div>
+                      <div class="action-section">
+                        <a href="${process.env.FRONTEND_URL || 'http://localhost:5137'}" class="action-button">Login to HRIS</a>
+                      </div>
+                      <p class="support-text">
+                        If you did not request this password reset, please contact your system administrator immediately.
+                      </p>
+                    </div>
+                    <div class="email-footer">
+                      <p class="footer-text">This is an automated message from the HRIS System.</p>
+                      <p class="footer-text">Please do not reply to this email.</p>
+                    </div>
+                  </div>
+                </div>
+              </body>
+              </html>
+            `,
+          };
+
+          await transporter.sendMail(mailOptions);
+
+          // Log audit
+          try {
+            logAudit(
+              req.user,
+              'Update',
+              'users',
+              employeeNumber,
+              employeeNumber
+            );
+          } catch (e) {
+            console.error('Audit log error:', e);
+          }
+
+          res.status(200).json({
+            message: 'Password reset successfully and email notification sent',
+            employeeNumber: user.employeeNumber,
+            email: user.email,
+          });
+        } catch (emailErr) {
+          console.error('Error sending email:', emailErr);
+          // Password was updated but email failed - still return success but with warning
+          res.status(200).json({
+            message: 'Password reset successfully but email notification failed',
+            employeeNumber: user.employeeNumber,
+            warning: 'Email could not be sent. Please notify the user manually.',
+          });
+        }
+      });
+    });
+  } catch (err) {
+    console.error('Error during password reset:', err);
+    res.status(500).json({ error: 'Failed to reset password' });
+  }
 });
 
 module.exports = router;

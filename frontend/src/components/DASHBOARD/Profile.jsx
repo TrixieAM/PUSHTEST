@@ -90,23 +90,25 @@ import LightbulbIcon from '@mui/icons-material/Lightbulb';
 import InfoIcon from '@mui/icons-material/Info';
 import ConstructionIcon from '@mui/icons-material/Construction';
 
-// HR Professional Color Palette
+// HR Professional Color Palette - Enhanced for readability
 const colors = {
   primary: '#6d2323',
   primaryLight: '#8a2e2e',
   primaryDark: '#4a1818',
   secondary: '#f5f5dc',
-  textPrimary: '#000000',
-  textSecondary: '#555555',
+  textPrimary: '#1a1a1a',
+  textSecondary: '#666666',
   textLight: '#ffffff',
-  background: '#fafafa',
+  background: '#f8f9fa',
   surface: '#ffffff',
-  border: '#e0e0e0',
+  border: '#d0d0d0',
   success: '#4caf50',
   warning: '#ff9800',
   error: '#f44336',
   info: '#2196f3',
   gradientPrimary: 'linear-gradient(135deg, #6d2323 0%, #8a2e2e 100%)',
+  sectionBg: '#ffffff',
+  sectionBorder: '#e8e8e8',
 };
 
 const shadows = {
@@ -117,50 +119,27 @@ const shadows = {
 };
 
 const ProfileContainer = styled(Container)(({ theme }) => ({
-  maxWidth: '1400px',
-  paddingTop: theme.spacing(4),
-  paddingBottom: theme.spacing(8),
+  maxWidth: '1200px',
+  paddingTop: theme.spacing(3),
+  paddingBottom: theme.spacing(6),
   minHeight: '100vh',
   backgroundColor: colors.background,
-  position: 'relative',
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: '300px',
-    background: colors.gradientPrimary,
-    zIndex: 0,
-    borderBottomLeftRadius: '50% 20%',
-    borderBottomRightRadius: '50% 20%',
-  },
+  fontFamily: '"Roboto", "Arial", sans-serif',
 }));
 
 const ProfileHeader = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(5),
-  marginBottom: theme.spacing(4),
-  borderRadius: theme.spacing(3),
-  boxShadow: shadows.medium,
+  padding: theme.spacing(4),
+  marginBottom: theme.spacing(3),
+  borderRadius: theme.spacing(2),
+  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
   display: 'flex',
   alignItems: 'center',
-  position: 'relative',
-  overflow: 'hidden',
   background: colors.surface,
-  zIndex: 1,
+  border: `2px solid ${colors.primary}`,
   [theme.breakpoints.down('md')]: {
     flexDirection: 'column',
     textAlign: 'center',
-    padding: theme.spacing(4),
-  },
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: '8px',
-    background: colors.gradientPrimary,
+    padding: theme.spacing(3),
   },
 }));
 
@@ -218,80 +197,51 @@ const ProfileActions = styled(Box)(({ theme }) => ({
 }));
 
 const SectionPaper = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(4),
-  marginBottom: theme.spacing(4),
-  borderRadius: theme.spacing(3),
-  boxShadow: shadows.light,
-  transition: 'box-shadow 0.3s ease, transform 0.3s ease',
-  position: 'relative',
-  overflow: 'hidden',
-  '&:hover': {
-    boxShadow: shadows.medium,
-    transform: 'translateY(-4px)',
-  },
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '6px',
-    height: '100%',
-    background: colors.gradientPrimary,
-    opacity: 0,
-    transition: 'opacity 0.3s ease',
-  },
-  '&:hover::before': {
-    opacity: 1,
-  },
+  padding: theme.spacing(3),
+  marginBottom: theme.spacing(3),
+  borderRadius: theme.spacing(1.5),
+  boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+  background: colors.surface,
+  border: `1px solid ${colors.sectionBorder}`,
 }));
 
 const SectionTitle = styled(Typography)(({ theme }) => ({
-  fontWeight: 700,
-  fontSize: '1.5rem',
-  color: colors.textPrimary,
-  marginBottom: theme.spacing(3),
-  display: 'flex',
-  alignItems: 'center',
-  gap: theme.spacing(1.5),
-  position: 'relative',
-  '&::after': {
-    content: '""',
-    position: 'absolute',
-    bottom: -theme.spacing(1),
-    left: 0,
-    width: '60px',
-    height: '3px',
-    background: colors.gradientPrimary,
-    borderRadius: theme.spacing(1),
-  },
-}));
-
-const InfoItem = styled(Box)(({ theme }) => ({
-  display: 'flex',
-  marginBottom: theme.spacing(2.5),
-  alignItems: 'flex-start',
-  padding: theme.spacing(1.5),
-  borderRadius: theme.spacing(2),
-  transition: 'background-color 0.2s ease',
-  '&:hover': {
-    backgroundColor: alpha(colors.primary, 0.05),
-  },
-}));
-
-const InfoLabel = styled(Typography)(({ theme }) => ({
   fontWeight: 600,
-  color: colors.textSecondary,
-  minWidth: '160px',
-  marginRight: theme.spacing(2),
+  fontSize: '1.4rem',
+  color: colors.primary,
+  marginBottom: theme.spacing(2),
+  paddingBottom: theme.spacing(1),
+  borderBottom: `3px solid ${colors.primary}`,
   display: 'flex',
   alignItems: 'center',
   gap: theme.spacing(1),
 }));
 
+const InfoItem = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  marginBottom: theme.spacing(2),
+  alignItems: 'flex-start',
+  padding: theme.spacing(2),
+  borderRadius: theme.spacing(1),
+  backgroundColor: '#fafafa',
+  border: `1px solid ${colors.border}`,
+}));
+
+const InfoLabel = styled(Typography)(({ theme }) => ({
+  fontWeight: 600,
+  color: colors.textPrimary,
+  minWidth: '200px',
+  marginRight: theme.spacing(3),
+  display: 'flex',
+  alignItems: 'center',
+  gap: theme.spacing(1),
+  fontSize: '1rem',
+}));
+
 const InfoValue = styled(Typography)(({ theme }) => ({
   color: colors.textPrimary,
   flex: 1,
-  fontWeight: 500,
+  fontWeight: 400,
   fontSize: '1rem',
 }));
 
@@ -399,10 +349,15 @@ const ModalBody = styled(Box)(({ theme }) => ({
 const FormField = styled(TextField)(({ theme }) => ({
   marginBottom: theme.spacing(2.5),
   '& .MuiOutlinedInput-root': {
-    borderRadius: theme.spacing(2),
-    transition: 'all 0.3s ease',
+    borderRadius: theme.spacing(1.5),
+    fontSize: '1rem',
+    '& input': {
+      fontSize: '1rem',
+      padding: '14px 16px',
+    },
     '& fieldset': {
       borderColor: colors.border,
+      borderWidth: '2px',
     },
     '&:hover fieldset': {
       borderColor: colors.primaryLight,
@@ -414,6 +369,7 @@ const FormField = styled(TextField)(({ theme }) => ({
   },
   '& .MuiInputLabel-root': {
     fontWeight: 500,
+    fontSize: '1rem',
     '&.Mui-focused': {
       color: colors.primary,
     },
@@ -3222,47 +3178,45 @@ const Profile = () => {
     if (tabIndex === 6) {
       return (
         <Box>
-          <ScrollableContainer>
-            {children.length > 0 ? (
-              <List>
-                {children.map((child) => (
-                  <React.Fragment key={child.id}>
-                    <ChildListItem>
-                      <MuiListItemIcon>
-                        <ChildCareIcon sx={{ color: colors.primary }} />
-                      </MuiListItemIcon>
-                      <MuiListItemText
-                        primary={`${child.childrenFirstName} ${
-                          child.childrenMiddleName
-                        } ${child.childrenLastName}${
-                          child.childrenNameExtension
-                            ? ` ${child.childrenNameExtension}`
-                            : ''
-                        }`}
-                        secondary={
-                          child.dateOfBirth
-                            ? `Born: ${new Date(
-                                child.dateOfBirth
-                              ).toLocaleDateString()} (Age: {getAge(child.dateOfBirth)})`
-                            : 'No birth date recorded'
-                        }
-                      />
-                    </ChildListItem>
-                    <Divider variant="inset" component="li" />
-                  </React.Fragment>
-                ))}
-              </List>
-            ) : (
-              <Box textAlign="center" py={4}>
-                <Typography variant="h6" color={colors.textSecondary}>
-                  No children records found
-                </Typography>
-                <Typography variant="body2" color={colors.textSecondary} mt={1}>
-                  Click "Edit Profile" to add children records
-                </Typography>
-              </Box>
-            )}
-          </ScrollableContainer>
+          {children.length > 0 ? (
+            <Box>
+              {children.map((child) => (
+                <Box
+                  key={child.id}
+                  sx={{
+                    p: 2.5,
+                    mb: 2,
+                    border: `2px solid ${colors.border}`,
+                    borderRadius: 2,
+                    backgroundColor: '#fafafa',
+                  }}
+                >
+                  <Box display="flex" alignItems="center" gap={2} mb={1}>
+                    <ChildCareIcon sx={{ color: colors.primary, fontSize: 28 }} />
+                    <Typography variant="h6" sx={{ fontSize: '1.2rem', fontWeight: 600, color: colors.primary }}>
+                      {child.childrenFirstName} {child.childrenMiddleName} {child.childrenLastName}
+                      {child.childrenNameExtension ? ` ${child.childrenNameExtension}` : ''}
+                    </Typography>
+                  </Box>
+                  {child.dateOfBirth && (
+                    <Typography variant="body1" sx={{ fontSize: '1rem', color: colors.textSecondary, ml: 5 }}>
+                      <strong>Date of Birth:</strong> {new Date(child.dateOfBirth).toLocaleDateString()} 
+                      {' '}(Age: {getAge(child.dateOfBirth)})
+                    </Typography>
+                  )}
+                </Box>
+              ))}
+            </Box>
+          ) : (
+            <Box textAlign="center" py={4}>
+              <Typography variant="h6" color={colors.textSecondary} sx={{ fontSize: '1.1rem' }}>
+                No children records found
+              </Typography>
+              <Typography variant="body1" color={colors.textSecondary} mt={1} sx={{ fontSize: '1rem' }}>
+                Click "Edit Profile" to add children records
+              </Typography>
+            </Box>
+          )}
         </Box>
       );
     }
@@ -3271,56 +3225,53 @@ const Profile = () => {
     if (tabIndex === 7) {
       return (
         <Box>
-          <ScrollableContainer>
-            {eligibilities.length > 0 ? (
-              <List>
-                {eligibilities.map((eligibility) => (
-                  <React.Fragment key={eligibility.id}>
-                    <EligibilityListItem>
-                      <MuiListItemIcon>
-                        <FactCheckIcon sx={{ color: colors.primary }} />
-                      </MuiListItemIcon>
-                      <MuiListItemText
-                        primary={eligibility.eligibilityName}
-                        secondary={
-                          <>
-                            Rating:{' '}
-                            {formatRating(eligibility.eligibilityRating)}
-                            {eligibility.licenseNumber && (
-                              <Typography component="span" sx={{ ml: 1 }}>
-                                License: {eligibility.licenseNumber}
-                              </Typography>
-                            )}
-                            {eligibility.DateOfValidity && (
-                              <Typography
-                                component="span"
-                                sx={{ ml: 1, display: 'block' }}
-                              >
-                                Valid Until:{' '}
-                                {new Date(
-                                  eligibility.DateOfValidity
-                                ).toLocaleDateString()}
-                              </Typography>
-                            )}
-                          </>
-                        }
-                      />
-                    </EligibilityListItem>
-                    <Divider variant="inset" component="li" />
-                  </React.Fragment>
-                ))}
-              </List>
-            ) : (
-              <Box textAlign="center" py={4}>
-                <Typography variant="h6" color={colors.textSecondary}>
-                  No eligibility records found
-                </Typography>
-                <Typography variant="body2" color={colors.textSecondary} mt={1}>
-                  Click "Edit Profile" to add eligibility records
-                </Typography>
-              </Box>
-            )}
-          </ScrollableContainer>
+          {eligibilities.length > 0 ? (
+            <Box>
+              {eligibilities.map((eligibility) => (
+                <Box
+                  key={eligibility.id}
+                  sx={{
+                    p: 2.5,
+                    mb: 2,
+                    border: `2px solid ${colors.border}`,
+                    borderRadius: 2,
+                    backgroundColor: '#fafafa',
+                  }}
+                >
+                  <Box display="flex" alignItems="center" gap={2} mb={1.5}>
+                    <FactCheckIcon sx={{ color: colors.primary, fontSize: 28 }} />
+                    <Typography variant="h6" sx={{ fontSize: '1.2rem', fontWeight: 600, color: colors.primary }}>
+                      {eligibility.eligibilityName}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ ml: 5 }}>
+                    <Typography variant="body1" sx={{ fontSize: '1rem', mb: 0.5 }}>
+                      <strong>Rating:</strong> {formatRating(eligibility.eligibilityRating)}
+                    </Typography>
+                    {eligibility.licenseNumber && (
+                      <Typography variant="body1" sx={{ fontSize: '1rem', mb: 0.5 }}>
+                        <strong>License Number:</strong> {eligibility.licenseNumber}
+                      </Typography>
+                    )}
+                    {eligibility.DateOfValidity && (
+                      <Typography variant="body1" sx={{ fontSize: '1rem' }}>
+                        <strong>Valid Until:</strong> {new Date(eligibility.DateOfValidity).toLocaleDateString()}
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          ) : (
+            <Box textAlign="center" py={4}>
+              <Typography variant="h6" color={colors.textSecondary} sx={{ fontSize: '1.1rem' }}>
+                No eligibility records found
+              </Typography>
+              <Typography variant="body1" color={colors.textSecondary} mt={1} sx={{ fontSize: '1rem' }}>
+                Click "Edit Profile" to add eligibility records
+              </Typography>
+            </Box>
+          )}
         </Box>
       );
     }
@@ -3330,80 +3281,58 @@ const Profile = () => {
     if (tabIndex === 8) {
       return (
         <Box>
-          <ScrollableContainer>
-            {workExperiences.length > 0 ? (
-              <List>
-                {workExperiences.map((workExp) => (
-                  <React.Fragment key={workExp.id}>
-                    <WorkExperienceListItem>
-                      <MuiListItemIcon>
-                        <WorkIcon sx={{ color: colors.primary }} />
-                      </MuiListItemIcon>
-                      <MuiListItemText
-                        primary={workExp.workPositionTitle || 'N/A'}
-                        secondary={
-                          <>
-                            <Typography
-                              component="span"
-                              sx={{ display: 'block' }}
-                            >
-                              {workExp.workCompany || 'N/A'}
-                            </Typography>
-                            {workExp.workDateFrom && workExp.workDateTo && (
-                              <Typography
-                                component="span"
-                                sx={{ display: 'block' }}
-                              >
-                                {new Date(
-                                  workExp.workDateFrom
-                                ).toLocaleDateString()}{' '}
-                                -{' '}
-                                {new Date(
-                                  workExp.workDateTo
-                                ).toLocaleDateString()}
-                              </Typography>
-                            )}
-                            {workExp.workMonthlySalary && (
-                              <Typography
-                                component="span"
-                                sx={{ display: 'block' }}
-                              >
-                                Salary: ₱
-                                {parseFloat(
-                                  workExp.workMonthlySalary
-                                ).toLocaleString()}
-                              </Typography>
-                            )}
-                            {workExp.isGovtService && (
-                              <Typography
-                                component="span"
-                                sx={{ display: 'block' }}
-                              >
-                                Service Type:{' '}
-                                {workExp.isGovtService === 'Yes'
-                                  ? 'Government'
-                                  : 'Private'}
-                              </Typography>
-                            )}
-                          </>
-                        }
-                      />
-                    </WorkExperienceListItem>
-                    <Divider variant="inset" component="li" />
-                  </React.Fragment>
-                ))}
-              </List>
-            ) : (
-              <Box textAlign="center" py={4}>
-                <Typography variant="h6" color={colors.textSecondary}>
-                  No work experience records found
-                </Typography>
-                <Typography variant="body2" color={colors.textSecondary} mt={1}>
-                  Click "Edit Profile" to add work experience records
-                </Typography>
-              </Box>
-            )}
-          </ScrollableContainer>
+          {workExperiences.length > 0 ? (
+            <Box>
+              {workExperiences.map((workExp) => (
+                <Box
+                  key={workExp.id}
+                  sx={{
+                    p: 2.5,
+                    mb: 2,
+                    border: `2px solid ${colors.border}`,
+                    borderRadius: 2,
+                    backgroundColor: '#fafafa',
+                  }}
+                >
+                  <Box display="flex" alignItems="center" gap={2} mb={1.5}>
+                    <WorkIcon sx={{ color: colors.primary, fontSize: 28 }} />
+                    <Typography variant="h6" sx={{ fontSize: '1.2rem', fontWeight: 600, color: colors.primary }}>
+                      {workExp.workPositionTitle || 'N/A'}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ ml: 5 }}>
+                    <Typography variant="body1" sx={{ fontSize: '1rem', mb: 0.5 }}>
+                      <strong>Company:</strong> {workExp.workCompany || 'N/A'}
+                    </Typography>
+                    {workExp.workDateFrom && workExp.workDateTo && (
+                      <Typography variant="body1" sx={{ fontSize: '1rem', mb: 0.5 }}>
+                        <strong>Period:</strong> {new Date(workExp.workDateFrom).toLocaleDateString()} - {new Date(workExp.workDateTo).toLocaleDateString()}
+                      </Typography>
+                    )}
+                    {workExp.workMonthlySalary && (
+                      <Typography variant="body1" sx={{ fontSize: '1rem', mb: 0.5 }}>
+                        <strong>Monthly Salary:</strong> ₱{parseFloat(workExp.workMonthlySalary).toLocaleString()}
+                      </Typography>
+                    )}
+                    {workExp.isGovtService && (
+                      <Typography variant="body1" sx={{ fontSize: '1rem' }}>
+                        <strong>Service Type:</strong> {workExp.isGovtService === 'Yes' ? 'Government' : 'Private'}
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          ) : (
+            <Box textAlign="center" py={4}>
+              <Typography variant="h6" color={colors.textSecondary} sx={{ fontSize: '1.1rem' }}>
+                No work experience records found
+              </Typography>
+              <Typography variant="body1" color={colors.textSecondary} mt={1} sx={{ fontSize: '1rem' }}>
+                Click "Edit Profile" to add work experience records
+              </Typography>
+            </Box>
+          )}
         </Box>
       );
     }
@@ -3412,73 +3341,55 @@ const Profile = () => {
     if (tabIndex === 9) {
       return (
         <Box>
-          <ScrollableContainer>
-            {voluntaryWork.length > 0 ? (
-              <List>
-                {voluntaryWork.map((vol) => (
-                  <React.Fragment key={vol.id}>
-                    <ListItem
-                      sx={{
-                        border: '1px solid #e0e0e0',
-                        borderRadius: 1,
-                        marginBottom: 1,
-                        '&:hover': {
-                          borderColor: colors.primary,
-                          backgroundColor: alpha(colors.primary, 0.05),
-                        },
-                      }}
-                    >
-                      <MuiListItemIcon>
-                        <GroupIcon sx={{ color: colors.primary }} />
-                      </MuiListItemIcon>
-                      <MuiListItemText
-                        primary={vol.nameAndAddress || 'N/A'}
-                        secondary={
-                          <>
-                            {vol.dateFrom && vol.dateTo && (
-                              <Typography
-                                component="span"
-                                sx={{ display: 'block' }}
-                              >
-                                {new Date(vol.dateFrom).toLocaleDateString()} -{' '}
-                                {new Date(vol.dateTo).toLocaleDateString()}
-                              </Typography>
-                            )}
-                            {vol.numberOfHours && (
-                              <Typography
-                                component="span"
-                                sx={{ display: 'block' }}
-                              >
-                                Hours: {vol.numberOfHours}
-                              </Typography>
-                            )}
-                            {vol.natureOfWork && (
-                              <Typography
-                                component="span"
-                                sx={{ display: 'block' }}
-                              >
-                                {vol.natureOfWork}
-                              </Typography>
-                            )}
-                          </>
-                        }
-                      />
-                    </ListItem>
-                    <Divider variant="inset" component="li" />
-                  </React.Fragment>
-                ))}
-              </List>
-            ) : (
-              <Box textAlign="center" py={4}>
-                <Typography variant="h6" color={colors.textSecondary}>
-                  No voluntary work records found
-                </Typography>
-                <Typography variant="body2" color={colors.textSecondary} mt={1}>
-                  Click "Edit Profile" to add voluntary work records
-                </Typography>
-              </Box>
-            )}
-          </ScrollableContainer>
+          {voluntaryWork.length > 0 ? (
+            <Box>
+              {voluntaryWork.map((vol) => (
+                <Box
+                  key={vol.id}
+                  sx={{
+                    p: 2.5,
+                    mb: 2,
+                    border: `2px solid ${colors.border}`,
+                    borderRadius: 2,
+                    backgroundColor: '#fafafa',
+                  }}
+                >
+                  <Box display="flex" alignItems="center" gap={2} mb={1.5}>
+                    <GroupIcon sx={{ color: colors.primary, fontSize: 28 }} />
+                    <Typography variant="h6" sx={{ fontSize: '1.2rem', fontWeight: 600, color: colors.primary }}>
+                      {vol.nameAndAddress || 'N/A'}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ ml: 5 }}>
+                    {vol.dateFrom && vol.dateTo && (
+                      <Typography variant="body1" sx={{ fontSize: '1rem', mb: 0.5 }}>
+                        <strong>Period:</strong> {new Date(vol.dateFrom).toLocaleDateString()} - {new Date(vol.dateTo).toLocaleDateString()}
+                      </Typography>
+                    )}
+                    {vol.numberOfHours && (
+                      <Typography variant="body1" sx={{ fontSize: '1rem', mb: 0.5 }}>
+                        <strong>Number of Hours:</strong> {vol.numberOfHours}
+                      </Typography>
+                    )}
+                    {vol.natureOfWork && (
+                      <Typography variant="body1" sx={{ fontSize: '1rem' }}>
+                        <strong>Nature of Work:</strong> {vol.natureOfWork}
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          ) : (
+            <Box textAlign="center" py={4}>
+              <Typography variant="h6" color={colors.textSecondary} sx={{ fontSize: '1.1rem' }}>
+                No voluntary work records found
+              </Typography>
+              <Typography variant="body1" color={colors.textSecondary} mt={1} sx={{ fontSize: '1rem' }}>
+                Click "Edit Profile" to add voluntary work records
+              </Typography>
+            </Box>
+          )}
         </Box>
       );
     }
@@ -3487,64 +3398,58 @@ const Profile = () => {
     if (tabIndex === 10) {
       return (
         <Box>
-          <ScrollableContainer>
-            {learningDevelopment.length > 0 ? (
-              <List>
-                {learningDevelopment.map((learning) => (
-                  <React.Fragment key={learning.id}>
-                    <LearningDevelopmentListItem>
-                      <MuiListItemIcon>
-                        <LightbulbIcon sx={{ color: colors.primary }} />
-                      </MuiListItemIcon>
-                      <MuiListItemText
-                        primary={learning.titleOfProgram}
-                        secondary={
-                          <>
-                            Type: {learning.typeOfLearningDevelopment || 'N/A'}
-                            {learning.dateFrom && learning.dateTo && (
-                              <Typography
-                                component="span"
-                                sx={{ ml: 1, display: 'block' }}
-                              >
-                                Period: {learning.dateFrom} - {learning.dateTo}
-                              </Typography>
-                            )}
-                            {learning.numberOfHours && (
-                              <Typography
-                                component="span"
-                                sx={{ ml: 1, display: 'block' }}
-                              >
-                                Hours: {learning.numberOfHours}
-                              </Typography>
-                            )}
-                            {learning.conductedSponsored && (
-                              <Typography
-                                component="span"
-                                sx={{ ml: 1, display: 'block' }}
-                              >
-                                Conducted/Sponsored by:{' '}
-                                {learning.conductedSponsored}
-                              </Typography>
-                            )}
-                          </>
-                        }
-                      />
-                    </LearningDevelopmentListItem>
-                    <Divider variant="inset" component="li" />
-                  </React.Fragment>
-                ))}
-              </List>
-            ) : (
-              <Box textAlign="center" py={4}>
-                <Typography variant="h6" color={colors.textSecondary}>
-                  No learning and development records found
-                </Typography>
-                <Typography variant="body2" color={colors.textSecondary} mt={1}>
-                  Click "Edit Profile" to add learning and development records
-                </Typography>
-              </Box>
-            )}
-          </ScrollableContainer>
+          {learningDevelopment.length > 0 ? (
+            <Box>
+              {learningDevelopment.map((learning) => (
+                <Box
+                  key={learning.id}
+                  sx={{
+                    p: 2.5,
+                    mb: 2,
+                    border: `2px solid ${colors.border}`,
+                    borderRadius: 2,
+                    backgroundColor: '#fafafa',
+                  }}
+                >
+                  <Box display="flex" alignItems="center" gap={2} mb={1.5}>
+                    <LightbulbIcon sx={{ color: colors.primary, fontSize: 28 }} />
+                    <Typography variant="h6" sx={{ fontSize: '1.2rem', fontWeight: 600, color: colors.primary }}>
+                      {learning.titleOfProgram}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ ml: 5 }}>
+                    <Typography variant="body1" sx={{ fontSize: '1rem', mb: 0.5 }}>
+                      <strong>Type:</strong> {learning.typeOfLearningDevelopment || 'N/A'}
+                    </Typography>
+                    {learning.dateFrom && learning.dateTo && (
+                      <Typography variant="body1" sx={{ fontSize: '1rem', mb: 0.5 }}>
+                        <strong>Period:</strong> {learning.dateFrom} - {learning.dateTo}
+                      </Typography>
+                    )}
+                    {learning.numberOfHours && (
+                      <Typography variant="body1" sx={{ fontSize: '1rem', mb: 0.5 }}>
+                        <strong>Number of Hours:</strong> {learning.numberOfHours}
+                      </Typography>
+                    )}
+                    {learning.conductedSponsored && (
+                      <Typography variant="body1" sx={{ fontSize: '1rem' }}>
+                        <strong>Conducted/Sponsored by:</strong> {learning.conductedSponsored}
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          ) : (
+            <Box textAlign="center" py={4}>
+              <Typography variant="h6" color={colors.textSecondary} sx={{ fontSize: '1.1rem' }}>
+                No learning and development records found
+              </Typography>
+              <Typography variant="body1" color={colors.textSecondary} mt={1} sx={{ fontSize: '1rem' }}>
+                Click "Edit Profile" to add learning and development records
+              </Typography>
+            </Box>
+          )}
         </Box>
       );
     }
@@ -3553,62 +3458,55 @@ const Profile = () => {
     if (tabIndex === 11) {
       return (
         <Box>
-          <ScrollableContainer>
-            {otherInformation.length > 0 ? (
-              <List>
-                {otherInformation.map((info) => (
-                  <React.Fragment key={info.id}>
-                    <OtherInformationListItem>
-                      <MuiListItemIcon>
-                        <InfoIcon sx={{ color: colors.primary }} />
-                      </MuiListItemIcon>
-                      <MuiListItemText
-                        primary="Other Information"
-                        secondary={
-                          <>
-                            {info.specialSkills && (
-                              <Typography
-                                component="span"
-                                sx={{ display: 'block' }}
-                              >
-                                Skills: {info.specialSkills}
-                              </Typography>
-                            )}
-                            {info.nonAcademicDistinctions && (
-                              <Typography
-                                component="span"
-                                sx={{ display: 'block' }}
-                              >
-                                Distinctions: {info.nonAcademicDistinctions}
-                              </Typography>
-                            )}
-                            {info.membershipInAssociation && (
-                              <Typography
-                                component="span"
-                                sx={{ display: 'block' }}
-                              >
-                                Associations: {info.membershipInAssociation}
-                              </Typography>
-                            )}
-                          </>
-                        }
-                      />
-                    </OtherInformationListItem>
-                    <Divider variant="inset" component="li" />
-                  </React.Fragment>
-                ))}
-              </List>
-            ) : (
-              <Box textAlign="center" py={4}>
-                <Typography variant="h6" color={colors.textSecondary}>
-                  No other information records found
-                </Typography>
-                <Typography variant="body2" color={colors.textSecondary} mt={1}>
-                  Click "Edit Profile" to add other information records
-                </Typography>
-              </Box>
-            )}
-          </ScrollableContainer>
+          {otherInformation.length > 0 ? (
+            <Box>
+              {otherInformation.map((info) => (
+                <Box
+                  key={info.id}
+                  sx={{
+                    p: 2.5,
+                    mb: 2,
+                    border: `2px solid ${colors.border}`,
+                    borderRadius: 2,
+                    backgroundColor: '#fafafa',
+                  }}
+                >
+                  <Box display="flex" alignItems="center" gap={2} mb={1.5}>
+                    <InfoIcon sx={{ color: colors.primary, fontSize: 28 }} />
+                    <Typography variant="h6" sx={{ fontSize: '1.2rem', fontWeight: 600, color: colors.primary }}>
+                      Other Information
+                    </Typography>
+                  </Box>
+                  <Box sx={{ ml: 5 }}>
+                    {info.specialSkills && (
+                      <Typography variant="body1" sx={{ fontSize: '1rem', mb: 1 }}>
+                        <strong>Special Skills:</strong> {info.specialSkills}
+                      </Typography>
+                    )}
+                    {info.nonAcademicDistinctions && (
+                      <Typography variant="body1" sx={{ fontSize: '1rem', mb: 1 }}>
+                        <strong>Non-Academic Distinctions:</strong> {info.nonAcademicDistinctions}
+                      </Typography>
+                    )}
+                    {info.membershipInAssociation && (
+                      <Typography variant="body1" sx={{ fontSize: '1rem' }}>
+                        <strong>Membership in Association:</strong> {info.membershipInAssociation}
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          ) : (
+            <Box textAlign="center" py={4}>
+              <Typography variant="h6" color={colors.textSecondary} sx={{ fontSize: '1.1rem' }}>
+                No other information records found
+              </Typography>
+              <Typography variant="body1" color={colors.textSecondary} mt={1} sx={{ fontSize: '1rem' }}>
+                Click "Edit Profile" to add other information records
+              </Typography>
+            </Box>
+          )}
         </Box>
       );
     }
@@ -4929,281 +4827,480 @@ const Profile = () => {
 
   return (
     <ProfileContainer ref={profileRef}>
-      {/* Modern Header with Gradient */}
-      <Box
-        sx={{
-          background: colors.gradientPrimary,
-          borderRadius: 3,
-          p: 4,
-          mb: 4,
-          position: 'relative',
-          overflow: 'hidden',
-          boxShadow: shadows.medium,
-        }}
-      >
-        <Box
-          sx={{
-            position: 'absolute',
-            top: -50,
-            right: -50,
-            width: 200,
-            height: 200,
-            background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%)',
-          }}
-        />
-        <Box
-          sx={{
-            position: 'absolute',
-            bottom: -30,
-            left: '30%',
-            width: 150,
-            height: 150,
-            background: 'radial-gradient(circle, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 70%)',
-          }}
-        />
-        
-        <Box display="flex" alignItems="center" justifyContent="space-between" position="relative" zIndex={1} flexWrap="wrap" gap={3}>
-          <Box display="flex" alignItems="center" gap={3} flex={1}>
-            <ProfileAvatar
-              src={
-                profilePicture
-                  ? `${API_BASE_URL}${profilePicture}?t=${Date.now()}`
-                  : undefined
-              }
-              alt="Profile Picture"
-              onClick={handleImageZoom}
+      {/* Simple, Clear Header */}
+      <ProfileHeader>
+        <Box display="flex" alignItems="center" gap={3} flex={1} flexWrap="wrap">
+          <ProfileAvatar
+            src={
+              profilePicture
+                ? `${API_BASE_URL}${profilePicture}?t=${Date.now()}`
+                : undefined
+            }
+            alt="Profile Picture"
+            onClick={handleImageZoom}
+            sx={{
+              width: 120,
+              height: 120,
+              border: `3px solid ${colors.primary}`,
+              cursor: 'pointer',
+              fontSize: '3rem',
+            }}
+          >
+            {!profilePicture && <PersonIcon sx={{ fontSize: 60 }} />}
+          </ProfileAvatar>
+          
+          <Box flex={1} minWidth="250px">
+            <Typography
+              variant="h4"
               sx={{
-                width: 128,
-                height: 128,
-                border: `4px solid ${colors.textLight}`,
-                cursor: 'pointer',
-                boxShadow: shadows.heavy,
+                fontWeight: 600,
+                color: colors.textPrimary,
+                mb: 1,
+                fontSize: { xs: '1.5rem', md: '2rem' },
               }}
             >
-              {!profilePicture && <PersonIcon sx={{ fontSize: 60 }} />}
-            </ProfileAvatar>
-            
-            <Box>
-              <ProfileName sx={{ color: colors.textLight, mb: 1 }}>
-                {person
-                  ? `${person.firstName} ${person.middleName} ${person.lastName} ${
-                      person.nameExtension || ''
-                    }`.trim()
-                  : 'Employee Profile'}
-              </ProfileName>
-              <ProfileSubtitle sx={{ color: alpha(colors.textLight, 0.9), mb: 0.5 }}>
-                Employee No.: <b>{person?.agencyEmployeeNum || '—'}</b>
-              </ProfileSubtitle>
-              {person?.emailAddress && (
-                <Box display="flex" alignItems="center" gap={1} mt={1}>
-                  <EmailIcon sx={{ fontSize: 16, color: alpha(colors.textLight, 0.8) }} />
-                  <Typography variant="body2" sx={{ color: alpha(colors.textLight, 0.8) }}>
-                    {person.emailAddress}
-                  </Typography>
-                </Box>
-              )}
-            </Box>
+              {person
+                ? `${person.firstName || ''} ${person.middleName || ''} ${person.lastName || ''} ${
+                    person.nameExtension || ''
+                  }`.trim()
+                : 'Employee Profile'}
+            </Typography>
+            <Typography
+              variant="h6"
+              sx={{
+                color: colors.textSecondary,
+                mb: 0.5,
+                fontSize: '1.1rem',
+                fontWeight: 500,
+              }}
+            >
+              Employee No.: <strong style={{ color: colors.primary }}>{person?.agencyEmployeeNum || '—'}</strong>
+            </Typography>
+            {person?.emailAddress && (
+              <Box display="flex" alignItems="center" gap={1} mt={1}>
+                <EmailIcon sx={{ fontSize: 18, color: colors.textSecondary }} />
+                <Typography variant="body1" sx={{ color: colors.textSecondary, fontSize: '1rem' }}>
+                  {person.emailAddress}
+                </Typography>
+              </Box>
+            )}
           </Box>
 
-          <Box display="flex" gap={2} flexWrap="wrap">
-            <Tooltip title="Refresh profile">
-              <IconButton
-                onClick={handleRefresh}
-                sx={{
-                  backgroundColor: alpha(colors.textLight, 0.2),
-                  color: colors.textLight,
-                  '&:hover': {
-                    backgroundColor: alpha(colors.textLight, 0.3),
-                  },
-                }}
-              >
-                <RefreshIcon />
-              </IconButton>
-            </Tooltip>
+          <Box display="flex" gap={2} flexDirection="column" alignItems="flex-end">
             <ActionButton
               variant="contained"
               startIcon={<EditIcon />}
               onClick={handleEditOpen}
+              size="large"
               sx={{
-                background: colors.textLight,
-                color: colors.primary,
-                '&:hover': {
-                  background: alpha(colors.textLight, 0.9),
-                },
+                fontSize: '1rem',
+                padding: '12px 24px',
+                minWidth: '160px',
               }}
             >
               Edit Profile
             </ActionButton>
+            <Button
+              variant="outlined"
+              startIcon={<RefreshIcon />}
+              onClick={handleRefresh}
+              size="medium"
+              sx={{
+                fontSize: '0.9rem',
+                padding: '8px 16px',
+                minWidth: '160px',
+                color: colors.primary,
+                borderColor: colors.primary,
+              }}
+            >
+              Refresh
+            </Button>
           </Box>
         </Box>
-      </Box>
+      </ProfileHeader>
 
-      {/* Quick Stats Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card
-            sx={{
-              p: 2,
-              textAlign: 'center',
-              background: `linear-gradient(135deg, ${alpha(colors.primary, 0.1)} 0%, ${alpha(colors.primary, 0.05)} 100%)`,
-              border: `1px solid ${alpha(colors.primary, 0.2)}`,
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-4px)',
-                boxShadow: shadows.medium,
-              },
-            }}
-          >
-            <ChildCareIcon sx={{ fontSize: 40, color: colors.primary, mb: 1 }} />
-            <Typography variant="h4" fontWeight="bold" color={colors.primary}>
+      {/* Summary Cards - Simple and Clear */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={6} sm={3}>
+          <Card sx={{ p: 2, textAlign: 'center', border: `2px solid ${colors.primary}` }}>
+            <ChildCareIcon sx={{ fontSize: 36, color: colors.primary, mb: 1 }} />
+            <Typography variant="h5" fontWeight="bold" color={colors.primary}>
               {children.length}
             </Typography>
-            <Typography variant="body2" color={colors.textSecondary}>
+            <Typography variant="body1" color={colors.textSecondary} sx={{ fontSize: '0.95rem' }}>
               Children
             </Typography>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card
-            sx={{
-              p: 2,
-              textAlign: 'center',
-              background: `linear-gradient(135deg, ${alpha(colors.primary, 0.1)} 0%, ${alpha(colors.primary, 0.05)} 100%)`,
-              border: `1px solid ${alpha(colors.primary, 0.2)}`,
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-4px)',
-                boxShadow: shadows.medium,
-              },
-            }}
-          >
-            <FactCheckIcon sx={{ fontSize: 40, color: colors.primary, mb: 1 }} />
-            <Typography variant="h4" fontWeight="bold" color={colors.primary}>
+        <Grid item xs={6} sm={3}>
+          <Card sx={{ p: 2, textAlign: 'center', border: `2px solid ${colors.primary}` }}>
+            <FactCheckIcon sx={{ fontSize: 36, color: colors.primary, mb: 1 }} />
+            <Typography variant="h5" fontWeight="bold" color={colors.primary}>
               {eligibilities.length}
             </Typography>
-            <Typography variant="body2" color={colors.textSecondary}>
+            <Typography variant="body1" color={colors.textSecondary} sx={{ fontSize: '0.95rem' }}>
               Eligibilities
             </Typography>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card
-            sx={{
-              p: 2,
-              textAlign: 'center',
-              background: `linear-gradient(135deg, ${alpha(colors.primary, 0.1)} 0%, ${alpha(colors.primary, 0.05)} 100%)`,
-              border: `1px solid ${alpha(colors.primary, 0.2)}`,
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-4px)',
-                boxShadow: shadows.medium,
-              },
-            }}
-          >
-            <WorkIcon sx={{ fontSize: 40, color: colors.primary, mb: 1 }} />
-            <Typography variant="h4" fontWeight="bold" color={colors.primary}>
+        <Grid item xs={6} sm={3}>
+          <Card sx={{ p: 2, textAlign: 'center', border: `2px solid ${colors.primary}` }}>
+            <WorkIcon sx={{ fontSize: 36, color: colors.primary, mb: 1 }} />
+            <Typography variant="h5" fontWeight="bold" color={colors.primary}>
               {workExperiences.length}
             </Typography>
-            <Typography variant="body2" color={colors.textSecondary}>
+            <Typography variant="body1" color={colors.textSecondary} sx={{ fontSize: '0.95rem' }}>
               Work Experience
             </Typography>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card
-            sx={{
-              p: 2,
-              textAlign: 'center',
-              background: `linear-gradient(135deg, ${alpha(colors.primary, 0.1)} 0%, ${alpha(colors.primary, 0.05)} 100%)`,
-              border: `1px solid ${alpha(colors.primary, 0.2)}`,
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-4px)',
-                boxShadow: shadows.medium,
-              },
-            }}
-          >
-            <BookIcon sx={{ fontSize: 40, color: colors.primary, mb: 1 }} />
-            <Typography variant="h4" fontWeight="bold" color={colors.primary}>
+        <Grid item xs={6} sm={3}>
+          <Card sx={{ p: 2, textAlign: 'center', border: `2px solid ${colors.primary}` }}>
+            <BookIcon sx={{ fontSize: 36, color: colors.primary, mb: 1 }} />
+            <Typography variant="h5" fontWeight="bold" color={colors.primary}>
               {learningDevelopment.length}
             </Typography>
-            <Typography variant="body2" color={colors.textSecondary}>
+            <Typography variant="body1" color={colors.textSecondary} sx={{ fontSize: '0.95rem' }}>
               Learning Programs
             </Typography>
           </Card>
         </Grid>
       </Grid>
 
-      {/* Main Content Section */}
+      {/* Main Content - Using Accordions for Better Organization */}
       <SectionPaper>
-        <Box
-          display="flex"
-          justifyContent="space-between"
-          alignItems="center"
-          mb={3}
-          flexWrap="wrap"
-          gap={2}
-        >
-          <SectionTitle>
-            <PersonIcon />
-            Complete Profile Information
-          </SectionTitle>
-          <Box display="flex" alignItems="center" gap={2}>
-            <Typography variant="body2" color={colors.textSecondary}>
-              View Mode:
-            </Typography>
-            <ToggleButtonGroup
-              value={viewMode}
-              exclusive
-              onChange={handleViewModeChange}
-              aria-label="view mode"
-              size="small"
-            >
-              <ViewToggleButton value="grid" aria-label="grid view">
-                <GridViewIcon />
-              </ViewToggleButton>
-              <ViewToggleButton value="list" aria-label="list view">
-                <ViewListIcon />
-              </ViewToggleButton>
-            </ToggleButtonGroup>
-          </Box>
+        <SectionTitle sx={{ mb: 3, fontSize: '1.6rem' }}>
+          <PersonIcon sx={{ fontSize: 28 }} />
+          Personal Data Sheet (PDS) Information
+        </SectionTitle>
+
+        {/* Use Accordions for easier navigation */}
+        <Box>
+          {/* Personal Information */}
+          <Accordion defaultExpanded sx={{ mb: 1, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Box display="flex" alignItems="center" gap={1}>
+                <PersonIcon sx={{ color: colors.primary }} />
+                <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.2rem' }}>
+                  Personal Information
+                </Typography>
+              </Box>
+            </AccordionSummary>
+            <AccordionDetails>
+              {renderTabContentList(0)}
+            </AccordionDetails>
+          </Accordion>
+
+          {/* Government IDs */}
+          <Accordion sx={{ mb: 1, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Box display="flex" alignItems="center" gap={1}>
+                <BadgeIcon sx={{ color: colors.primary }} />
+                <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.2rem' }}>
+                  Government IDs
+                </Typography>
+              </Box>
+            </AccordionSummary>
+            <AccordionDetails>
+              {renderTabContentList(1)}
+            </AccordionDetails>
+          </Accordion>
+
+          {/* Addresses */}
+          <Accordion sx={{ mb: 1, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Box display="flex" alignItems="center" gap={1}>
+                <HomeIcon sx={{ color: colors.primary }} />
+                <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.2rem' }}>
+                  Addresses
+                </Typography>
+              </Box>
+            </AccordionSummary>
+            <AccordionDetails>
+              {renderTabContentList(2)}
+            </AccordionDetails>
+          </Accordion>
+
+          {/* Contact Information */}
+          <Accordion sx={{ mb: 1, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Box display="flex" alignItems="center" gap={1}>
+                <CallIcon sx={{ color: colors.primary }} />
+                <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.2rem' }}>
+                  Contact Information
+                </Typography>
+              </Box>
+            </AccordionSummary>
+            <AccordionDetails>
+              {renderTabContentList(3)}
+            </AccordionDetails>
+          </Accordion>
+
+          {/* Family Information */}
+          <Accordion sx={{ mb: 1, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Box display="flex" alignItems="center" gap={1}>
+                <GroupIcon sx={{ color: colors.primary }} />
+                <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.2rem' }}>
+                  Family Information
+                </Typography>
+              </Box>
+            </AccordionSummary>
+            <AccordionDetails>
+              {renderTabContentList(4)}
+            </AccordionDetails>
+          </Accordion>
+
+          {/* Education */}
+          <Accordion sx={{ mb: 1, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Box display="flex" alignItems="center" gap={1}>
+                <SchoolIcon sx={{ color: colors.primary }} />
+                <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.2rem' }}>
+                  Education
+                </Typography>
+              </Box>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Box>
+                <EducationSubTabs
+                  value={educationSubTabValue}
+                  onChange={(e, newValue) => setEducationSubTabValue(newValue)}
+                  variant="fullWidth"
+                  sx={{ mb: 3 }}
+                >
+                  <EducationSubTab
+                    label="Elementary & Secondary"
+                    icon={<SchoolIcon />}
+                  />
+                  <EducationSubTab label="College" icon={<SchoolRoundedIcon />} />
+                  <EducationSubTab
+                    label="Graduate Studies"
+                    icon={<PsychologyIcon />}
+                  />
+                  <EducationSubTab label="Vocational" icon={<ConstructionIcon />} />
+                </EducationSubTabs>
+                {educationSubTabValue === 0 && renderTabContentList(5)}
+                {educationSubTabValue === 1 && (
+                  <Box>
+                    {colleges.length > 0 ? (
+                      <List>
+                        {colleges.map((college) => (
+                          <React.Fragment key={college.id}>
+                            <CollegeListItem>
+                              <MuiListItemIcon>
+                                <SchoolRoundedIcon sx={{ color: colors.primary, fontSize: 28 }} />
+                              </MuiListItemIcon>
+                              <MuiListItemText
+                                primary={
+                                  <Typography variant="h6" sx={{ fontSize: '1.1rem', fontWeight: 600 }}>
+                                    {college.collegeNameOfSchool}
+                                  </Typography>
+                                }
+                                secondary={
+                                  <Box sx={{ mt: 1 }}>
+                                    <Typography variant="body1" sx={{ fontSize: '1rem' }}>
+                                      <strong>Degree:</strong> {college.collegeDegree || 'N/A'}
+                                    </Typography>
+                                    <Typography variant="body1" sx={{ fontSize: '1rem' }}>
+                                      <strong>Period:</strong> {college.collegePeriodFrom || 'N/A'} - {college.collegePeriodTo || 'N/A'}
+                                    </Typography>
+                                  </Box>
+                                }
+                              />
+                            </CollegeListItem>
+                            <Divider variant="inset" component="li" />
+                          </React.Fragment>
+                        ))}
+                      </List>
+                    ) : (
+                      <Box textAlign="center" py={4}>
+                        <Typography variant="h6" color={colors.textSecondary}>
+                          No college records found
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+                )}
+                {educationSubTabValue === 2 && (
+                  <Box>
+                    {graduates.length > 0 ? (
+                      <List>
+                        {graduates.map((graduate) => (
+                          <React.Fragment key={graduate.id}>
+                            <GraduateListItem>
+                              <MuiListItemIcon>
+                                <PsychologyIcon sx={{ color: colors.primary, fontSize: 28 }} />
+                              </MuiListItemIcon>
+                              <MuiListItemText
+                                primary={
+                                  <Typography variant="h6" sx={{ fontSize: '1.1rem', fontWeight: 600 }}>
+                                    {graduate.graduateNameOfSchool}
+                                  </Typography>
+                                }
+                                secondary={
+                                  <Box sx={{ mt: 1 }}>
+                                    <Typography variant="body1" sx={{ fontSize: '1rem' }}>
+                                      <strong>Degree:</strong> {graduate.graduateDegree || 'N/A'}
+                                    </Typography>
+                                    <Typography variant="body1" sx={{ fontSize: '1rem' }}>
+                                      <strong>Period:</strong> {graduate.graduatePeriodFrom || 'N/A'} - {graduate.graduatePeriodTo || 'N/A'}
+                                    </Typography>
+                                  </Box>
+                                }
+                              />
+                            </GraduateListItem>
+                            <Divider variant="inset" component="li" />
+                          </React.Fragment>
+                        ))}
+                      </List>
+                    ) : (
+                      <Box textAlign="center" py={4}>
+                        <Typography variant="h6" color={colors.textSecondary}>
+                          No graduate studies records found
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+                )}
+                {educationSubTabValue === 3 && (
+                  <Box>
+                    {vocational.length > 0 ? (
+                      <List>
+                        {vocational.map((voc) => (
+                          <React.Fragment key={voc.id}>
+                            <VocationalListItem>
+                              <MuiListItemIcon>
+                                <ConstructionIcon sx={{ color: colors.primary, fontSize: 28 }} />
+                              </MuiListItemIcon>
+                              <MuiListItemText
+                                primary={
+                                  <Typography variant="h6" sx={{ fontSize: '1.1rem', fontWeight: 600 }}>
+                                    {voc.vocationalNameOfSchool}
+                                  </Typography>
+                                }
+                                secondary={
+                                  <Box sx={{ mt: 1 }}>
+                                    <Typography variant="body1" sx={{ fontSize: '1rem' }}>
+                                      <strong>Degree:</strong> {voc.vocationalDegree || 'N/A'}
+                                    </Typography>
+                                    <Typography variant="body1" sx={{ fontSize: '1rem' }}>
+                                      <strong>Period:</strong> {voc.vocationalPeriodFrom || 'N/A'} - {voc.vocationalPeriodTo || 'N/A'}
+                                    </Typography>
+                                  </Box>
+                                }
+                              />
+                            </VocationalListItem>
+                            <Divider variant="inset" component="li" />
+                          </React.Fragment>
+                        ))}
+                      </List>
+                    ) : (
+                      <Box textAlign="center" py={4}>
+                        <Typography variant="h6" color={colors.textSecondary}>
+                          No vocational records found
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+                )}
+              </Box>
+            </AccordionDetails>
+          </Accordion>
+
+          {/* Children */}
+          <Accordion sx={{ mb: 1, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Box display="flex" alignItems="center" gap={1}>
+                <ChildCareIcon sx={{ color: colors.primary }} />
+                <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.2rem' }}>
+                  Children
+                </Typography>
+              </Box>
+            </AccordionSummary>
+            <AccordionDetails>
+              {renderTabContentList(6)}
+            </AccordionDetails>
+          </Accordion>
+
+          {/* Eligibility */}
+          <Accordion sx={{ mb: 1, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Box display="flex" alignItems="center" gap={1}>
+                <FactCheckIcon sx={{ color: colors.primary }} />
+                <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.2rem' }}>
+                  Eligibility
+                </Typography>
+              </Box>
+            </AccordionSummary>
+            <AccordionDetails>
+              {renderTabContentList(7)}
+            </AccordionDetails>
+          </Accordion>
+
+          {/* Work Experience */}
+          <Accordion sx={{ mb: 1, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Box display="flex" alignItems="center" gap={1}>
+                <WorkIcon sx={{ color: colors.primary }} />
+                <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.2rem' }}>
+                  Work Experience
+                </Typography>
+              </Box>
+            </AccordionSummary>
+            <AccordionDetails>
+              {renderTabContentList(8)}
+            </AccordionDetails>
+          </Accordion>
+
+          {/* Voluntary Work */}
+          <Accordion sx={{ mb: 1, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Box display="flex" alignItems="center" gap={1}>
+                <GroupIcon sx={{ color: colors.primary }} />
+                <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.2rem' }}>
+                  Voluntary Work
+                </Typography>
+              </Box>
+            </AccordionSummary>
+            <AccordionDetails>
+              {renderTabContentList(9)}
+            </AccordionDetails>
+          </Accordion>
+
+          {/* Learning & Development */}
+          <Accordion sx={{ mb: 1, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Box display="flex" alignItems="center" gap={1}>
+                <BookIcon sx={{ color: colors.primary }} />
+                <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.2rem' }}>
+                  Learning & Development
+                </Typography>
+              </Box>
+            </AccordionSummary>
+            <AccordionDetails>
+              {renderTabContentList(10)}
+            </AccordionDetails>
+          </Accordion>
+
+          {/* Other Information */}
+          <Accordion sx={{ mb: 1, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Box display="flex" alignItems="center" gap={1}>
+                <InfoIcon sx={{ color: colors.primary }} />
+                <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.2rem' }}>
+                  Other Information
+                </Typography>
+              </Box>
+            </AccordionSummary>
+            <AccordionDetails>
+              {renderTabContentList(11)}
+            </AccordionDetails>
+          </Accordion>
         </Box>
-
-        <TabContainer>
-          <CustomTabs
-            value={tabValue}
-            onChange={handleTabChange}
-            variant={isMobile ? 'scrollable' : 'standard'}
-            scrollButtons={isMobile ? 'auto' : false}
-            sx={{
-              '& .MuiTab-root': {
-                minHeight: 48,
-                fontSize: '0.9rem',
-              },
-            }}
-          >
-            {tabs.map((tab) => (
-              <CustomTab
-                key={tab.key}
-                label={tab.label}
-                icon={tab.icon}
-                iconPosition="start"
-              />
-            ))}
-          </CustomTabs>
-        </TabContainer>
-
-        <ContentContainer>
-          <ViewWrapper className={viewMode === 'grid' ? 'active' : ''}>
-            {renderTabContentGrid(tabValue)}
-          </ViewWrapper>
-          <ViewWrapper className={viewMode === 'list' ? 'active' : ''}>
-            {renderTabContentList(tabValue)}
-          </ViewWrapper>
-        </ContentContainer>
       </SectionPaper>
 
-      {/* Edit Profile Modal */}
+      {/* Edit Profile Modal - Simplified */}
       <Modal
         open={editOpen}
         onClose={handleEditClose}
@@ -5216,101 +5313,93 @@ const Profile = () => {
         <Backdrop open={editOpen} onClick={handleEditClose}>
           <ModalContainer onClick={(e) => e.stopPropagation()}>
             <ModalHeader>
-              <ModalTitle>Edit Profile</ModalTitle>
+              <ModalTitle sx={{ fontSize: '1.5rem' }}>Edit Profile Information</ModalTitle>
               <IconButton
                 onClick={handleEditClose}
-                sx={{ color: colors.textLight }}
+                sx={{ color: colors.textLight, fontSize: '1.5rem' }}
               >
                 <CloseIcon />
               </IconButton>
             </ModalHeader>
 
-            <EditModalPictureSection>
-              <EditModalAvatar
-                src={
-                  profilePicture
-                    ? `${API_BASE_URL}${profilePicture}?t=${Date.now()}`
-                    : undefined
-                }
-                alt="Profile Picture"
-                onClick={handleEditImageZoom}
-              >
-                {!profilePicture && <PersonIcon sx={{ fontSize: 60 }} />}
-              </EditModalAvatar>
-              <EditModalPictureInfo>
-                <Typography
-                  variant="h6"
-                  sx={{ fontWeight: 600, color: colors.primary, mb: 1 }}
+            <Box sx={{ p: 3, borderBottom: `1px solid ${colors.border}` }}>
+              <Box display="flex" alignItems="center" gap={3} flexWrap="wrap">
+                <EditModalAvatar
+                  src={
+                    profilePicture
+                      ? `${API_BASE_URL}${profilePicture}?t=${Date.now()}`
+                      : undefined
+                  }
+                  alt="Profile Picture"
+                  onClick={handleEditImageZoom}
+                  sx={{ width: 100, height: 100, fontSize: '2.5rem' }}
                 >
-                  Profile Picture
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color={colors.textSecondary}
-                  sx={{ mb: 2 }}
-                >
-                  Click on image to preview. Upload a professional headshot (max
-                  5MB, JPEG/PNG)
-                </Typography>
-                <Box display="flex" gap={1} flexWrap="wrap">
-                  <Chip
-                    icon={<PhotoSizeSelectActualIcon fontSize="small" />}
-                    label="High Quality"
-                    size="small"
-                    sx={{
-                      backgroundColor: alpha(colors.primary, 0.1),
-                      color: colors.primary,
-                      fontWeight: 600,
-                    }}
-                  />
-                  <Chip
-                    icon={<CropOriginalIcon fontSize="small" />}
-                    label="Recommended: 400x400px"
-                    size="small"
-                    sx={{
-                      backgroundColor: alpha(colors.secondary, 0.5),
-                      color: colors.textSecondary,
-                      fontWeight: 600,
-                    }}
-                  />
+                  {!profilePicture && <PersonIcon sx={{ fontSize: 50 }} />}
+                </EditModalAvatar>
+                <Box flex={1}>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: colors.primary, mb: 1, fontSize: '1.2rem' }}>
+                    Profile Picture
+                  </Typography>
+                  <Typography variant="body1" color={colors.textSecondary} sx={{ mb: 2, fontSize: '1rem' }}>
+                    Click on image to preview. Upload a professional headshot (max 5MB, JPEG/PNG)
+                  </Typography>
+                  <Box display="flex" gap={2} flexWrap="wrap">
+                    <input
+                      accept="image/*"
+                      id="profile-picture-upload-modal"
+                      type="file"
+                      style={{ display: 'none' }}
+                      onChange={handlePictureChange}
+                    />
+                    <label htmlFor="profile-picture-upload-modal">
+                      <Button
+                        component="span"
+                        variant="contained"
+                        startIcon={<CloudUploadIcon />}
+                        sx={{
+                          fontSize: '1rem',
+                          padding: '10px 20px',
+                          backgroundColor: colors.primary,
+                        }}
+                      >
+                        Upload Photo
+                      </Button>
+                    </label>
+                    <Button
+                      variant="outlined"
+                      startIcon={<DeleteIcon />}
+                      onClick={handleRemovePicture}
+                      sx={{
+                        fontSize: '1rem',
+                        padding: '10px 20px',
+                        borderColor: colors.error,
+                        color: colors.error,
+                      }}
+                    >
+                      Remove Photo
+                    </Button>
+                  </Box>
                 </Box>
-              </EditModalPictureInfo>
-              <EditModalPictureActions>
-                <input
-                  accept="image/*"
-                  id="profile-picture-upload-modal"
-                  type="file"
-                  style={{ display: 'none' }}
-                  onChange={handlePictureChange}
-                />
-                <label htmlFor="profile-picture-upload-modal">
-                  <ActionButton
-                    component="span"
-                    variant="contained"
-                    startIcon={<CloudUploadIcon />}
-                    fullWidth
-                  >
-                    Upload Photo
-                  </ActionButton>
-                </label>
-                <ActionButton
-                  variant="outlined"
-                  startIcon={<DeleteIcon />}
-                  onClick={handleRemovePicture}
-                  fullWidth
-                >
-                  Remove Photo
-                </ActionButton>
-              </EditModalPictureActions>
-            </EditModalPictureSection>
+              </Box>
+            </Box>
 
             <ModalBody>
               <Box sx={{ mb: 3 }}>
+                <Typography variant="h6" sx={{ mb: 2, fontSize: '1.3rem', fontWeight: 600, color: colors.primary }}>
+                  Select Section to Edit:
+                </Typography>
                 <CustomTabs
                   value={tabValue}
                   onChange={handleTabChange}
                   variant="scrollable"
                   scrollButtons="auto"
+                  sx={{
+                    '& .MuiTab-root': {
+                      fontSize: '1rem',
+                      minHeight: 56,
+                      padding: '12px 16px',
+                    },
+                  }}
                 >
                   {tabs.map((tab) => (
                     <CustomTab
@@ -5323,33 +5412,51 @@ const Profile = () => {
                 </CustomTabs>
               </Box>
 
-              {renderFormFields()}
+              <Box sx={{ minHeight: '400px' }}>
+                {renderFormFields()}
+              </Box>
             </ModalBody>
 
-            {/* Fixed Bottom Action Bar - Right Aligned */}
+            {/* Fixed Bottom Action Bar */}
             <Box
               sx={{
                 position: 'sticky',
                 bottom: 0,
                 backgroundColor: colors.surface,
-                padding: theme.spacing(2),
-                borderTop: `1px solid ${colors.border}`,
+                padding: theme.spacing(2.5),
+                borderTop: `2px solid ${colors.border}`,
                 display: 'flex',
                 justifyContent: 'flex-end',
                 gap: theme.spacing(2),
-                boxShadow: '0 -2px 8px rgba(0,0,0,0.08)',
+                boxShadow: '0 -2px 8px rgba(0,0,0,0.1)',
               }}
             >
-              <ActionButton variant="outlined" onClick={handleEditClose}>
+              <Button
+                variant="outlined"
+                onClick={handleEditClose}
+                sx={{
+                  fontSize: '1rem',
+                  padding: '12px 24px',
+                  minWidth: '140px',
+                  borderColor: colors.textSecondary,
+                  color: colors.textSecondary,
+                }}
+              >
                 Cancel
-              </ActionButton>
-              <ActionButton
+              </Button>
+              <Button
                 variant="contained"
                 onClick={handleSave}
                 startIcon={<SaveIcon />}
+                sx={{
+                  fontSize: '1rem',
+                  padding: '12px 24px',
+                  minWidth: '180px',
+                  backgroundColor: colors.primary,
+                }}
               >
-                Save Changes
-              </ActionButton>
+                Save All Changes
+              </Button>
             </Box>
           </ModalContainer>
         </Backdrop>

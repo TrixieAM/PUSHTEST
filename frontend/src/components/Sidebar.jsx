@@ -65,7 +65,8 @@ import {
   TransferWithinAStation,
   NewReleases,
   Lock,
-  LockOpen
+  LockOpen,
+  Assessment
 } from '@mui/icons-material';
 import {
   AccessAlarm,
@@ -241,6 +242,8 @@ const Sidebar = ({
     currentPath === '/bulk-register'
   ) {
     setSelectedItem('bulk-register');
+  } else if (currentPath === '/reset-password') {
+    setSelectedItem('reset-password');
   } else if (currentPath === '/personalinfo') {
     setSelectedItem('personalinfo');
   } else if (currentPath === '/children') {
@@ -333,6 +336,10 @@ const Sidebar = ({
     setSelectedItem('scholarship-agreement');
   } else if (currentPath === '/subject') {
     setSelectedItem('subject');
+  } else if (currentPath === '/reports') {
+    setSelectedItem('reports');
+  } else if (currentPath === '/employee-reports') {
+    setSelectedItem('employee-reports');
   } else if (currentPath === '/profile') {
     setSelectedItem(null);
   } else {
@@ -441,6 +448,8 @@ const Sidebar = ({
     } else {
       navigate('/admin-home');
     }
+  } else if (item === 'employee-reports') {
+    navigate('/employee-reports');
   } else if (item === '#') {
     navigate('/');
   }
@@ -1139,6 +1148,114 @@ const Sidebar = ({
                 <AppRegistration sx={{ fontSize: 29, marginLeft: '-6%' }} />
               </ListItemIcon>
               <ListItemText primary="Registration" sx={{ marginLeft: '-10px' }} />
+            </ListItem>
+
+            )}
+
+            {(userRole === 'administrator' || userRole === 'superadmin') && (
+            <ListItem
+              button
+              component={Link}
+              to="/reports"
+              onClick={() => handleItemClick('reports')}
+              sx={{
+                bgcolor: selectedItem === 'reports' ? (settings.accentColor || '#FEF9E1') : 'inherit',
+                color: selectedItem === 'reports' ? settings.textPrimaryColor : (settings.textSecondaryColor),
+
+                '& .MuiListItemIcon-root': {
+                  color: selectedItem === 'reports' ? settings.textPrimaryColor : (settings.textSecondaryColor),
+                },
+                '& .MuiListItemText-primary': {
+                  color: selectedItem === 'reports' ? settings.textPrimaryColor : (settings.textSecondaryColor),
+                },
+
+                '&:hover': {
+                  bgcolor: settings.hoverColor || '#6D2323',
+                  color: settings.textSecondaryColor,
+                  '& .MuiListItemIcon-root': { color: settings.textSecondaryColor },
+                  '& .MuiListItemText-primary': { color: settings.textSecondaryColor },
+                },
+
+                borderTopRightRadius: selectedItem === 'reports' ? '15px' : 0,
+                borderBottomRightRadius: selectedItem === 'reports' ? '15px' : 0,
+              }}
+            >
+              <ListItemIcon>
+                <Assessment sx={{ fontSize: 29, marginLeft: '-6%' }} />
+              </ListItemIcon>
+              <ListItemText primary="Reports" sx={{ marginLeft: '-10px' }} />
+            </ListItem>
+
+            )}
+
+            {(userRole === 'administrator' || userRole === 'superadmin') && (
+            <ListItem
+              button
+              component={Link}
+              to="/reset-password"
+              onClick={() => handleItemClick('reset-password')}
+              sx={{
+                bgcolor: selectedItem === 'reset-password' ? (settings.accentColor || '#FEF9E1') : 'inherit',
+                color: selectedItem === 'reset-password' ? settings.textPrimaryColor : (settings.textSecondaryColor),
+
+                '& .MuiListItemIcon-root': {
+                  color: selectedItem === 'reset-password' ? settings.textPrimaryColor : (settings.textSecondaryColor),
+                },
+                '& .MuiListItemText-primary': {
+                  color: selectedItem === 'reset-password' ? settings.textPrimaryColor : (settings.textSecondaryColor),
+                },
+
+                '&:hover': {
+                  bgcolor: settings.hoverColor || '#6D2323',
+                  color: settings.textSecondaryColor,
+                  '& .MuiListItemIcon-root': { color: settings.textSecondaryColor },
+                  '& .MuiListItemText-primary': { color: settings.textSecondaryColor },
+                },
+
+                borderTopRightRadius: selectedItem === 'reset-password' ? '15px' : 0,
+                borderBottomRightRadius: selectedItem === 'reset-password' ? '15px' : 0,
+              }}
+            >
+              <ListItemIcon>
+                <LockOpen sx={{ fontSize: 29, marginLeft: '-6%' }} />
+              </ListItemIcon>
+              <ListItemText primary="Reset Password" sx={{ marginLeft: '-10px' }} />
+            </ListItem>
+
+            )}
+
+            {userRole === 'staff' && (
+            <ListItem
+              button
+              component={Link}
+              to="/employee-reports"
+              onClick={() => handleItemClick('employee-reports')}
+              sx={{
+                bgcolor: selectedItem === 'employee-reports' ? (settings.accentColor || '#FEF9E1') : 'inherit',
+                color: selectedItem === 'employee-reports' ? settings.textPrimaryColor : (settings.textSecondaryColor),
+
+                '& .MuiListItemIcon-root': {
+                  color: selectedItem === 'employee-reports' ? settings.textPrimaryColor : (settings.textSecondaryColor),
+                },
+                '& .MuiListItemText-primary': {
+                  color: selectedItem === 'employee-reports' ? settings.textPrimaryColor : (settings.textSecondaryColor),
+                },
+
+                '&:hover': {
+                  bgcolor: settings.hoverColor || '#6D2323',
+                  color: settings.textSecondaryColor,
+                  '& .MuiListItemIcon-root': { color: settings.textSecondaryColor },
+                  '& .MuiListItemText-primary': { color: settings.textSecondaryColor },
+                },
+
+                borderTopRightRadius: selectedItem === 'employee-reports' ? '15px' : 0,
+                borderBottomRightRadius: selectedItem === 'employee-reports' ? '15px' : 0,
+              }}
+            >
+              <ListItemIcon>
+                <PeopleAltIcon sx={{ fontSize: 29, marginLeft: '-6%' }} />
+              </ListItemIcon>
+              <ListItemText primary="Employee Reports" sx={{ marginLeft: '-10px' }} />
             </ListItem>
 
             )}

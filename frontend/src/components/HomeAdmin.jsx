@@ -78,6 +78,7 @@ import {
   Build,
   PersonAdd,
   Save,
+  Flag,
 } from "@mui/icons-material";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
@@ -2633,10 +2634,11 @@ const AdminHome = () => {
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const [notifModalOpen, setNotifModalOpen] = useState(false);
   const [hoveredCard, setHoveredCard] = useState(null);
-  const [chartView, setChartView] = useState("pie");
   const [anchorEl, setAnchorEl] = useState(null);
   const [logoutOpen, setLogoutOpen] = useState(false);
-  const [tabValue, setTabValue] = useState(0);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [announcementDetails, setAnnouncementDetails] = useState({}); // Store announcement details by notification id
 
   const openMenu = Boolean(anchorEl);
   const navigate = useNavigate();
@@ -2668,6 +2670,123 @@ const AdminHome = () => {
         fill: COLORS(settings)[idx % COLORS(settings).length],
       }))
     : [];
+
+  // Fetch notifications
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (!employeeNumber) {
+        console.log('No employeeNumber, skipping notification fetch');
+        return;
+      }
+      
+      // Ensure employeeNumber is a string
+      const empNum = String(employeeNumber).trim();
+      if (!empNum) return;
+      
+      try {
+        const token = localStorage.getItem("token");
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        
+        console.log(`Fetching notifications for employeeNumber: ${empNum}`);
+        const [notifRes, unreadRes] = await Promise.all([
+          axios.get(`${API_BASE_URL}/api/notifications/${empNum}`, { headers }),
+          axios.get(`${API_BASE_URL}/api/notifications/${empNum}/unread-count`, { headers })
+        ]);
+        
+        // Filter notifications to ensure they belong to the logged-in employee
+        const filteredNotifications = Array.isArray(notifRes.data) 
+          ? notifRes.data.filter(notif => String(notif.employeeNumber).trim() === empNum)
+          : [];
+        
+        console.log(`Found ${filteredNotifications.length} notifications for employee ${empNum}`);
+        setNotifications(filteredNotifications);
+        setUnreadCount(unreadRes.data?.count || 0);
+      } catch (err) {
+        console.error("Error fetching notifications:", err);
+        setNotifications([]);
+        setUnreadCount(0);
+      }
+    };
+    
+    fetchNotifications();
+    // Refresh notifications every 5 seconds for near real-time updates
+    const interval = setInterval(fetchNotifications, 5000);
+    return () => clearInterval(interval);
+  }, [employeeNumber]);
+
+  const handleNotificationClick = async (notification) => {
+    // Mark as read
+    if (notification.read_status === 0) {
+      try {
+        const token = localStorage.getItem("token");
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        await axios.put(
+          `${API_BASE_URL}/api/notifications/${notification.id}/read`,
+          {},
+          { headers }
+        );
+        // Update local state
+        setNotifications(prev =>
+          prev.map(n => n.id === notification.id ? { ...n, read_status: 1 } : n)
+        );
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      } catch (err) {
+        console.error("Error marking notification as read:", err);
+      }
+    }
+
+    // Handle based on notification type
+    if (notification.notification_type === 'payslip' || 
+        (notification.action_link && notification.action_link.includes('payslip'))) {
+      setNotifModalOpen(false);
+      navigate('/payslip');
+    } else if (notification.notification_type === 'announcement' || 
+               (notification.action_link && notification.action_link.includes('announcement'))) {
+      // Fetch the announcement details
+      try {
+        const token = localStorage.getItem("token");
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const annRes = await axios.get(`${API_BASE_URL}/api/announcements`, { headers });
+        const announcementList = Array.isArray(annRes.data) ? annRes.data : [];
+        
+        // Try to find by announcement_id first, then fallback to title matching
+        let matchingAnnouncement = null;
+        if (notification.announcement_id) {
+          matchingAnnouncement = announcementList.find(
+            ann => ann.id === notification.announcement_id || ann.id === parseInt(notification.announcement_id)
+          );
+        }
+        
+        // If not found by ID, try to get from announcementDetails state
+        if (!matchingAnnouncement && notification.announcement_id) {
+          const cachedAnnouncement = announcementDetails[notification.id];
+          if (cachedAnnouncement) {
+            matchingAnnouncement = cachedAnnouncement;
+          }
+        }
+        
+        // If still not found, get the most recent announcement
+        if (!matchingAnnouncement && announcementList.length > 0) {
+          matchingAnnouncement = announcementList[0]; // Most recent
+        }
+        
+        if (matchingAnnouncement) {
+          setNotifModalOpen(false);
+          setSelectedAnnouncement(matchingAnnouncement);
+          setOpenModal(true);
+        } else {
+          // If not found, just close notification modal
+          setNotifModalOpen(false);
+        }
+      } catch (err) {
+        console.error('Error fetching announcement:', err);
+        setNotifModalOpen(false);
+      }
+    } else if (notification.action_link) {
+      setNotifModalOpen(false);
+      navigate(notification.action_link);
+    }
+  };
 
   return (
     <Box
@@ -2761,12 +2880,34 @@ const AdminHome = () => {
                     "&:hover": { bgcolor: `${settings.primaryColor}33` },
                     color: settings.textPrimaryColor,
                   }}
-                  onClick={() => setNotifModalOpen(true)}
+                  onClick={async () => {
+                    // Immediately fetch latest notifications when opening modal
+                    if (employeeNumber) {
+                      try {
+                        const empNum = String(employeeNumber).trim();
+                        const token = localStorage.getItem("token");
+                        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+                        const [notifRes, unreadRes] = await Promise.all([
+                          axios.get(`${API_BASE_URL}/api/notifications/${empNum}`, { headers }),
+                          axios.get(`${API_BASE_URL}/api/notifications/${empNum}/unread-count`, { headers })
+                        ]);
+                        
+                        // Filter notifications to ensure they belong to the logged-in employee
+                        const filteredNotifications = Array.isArray(notifRes.data) 
+                          ? notifRes.data.filter(notif => String(notif.employeeNumber).trim() === empNum)
+                          : [];
+                        
+                        setNotifications(filteredNotifications);
+                        setUnreadCount(unreadRes.data?.count || 0);
+                      } catch (err) {
+                        console.error("Error fetching notifications:", err);
+                      }
+                    }
+                    setNotifModalOpen(true);
+                  }}
                 >
                   <Badge
-                    badgeContent={
-                      Array.isArray(announcements) ? announcements.length : 0
-                    }
+                    badgeContent={unreadCount}
                     color="error"
                     max={9}
                   >
@@ -2980,320 +3121,6 @@ const AdminHome = () => {
           </Grid>
         </Grid>
 
-        <Grid container spacing={2}>
-          <Grid item xs={12}>
-            <Tabs
-              value={tabValue}
-              onChange={(e, v) => setTabValue(v)}
-              sx={{
-                mb: 2,
-                "& .MuiTab-root": {
-                  color: settings.textPrimaryColor,
-                  "&.Mui-selected": {
-                    color: settings.textPrimaryColor,
-                  },
-                },
-                "& .MuiTabs-indicator": {
-                  backgroundColor: settings.textPrimaryColor,
-                },
-              }}
-            >
-              <Tab
-                label="Overview"
-                sx={{
-                  fontSize: "0.875rem",
-                  fontWeight: 600,
-                  textTransform: "none",
-                }}
-              />
-              <Tab
-                label="Analytics"
-                sx={{
-                  fontSize: "0.875rem",
-                  fontWeight: 600,
-                  textTransform: "none",
-                }}
-              />
-            </Tabs>
-
-            {tabValue === 0 && (
-              <Grid container spacing={2}>
-                <Grid item xs={12} md={6}>
-                  <CompactChart
-                    title="Weekly Attendance"
-                    height={200}
-                    settings={settings}
-                  >
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={weeklyAttendanceData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                        <XAxis dataKey="day" stroke="#666" fontSize={12} />
-                        <YAxis stroke="#666" fontSize={12} />
-                        <RechartTooltip />
-                        <Bar dataKey="present" fill={settings.primaryColor} />
-                        <Bar dataKey="absent" fill={settings.secondaryColor} />
-                        <Bar dataKey="late" fill={settings.hoverColor} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </CompactChart>
-                </Grid>
-
-                <Grid item xs={12} md={6}>
-                  <CompactChart
-                    title="Department Attendance Rate"
-                    height={200}
-                    settings={settings}
-                  >
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={departmentAttendanceData}
-                        layout="horizontal"
-                      >
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                        <XAxis type="number" stroke="#666" fontSize={12} />
-                        <YAxis
-                          dataKey="department"
-                          type="category"
-                          stroke="#666"
-                          fontSize={12}
-                          width={60}
-                        />
-                        <RechartTooltip />
-                        <Bar dataKey="rate" fill={settings.primaryColor} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </CompactChart>
-                </Grid>
-
-                <Grid item xs={12} md={6}>
-                  <CompactChart
-                    title="Payroll Status"
-                    height={200}
-                    settings={settings}
-                  >
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={payrollStatusData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={40}
-                          outerRadius={70}
-                          paddingAngle={2}
-                          dataKey="value"
-                        >
-                          {Array.isArray(payrollStatusData) &&
-                            payrollStatusData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.fill} />
-                            ))}
-                        </Pie>
-                        <RechartTooltip />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </CompactChart>
-                </Grid>
-
-                <Grid item xs={12} md={6}>
-                  <CompactChart
-                    title="Today's Attendance Summary"
-                    height={200}
-                    settings={settings}
-                  >
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        height: "100%",
-                      }}
-                    >
-                      <Box
-                        sx={{ position: "relative", width: 140, height: 140 }}
-                      >
-                        <svg width="140" height="140" viewBox="0 0 140 140">
-                          <circle
-                            cx="70"
-                            cy="70"
-                            r="60"
-                            fill="none"
-                            stroke="#f0f0f0"
-                            strokeWidth="12"
-                          />
-                          <circle
-                            cx="70"
-                            cy="70"
-                            r="60"
-                            fill="none"
-                            stroke={settings.primaryColor}
-                            strokeWidth="12"
-                            strokeDasharray={`${2 * Math.PI * 60 * 0.877} ${
-                              2 * Math.PI * 60
-                            }`}
-                            strokeDashoffset="0"
-                            strokeLinecap="round"
-                            transform="rotate(-90 70 70)"
-                          />
-                        </svg>
-                        <Box
-                          sx={{
-                            position: "absolute",
-                            top: "50%",
-                            left: "50%",
-                            transform: "translate(-50%, -50%)",
-                            textAlign: "center",
-                          }}
-                        >
-                          <Typography
-                            variant="h3"
-                            sx={{
-                              fontWeight: 700,
-                              color: settings.textPrimaryColor,
-                              lineHeight: 1,
-                            }}
-                          >
-                            87.7
-                          </Typography>
-                          <Typography
-                            variant="caption"
-                            sx={{ color: settings.textSecondaryColor }}
-                          >
-                            % Present
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </Box>
-                  </CompactChart>
-                </Grid>
-              </Grid>
-            )}
-
-            {tabValue === 1 && (
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <CompactChart
-                    title="Monthly Attendance Trend"
-                    height={250}
-                    settings={settings}
-                  >
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={monthlyAttendanceTrend}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                        <XAxis dataKey="month" stroke="#666" fontSize={12} />
-                        <YAxis stroke="#666" fontSize={12} />
-                        <RechartTooltip />
-                        <Legend />
-                        <Line
-                          type="monotone"
-                          dataKey="attendance"
-                          stroke={settings.primaryColor}
-                          strokeWidth={2}
-                          dot={{ fill: settings.primaryColor, r: 4 }}
-                          name="Attendance %"
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="leaves"
-                          stroke={settings.secondaryColor}
-                          strokeWidth={2}
-                          dot={{ fill: settings.secondaryColor, r: 4 }}
-                          name="Leaves %"
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="overtime"
-                          stroke={settings.hoverColor}
-                          strokeWidth={2}
-                          dot={{ fill: settings.hoverColor, r: 4 }}
-                          name="Overtime %"
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </CompactChart>
-                </Grid>
-
-                <Grid item xs={12}>
-                  <CompactChart
-                    title="Payroll Trend (₱)"
-                    height={200}
-                    settings={settings}
-                  >
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={payrollTrendData}>
-                        <defs>
-                          <linearGradient
-                            id="colorGross"
-                            x1="0"
-                            y1="0"
-                            x2="0"
-                            y2="1"
-                          >
-                            <stop
-                              offset="5%"
-                              stopColor={settings.primaryColor}
-                              stopOpacity={0.8}
-                            />
-                            <stop
-                              offset="95%"
-                              stopColor={settings.primaryColor}
-                              stopOpacity={0}
-                            />
-                          </linearGradient>
-                          <linearGradient
-                            id="colorNet"
-                            x1="0"
-                            y1="0"
-                            x2="0"
-                            y2="1"
-                          >
-                            <stop
-                              offset="5%"
-                              stopColor={settings.secondaryColor}
-                              stopOpacity={0.8}
-                            />
-                            <stop
-                              offset="95%"
-                              stopColor={settings.secondaryColor}
-                              stopOpacity={0}
-                            />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                        <XAxis dataKey="month" stroke="#666" fontSize={12} />
-                        <YAxis stroke="#666" fontSize={12} />
-                        <RechartTooltip
-                          formatter={(value) => [
-                            `₱${value.toLocaleString()}`,
-                            "",
-                          ]}
-                        />
-                        <Legend />
-                        <Area
-                          type="monotone"
-                          dataKey="grossPay"
-                          stroke={settings.primaryColor}
-                          strokeWidth={2}
-                          fillOpacity={1}
-                          fill="url(#colorGross)"
-                          name="Gross Pay"
-                        />
-                        <Area
-                          type="monotone"
-                          dataKey="netPay"
-                          stroke={settings.secondaryColor}
-                          strokeWidth={2}
-                          fillOpacity={1}
-                          fill="url(#colorNet)"
-                          name="Net Pay"
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </CompactChart>
-                </Grid>
-              </Grid>
-            )}
-          </Grid>
-        </Grid>
       </Box>
 
       <Modal open={openModal} onClose={handleCloseModal}>
@@ -3453,107 +3280,220 @@ const AdminHome = () => {
             <Box
               sx={{ maxHeight: "calc(100vh - 250px)", overflowY: "auto", p: 2 }}
             >
-              {Array.isArray(announcements) &&
-                announcements.slice(0, 8).map((item, idx) => (
-                  <Grow in timeout={300 + idx * 50} key={idx}>
-                    <Box
-                      sx={{
-                        mb: 2,
-                        p: 2.5,
-                        borderRadius: 3,
-                        background: `${settings.primaryColor}0A`,
-                        border: `1px solid ${settings.primaryColor}26`,
-                        cursor: "pointer",
-                        transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                        position: "relative",
-                        overflow: "hidden",
-                        "&::before": {
-                          content: '""',
-                          position: "absolute",
-                          left: 0,
-                          top: 0,
-                          bottom: 0,
-                          width: 4,
-                          background: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
-                          transform: "scaleY(0)",
-                          transition: "transform 0.3s",
-                        },
-                        "&:hover": {
-                          background: `${settings.primaryColor}1A`,
-                          transform: "translateX(8px)",
-                          boxShadow: `0 8px 24px ${settings.primaryColor}33`,
-                        },
-                        "&:hover::before": { transform: "scaleY(1)" },
-                      }}
-                      onClick={() => {
-                        setSelectedAnnouncement(item);
-                        setNotifModalOpen(false);
-                        setOpenModal(true);
-                      }}
-                    >
+              {/* System Notifications (Payslip, Announcements, etc.) */}
+              {Array.isArray(notifications) &&
+                notifications.slice(0, 10).map((notif, idx) => {
+                  const announcement = notif.notification_type === 'announcement' 
+                    ? announcementDetails[notif.id] 
+                    : null;
+                  
+                  // For announcement notifications, show full image with overlaid title
+                  if (notif.notification_type === 'announcement' && announcement) {
+                    return (
+                      <Grow in timeout={300 + idx * 50} key={`notif-${notif.id}`}>
+                        <Box
+                          sx={{
+                            mb: 2,
+                            borderRadius: 3,
+                            overflow: 'hidden',
+                            cursor: "pointer",
+                            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                            boxShadow: `0 2px 8px ${settings.primaryColor}33`,
+                            opacity: notif.read_status === 1 ? 0.7 : 1,
+                            position: "relative",
+                            height: 200,
+                            "&:hover": {
+                              transform: "translateY(-4px)",
+                              boxShadow: `0 8px 24px ${settings.primaryColor}4D`,
+                              opacity: 1
+                            },
+                          }}
+                          onClick={() => handleNotificationClick(notif)}
+                        >
+                          <Box
+                            component="img"
+                            src={announcement.image ? `${API_BASE_URL}${announcement.image}` : '/api/placeholder/400/200'}
+                            alt={announcement.title}
+                            sx={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover',
+                            }}
+                          />
+                          <Box
+                            sx={{
+                              position: 'absolute',
+                              bottom: 0,
+                              left: 0,
+                              right: 0,
+                              background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 50%, transparent 100%)',
+                              p: 2,
+                            }}
+                          >
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                              <Flag 
+                                sx={{ 
+                                  color: '#ff69b4',
+                                  fontSize: 18,
+                                }} 
+                              />
+                              <Typography 
+                                fontSize="0.75rem"
+                                sx={{ 
+                                  color: '#fff',
+                                  fontWeight: 600,
+                                  textTransform: 'uppercase',
+                                  letterSpacing: 0.5
+                                }}
+                              >
+                                New Announcement
+                              </Typography>
+                            </Box>
+                            <Typography 
+                              fontWeight={700} 
+                              fontSize="1.1rem" 
+                              sx={{ 
+                                color: '#fff',
+                                mb: 0.5,
+                                lineHeight: 1.3,
+                                textShadow: '0 2px 8px rgba(0,0,0,0.5)'
+                              }}
+                            >
+                              {announcement.title}
+                            </Typography>
+                            <Typography 
+                              fontSize="0.75rem" 
+                              sx={{ 
+                                color: 'rgba(255,255,255,0.9)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 0.5
+                              }}
+                            >
+                              <AccessTimeIcon sx={{ fontSize: 12 }} />
+                              {notif.created_at
+                                ? new Date(notif.created_at).toLocaleDateString('en-GB', {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    year: 'numeric'
+                                  })
+                                : ''}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Grow>
+                    );
+                  }
+                  
+                  // For other notifications (payslip, etc.), use the regular style
+                  return (
+                    <Grow in timeout={300 + idx * 50} key={`notif-${notif.id}`}>
                       <Box
                         sx={{
-                          display: "flex",
-                          alignItems: "flex-start",
-                          gap: 2,
+                          mb: 2,
+                          p: 2.5,
+                          borderRadius: 3,
+                          background: notif.read_status === 0 
+                            ? (notif.notification_type === 'payslip'
+                                ? 'rgba(76, 175, 80, 0.1)'
+                                : `${settings.primaryColor}1A`)
+                            : `${settings.primaryColor}0A`,
+                          border: `1px solid ${settings.primaryColor}26`,
+                          borderLeft: notif.read_status === 0 
+                            ? (notif.notification_type === 'payslip'
+                                ? '4px solid #4caf50'
+                                : `4px solid ${settings.primaryColor}`)
+                            : `1px solid ${settings.primaryColor}26`,
+                          cursor: "pointer",
+                          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                          position: "relative",
+                          overflow: "hidden",
+                          "&:hover": {
+                            background: `${settings.primaryColor}1A`,
+                            transform: "translateX(8px)",
+                            boxShadow: `0 8px 24px ${settings.primaryColor}33`,
+                          },
                         }}
+                        onClick={() => handleNotificationClick(notif)}
                       >
                         <Box
                           sx={{
-                            width: 12,
-                            height: 12,
-                            borderRadius: "50%",
-                            background: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
-                            mt: 0.5,
-                            flexShrink: 0,
-                            boxShadow: `0 0 12px ${settings.primaryColor}99`,
-                            animation: "pulse 2s infinite",
-                            "@keyframes pulse": {
-                              "0%, 100%": { opacity: 1 },
-                              "50%": { opacity: 0.5 },
-                            },
+                            display: "flex",
+                            alignItems: "flex-start",
+                            gap: 1.5,
                           }}
-                        />
-                        <Box sx={{ flex: 1 }}>
-                          <Typography
+                        >
+                          <Box
                             sx={{
-                              fontWeight: 700,
-                              fontSize: "1rem",
-                              color: settings.textPrimaryColor,
-                              mb: 0.5,
-                              lineHeight: 1.4,
+                              width: 12,
+                              height: 12,
+                              borderRadius: "50%",
+                              background: notif.notification_type === 'payslip'
+                                ? `linear-gradient(135deg, #4caf50, #2e7d32)`
+                                : `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
+                              mt: 0.5,
+                              flexShrink: 0,
+                              boxShadow: `0 0 12px ${settings.primaryColor}99`,
+                              opacity: notif.read_status === 0 ? 1 : 0.5,
                             }}
-                          >
-                            {item.title}
-                          </Typography>
-                          <Typography
+                          />
+                          <Box sx={{ flex: 1 }}>
+                            <Typography
+                              sx={{
+                                fontWeight: 700,
+                                fontSize: "1rem",
+                                color: settings.textPrimaryColor,
+                                mb: 0.5,
+                                lineHeight: 1.4,
+                              }}
+                            >
+                              {notif.notification_type === 'payslip' 
+                                ? '💰 Payslip Available' 
+                                : 'Notification'}
+                            </Typography>
+                            <Typography
+                              sx={{
+                                fontSize: "0.85rem",
+                                color: settings.textPrimaryColor,
+                                mb: 0.5,
+                              }}
+                            >
+                              {notif.description}
+                            </Typography>
+                            <Typography
+                              sx={{
+                                fontSize: "0.8rem",
+                                color: settings.textPrimaryColor,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 0.5,
+                              }}
+                            >
+                              <AccessTimeIcon sx={{ fontSize: 14 }} />
+                              {notif.created_at
+                                ? new Date(notif.created_at).toLocaleDateString('en-GB', {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    year: 'numeric'
+                                  })
+                                : ""}
+                            </Typography>
+                          </Box>
+                          <ArrowForward
                             sx={{
-                              fontSize: "0.8rem",
                               color: settings.textPrimaryColor,
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 0.5,
+                              fontSize: 20,
+                              transition: "transform 0.3s",
+                              mt: 0.5,
+                              flexShrink: 0
                             }}
-                          >
-                            <AccessTimeIcon sx={{ fontSize: 14 }} />
-                            {item.date
-                              ? new Date(item.date).toLocaleDateString()
-                              : ""}
-                          </Typography>
+                          />
                         </Box>
-                        <ArrowForward
-                          sx={{
-                            color: settings.textPrimaryColor,
-                            fontSize: 20,
-                            transition: "transform 0.3s",
-                          }}
-                        />
                       </Box>
-                    </Box>
-                  </Grow>
-                ))}
-              {(!Array.isArray(announcements) ||
-                announcements.length === 0) && (
+                    </Grow>
+                  );
+                })}
+              {(!Array.isArray(notifications) || notifications.length === 0) && (
                 <Box sx={{ textAlign: "center", py: 8 }}>
                   <NotificationsIcon
                     sx={{ fontSize: 80, color: `${settings.primaryColor}33` }}

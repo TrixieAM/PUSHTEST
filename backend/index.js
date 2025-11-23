@@ -48,6 +48,9 @@ const tasksRoutes = require('./routes/tasks');
 const dashboardRoutes = require('./routes/dashboard');
 const notesRoutes = require('./routes/notes');
 const eventsRoutes = require('./routes/events');
+const notificationsRoutes = require('./routes/notifications');
+const reportsRoutes = require('./routes/reports');
+const settingsExtendedRoutes = require('./routes/settings-extended');
 
 const app = express();
 
@@ -147,6 +150,9 @@ app.use('/', tasksRoutes);
 app.use('/', dashboardRoutes);
 app.use('/', notesRoutes);
 app.use('/', eventsRoutes);
+app.use('/', notificationsRoutes);
+app.use('/', reportsRoutes);
+app.use('/', settingsExtendedRoutes);
 
 // ============================================
 // ROUTE ORGANIZATION STATUS

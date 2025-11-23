@@ -297,8 +297,71 @@ const Login = () => {
       const data = await response.json();
       if (response.ok) {
         setUserEmail(data.email);
-        await send2FACode(data.email, formData.employeeNumber);
-        setShow2FA(true);
+        
+        // Check if MFA is enabled for this user
+        try {
+          const prefResponse = await fetch(`${API_BASE_URL}/api/user-preferences/${formData.employeeNumber}`);
+          
+          let mfaEnabled = true; // Default to enabled for security
+          
+          if (prefResponse.ok) {
+            const prefData = await prefResponse.json();
+            // Check if MFA is explicitly disabled (0 or false)
+            // enable_mfa can be: 1 (enabled), 0 (disabled), true (enabled), false (disabled)
+            // If undefined/null, default to enabled for security
+            if (prefData.enable_mfa === 0 || prefData.enable_mfa === false) {
+              mfaEnabled = false;
+            } else {
+              // Default to enabled if 1, true, or undefined
+              mfaEnabled = true;
+            }
+            console.log('MFA preference check:', { enable_mfa: prefData.enable_mfa, mfaEnabled });
+          } else {
+            // If preferences don't exist or error, default to enabled
+            console.log('MFA preferences not found, defaulting to enabled');
+          }
+          
+          if (mfaEnabled) {
+            // MFA is enabled, send code and show 2FA modal
+            console.log('MFA is enabled, sending verification code');
+            await send2FACode(data.email, formData.employeeNumber);
+            setShow2FA(true);
+          } else {
+            // MFA is disabled, complete login directly
+            console.log('MFA is disabled, completing login directly');
+            const loginRes = await fetch(`${API_BASE_URL}/complete-2fa-login`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email: data.email, employeeNumber: formData.employeeNumber }),
+            });
+            const loginData = await loginRes.json();
+            
+            if (loginRes.ok) {
+              localStorage.setItem("token", loginData.token);
+              const decoded = JSON.parse(atob(loginData.token.split(".")[1]));
+              localStorage.setItem("employeeNumber", decoded.employeeNumber || "");
+              localStorage.setItem("role", decoded.role || "");
+              
+              if (loginData.isDefaultPassword) {
+                setIsDefaultPassword(true);
+                setShowPasswordPrompt(true);
+              } else {
+                if (decoded.role === "superadmin" || decoded.role === "administrator") {
+                  window.location.href = "/admin-home";
+                } else {
+                  window.location.href = "/home";
+                }
+              }
+            } else {
+              setErrorMessage(loginData.error || "Login completion failed.");
+            }
+          }
+        } catch (prefErr) {
+          console.error('Error checking MFA preference:', prefErr);
+          // Default to enabled if error (for security)
+          await send2FACode(data.email, formData.employeeNumber);
+          setShow2FA(true);
+        }
       } else setErrorMessage(data.error || "Invalid credentials");
     } catch {
       setErrorMessage("Connection error. Please try again.");

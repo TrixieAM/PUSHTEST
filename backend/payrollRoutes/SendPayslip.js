@@ -338,6 +338,38 @@ EARIST HR Testing Team`,
             console.error('Audit log error:', e);
           }
 
+          // Create notification for employee
+          try {
+            const periodLabel = new Date().toLocaleDateString('en-US', {
+              month: 'long',
+              year: 'numeric',
+            });
+            const notificationDescription = `Your payslip for ${periodLabel} has been processed and sent to your email. Click to view your payslip.`;
+            
+            // Check if notification_type and action_link columns exist, if not use description only
+            db.query(
+              `INSERT INTO notifications (employeeNumber, description, read_status, notification_type, action_link) 
+               VALUES (?, ?, 0, 'payslip', '/payslip')`,
+              [employeeNumber, notificationDescription],
+              (notifErr) => {
+                if (notifErr) {
+                  // Fallback: try without notification_type and action_link
+                  db.query(
+                    `INSERT INTO notifications (employeeNumber, description, read_status) 
+                     VALUES (?, ?, 0)`,
+                    [employeeNumber, notificationDescription],
+                    (fallbackErr) => {
+                      if (fallbackErr) {
+                        console.error('Notification error:', fallbackErr);
+                      }
+                    }
+                  );
+                }
+              }
+            );
+          } catch (notifError) {
+            console.error('Error creating notification:', notifError);
+          }
 
           results.push({ employeeNumber, success: true });
         } catch (err) {

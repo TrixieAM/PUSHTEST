@@ -53,38 +53,53 @@ router.post('/send-2fa-code', async (req, res) => {
       .json({ error: 'Email and employee number required' });
   }
 
-  const query = `
-    SELECT p.firstName, 
-           p.middleName, 
-           p.lastName, 
-           p.nameExtension,
-           CONCAT(p.firstName, 
-                  CASE WHEN p.middleName IS NOT NULL THEN CONCAT(' ', p.middleName) ELSE '' END,
-                  ' ', p.lastName,
-                  CASE WHEN p.nameExtension IS NOT NULL THEN CONCAT(' ', p.nameExtension) ELSE '' END
-           ) as fullName
-    FROM users u 
-    LEFT JOIN person_table p ON u.employeeNumber = p.agencyEmployeeNum 
-    WHERE u.email = ? AND u.employeeNumber = ?
-  `;
+  // Check if MFA is enabled for this user
+  db.query(
+    'SELECT enable_mfa FROM user_preferences WHERE employee_number = ?',
+    [employeeNumber],
+    async (err, prefResult) => {
+      if (err) {
+        console.error('Error checking MFA preference:', err);
+        // Continue with default (enabled) if error
+      } else {
+        // If MFA is disabled, return error
+        if (prefResult.length > 0 && (prefResult[0].enable_mfa === 0 || prefResult[0].enable_mfa === false)) {
+          return res.status(400).json({ error: 'MFA is disabled for this account' });
+        }
+      }
 
-  db.query(query, [email, employeeNumber], async (err, result) => {
-    if (err) {
-      console.error('DB error:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (result.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+      const query = `
+        SELECT p.firstName, 
+               p.middleName, 
+               p.lastName, 
+               p.nameExtension,
+               CONCAT(p.firstName, 
+                      CASE WHEN p.middleName IS NOT NULL THEN CONCAT(' ', p.middleName) ELSE '' END,
+                      ' ', p.lastName,
+                      CASE WHEN p.nameExtension IS NOT NULL THEN CONCAT(' ', p.nameExtension) ELSE '' END
+               ) as fullName
+        FROM users u 
+        LEFT JOIN person_table p ON u.employeeNumber = p.agencyEmployeeNum 
+        WHERE u.email = ? AND u.employeeNumber = ?
+      `;
 
-    const user = result[0];
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = Date.now() + 15 * 60 * 1000;
+      db.query(query, [email, employeeNumber], async (err, result) => {
+        if (err) {
+          console.error('DB error:', err);
+          return res.status(500).json({ error: 'Database error' });
+        }
+        if (result.length === 0) {
+          return res.status(404).json({ error: 'User not found' });
+        }
 
-    twoFACodes[email] = { code, expiresAt };
+        const user = result[0];
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = Date.now() + 15 * 60 * 1000;
 
-    try {
-      await transporter.sendMail({
+        twoFACodes[email] = { code, expiresAt };
+
+        try {
+          await transporter.sendMail({
         from: '"EARIST HR Testing" <yourgmail@gmail.com>',
         to: email,
         subject: 'Login Verification Code',
@@ -113,12 +128,14 @@ router.post('/send-2fa-code', async (req, res) => {
       </div>
     `,
       });
-      res.json({ message: 'Verification code sent' });
-    } catch (err) {
-      console.error('Email send error:', err);
-      res.status(500).json({ error: 'Failed to send email' });
+          res.json({ message: 'Verification code sent' });
+        } catch (err) {
+          console.error('Email send error:', err);
+          res.status(500).json({ error: 'Failed to send email' });
+        }
+      });
     }
-  });
+  );
 });
 
 // Verify 2FA code

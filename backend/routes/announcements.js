@@ -29,10 +29,91 @@ router.post('/api/announcements', upload.single('image'), (req, res) => {
       console.error('Error creating announcement:', err);
       return res.status(500).json({ error: 'Internal server error' });
     }
-    res.status(201).json({
-      message: 'Announcement created successfully',
-      id: result.insertId,
-    });
+
+    // Create notifications for all employees
+    const announcementId = result.insertId;
+    const notificationDescription = `New announcement has been posted. Click to see details.`;
+    
+    // Fetch all employee numbers from users table and create notifications
+    db.query(
+      'SELECT DISTINCT employeeNumber FROM users WHERE employeeNumber IS NOT NULL AND employeeNumber != ""',
+      async (userErr, users) => {
+        if (userErr) {
+          console.error('Error fetching users for notifications:', userErr);
+          // Still return success even if notification creation fails
+          return res.status(201).json({
+            message: 'Announcement created successfully',
+            id: announcementId,
+          });
+        }
+
+        if (users && users.length > 0) {
+          // Create notifications for each employee using promises
+          const notificationPromises = users.map((user) => {
+            return new Promise((resolve) => {
+              const empNum = String(user.employeeNumber).trim();
+              if (!empNum) {
+                resolve({ success: false, reason: 'empty employee number' });
+                return;
+              }
+
+              // Try with notification_type, action_link, and announcement_id first
+              db.query(
+                `INSERT INTO notifications (employeeNumber, description, read_status, notification_type, action_link, announcement_id) 
+                 VALUES (?, ?, 0, 'announcement', NULL, ?)`,
+                [empNum, notificationDescription, announcementId],
+                (notifErr) => {
+                  if (notifErr) {
+                    // Fallback: try without announcement_id
+                    db.query(
+                      `INSERT INTO notifications (employeeNumber, description, read_status, notification_type, action_link) 
+                       VALUES (?, ?, 0, 'announcement', NULL)`,
+                      [empNum, notificationDescription],
+                      (fallbackErr) => {
+                        if (fallbackErr) {
+                          // Final fallback: try without notification_type and action_link
+                          db.query(
+                            `INSERT INTO notifications (employeeNumber, description, read_status) 
+                             VALUES (?, ?, 0)`,
+                            [empNum, notificationDescription],
+                            (finalErr) => {
+                              if (finalErr) {
+                                console.error(`Error creating notification for employee ${empNum}:`, finalErr);
+                                resolve({ success: false, employeeNumber: empNum });
+                              } else {
+                                resolve({ success: true, employeeNumber: empNum });
+                              }
+                            }
+                          );
+                        } else {
+                          resolve({ success: true, employeeNumber: empNum });
+                        }
+                      }
+                    );
+                  } else {
+                    resolve({ success: true, employeeNumber: empNum });
+                  }
+                }
+              );
+            });
+          });
+
+          // Wait for all notifications to be created (but don't block the response)
+          Promise.all(notificationPromises).then((results) => {
+            const successful = results.filter(r => r.success).length;
+            const failed = results.filter(r => !r.success).length;
+            console.log(`Created ${successful} announcement notifications${failed > 0 ? ` (${failed} failed)` : ''}`);
+          }).catch((err) => {
+            console.error('Error processing notification promises:', err);
+          });
+        }
+
+        res.status(201).json({
+          message: 'Announcement created successfully',
+          id: announcementId,
+        });
+      }
+    );
   });
 });
 
