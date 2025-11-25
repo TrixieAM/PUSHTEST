@@ -1116,42 +1116,6 @@ const Sidebar = ({
             )}
             </>
 
-            {userRole !== 'staff' && (
-            <ListItem
-              button
-              component={Link}
-              to="/registration"
-              onClick={() => handleItemClick('bulk-register')}
-              sx={{
-                bgcolor: selectedItem === 'bulk-register' ? (settings.accentColor || '#FEF9E1') : 'inherit',
-                color: selectedItem === 'bulk-register' ? settings.textPrimaryColor : (settings.textSecondaryColor),
-
-                '& .MuiListItemIcon-root': {
-                  color: selectedItem === 'bulk-register' ? settings.textPrimaryColor : (settings.textSecondaryColor),
-                },
-                '& .MuiListItemText-primary': {
-                  color: selectedItem === 'bulk-register' ? settings.textPrimaryColor : (settings.textSecondaryColor),
-                },
-
-                '&:hover': {
-                  bgcolor: settings.hoverColor || '#6D2323',
-                  color: settings.textSecondaryColor,
-                  '& .MuiListItemIcon-root': { color: settings.textSecondaryColor },
-                  '& .MuiListItemText-primary': { color: settings.textSecondaryColor },
-                },
-
-                borderTopRightRadius: selectedItem === 'bulk-register' ? '15px' : 0,
-                borderBottomRightRadius: selectedItem === 'bulk-register' ? '15px' : 0,
-              }}
-            >
-              <ListItemIcon>
-                <AppRegistration sx={{ fontSize: 29, marginLeft: '-6%' }} />
-              </ListItemIcon>
-              <ListItemText primary="Registration" sx={{ marginLeft: '-10px' }} />
-            </ListItem>
-
-            )}
-
             {(userRole === 'administrator' || userRole === 'superadmin') && (
             <ListItem
               button
@@ -1184,6 +1148,43 @@ const Sidebar = ({
                 <Assessment sx={{ fontSize: 29, marginLeft: '-6%' }} />
               </ListItemIcon>
               <ListItemText primary="Reports" sx={{ marginLeft: '-10px' }} />
+            </ListItem>
+
+            )}
+
+            
+            {userRole !== 'staff' && (
+            <ListItem
+              button
+              component={Link}
+              to="/registration"
+              onClick={() => handleItemClick('bulk-register')}
+              sx={{
+                bgcolor: selectedItem === 'bulk-register' ? (settings.accentColor || '#FEF9E1') : 'inherit',
+                color: selectedItem === 'bulk-register' ? settings.textPrimaryColor : (settings.textSecondaryColor),
+
+                '& .MuiListItemIcon-root': {
+                  color: selectedItem === 'bulk-register' ? settings.textPrimaryColor : (settings.textSecondaryColor),
+                },
+                '& .MuiListItemText-primary': {
+                  color: selectedItem === 'bulk-register' ? settings.textPrimaryColor : (settings.textSecondaryColor),
+                },
+
+                '&:hover': {
+                  bgcolor: settings.hoverColor || '#6D2323',
+                  color: settings.textSecondaryColor,
+                  '& .MuiListItemIcon-root': { color: settings.textSecondaryColor },
+                  '& .MuiListItemText-primary': { color: settings.textSecondaryColor },
+                },
+
+                borderTopRightRadius: selectedItem === 'bulk-register' ? '15px' : 0,
+                borderBottomRightRadius: selectedItem === 'bulk-register' ? '15px' : 0,
+              }}
+            >
+              <ListItemIcon>
+                <AppRegistration sx={{ fontSize: 29, marginLeft: '-6%' }} />
+              </ListItemIcon>
+              <ListItemText primary="Registration" sx={{ marginLeft: '-10px' }} />
             </ListItem>
 
             )}

@@ -1,5 +1,5 @@
 import API_BASE_URL from '../apiConfig';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -20,6 +20,18 @@ import {
   IconButton,
   InputAdornment,
   CircularProgress,
+  Container,
+  Alert,
+  Grid,
+  Card,
+  CardContent,
+  Tooltip,
+  Avatar,
+  Fade,
+  Backdrop,
+  styled,
+  alpha,
+  CardHeader,
 } from '@mui/material';
 import {
   Download as DownloadIcon,
@@ -37,8 +49,86 @@ import {
   FileDownload as FileDownloadIcon,
   Close as CloseIcon,
   Search as SearchIcon,
+  FilterList,
+  Security,
+  Warning,
+  Error,
+  Home,
+  Refresh,
+  Person,
+  ViewList,
+  SupervisorAccount,
+  AdminPanelSettings,
+  Work,
+  Info,
+  Category,
+  Assignment,
+  Assessment,
+  Payment,
+  Description as FormIcon,
+  Folder,
+  FolderSpecial,
 } from '@mui/icons-material';
 import { getUserInfo } from '../utils/auth';
+
+// Get auth headers function
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('token');
+  return {
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  };
+};
+
+// System Settings Hook
+const useSystemSettings = () => {
+  const [settings, setSettings] = useState({
+    primaryColor: '#894444',
+    secondaryColor: '#6d2323',
+    accentColor: '#FEF9E1',
+    textColor: '#FFFFFF',
+    textPrimaryColor: '#6D2323', 
+    textSecondaryColor: '#FEF9E1', 
+    hoverColor: '#6D2323',
+    backgroundColor: '#FFFFFF',
+  });
+
+  useEffect(() => {
+    const storedSettings = localStorage.getItem('systemSettings');
+    if (storedSettings) {
+      try {
+        const parsedSettings = JSON.parse(storedSettings);
+        if (parsedSettings && typeof parsedSettings === 'object') {
+          setSettings(parsedSettings);
+        }
+      } catch (error) {
+        console.error('Error parsing stored settings:', error);
+      }
+    }
+
+    const fetchSettings = async () => {
+      try {
+        const url = API_BASE_URL.includes('/api') 
+          ? `${API_BASE_URL}/system-settings`
+          : `${API_BASE_URL}/api/system-settings`;
+        
+        const response = await axios.get(url, getAuthHeaders());
+        if (response.data && typeof response.data === 'object') {
+          setSettings(response.data);
+          localStorage.setItem('systemSettings', JSON.stringify(response.data));
+        }
+      } catch (error) {
+        console.error('Error fetching system settings:', error);
+      }
+    };
+
+    fetchSettings();
+  }, []);
+
+  return settings;
+};
 
 const AuditLogs = () => {
   const navigate = useNavigate();
@@ -56,11 +146,67 @@ const AuditLogs = () => {
   const [passwordInput, setPasswordInput] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [passwordError, setPasswordError] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
   const HARDCODED_PASSWORD = '20134507';
   const SESSION_DURATION = 60 * 60 * 1000; // 1 hour
 
-  // Check if session is still valid
+  const settings = useSystemSettings();
+  
+  // Memoized styled components
+  const GlassCard = useMemo(() => styled(Card)(({ theme }) => ({
+    borderRadius: 20,
+    background: `${settings?.accentColor || '#FEF9E1'}F2`,
+    backdropFilter: "blur(10px)",
+    boxShadow: `0 8px 40px ${settings?.primaryColor || '#894444'}14`,
+    border: `1px solid ${settings?.primaryColor || '#894444'}1A`,
+    overflow: "hidden",
+    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+    "&:hover": {
+      boxShadow: `0 12px 48px ${settings?.primaryColor || '#894444'}26`,
+      transform: "translateY(-4px)",
+    },
+  })), [settings]);
+
+  const ProfessionalButton = useMemo(() => styled(Button)(({ theme, variant }) => ({
+    borderRadius: 12,
+    fontWeight: 600,
+    padding: "12px 24px",
+    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+    textTransform: "none",
+    fontSize: "0.95rem",
+    letterSpacing: "0.025em",
+    boxShadow: variant === "contained" ? `0 4px 14px ${settings?.primaryColor || '#894444'}40` : "none",
+    "&:hover": {
+      transform: "translateY(-2px)",
+      boxShadow: variant === "contained" ? `0 6px 20px ${settings?.primaryColor || '#894444'}59` : "none",
+    },
+    "&:active": {
+      transform: "translateY(0)",
+    },
+  })), [settings]);
+
+  const ModernTextField = useMemo(() => styled(TextField)(({ theme }) => ({
+    "& .MuiOutlinedInput-root": {
+      borderRadius: 12,
+      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+      backgroundColor: "rgba(255, 255, 255, 0.8)",
+      "&:hover": {
+        transform: "translateY(-1px)",
+        backgroundColor: "rgba(255, 255, 255, 0.95)",
+      },
+      "&.Mui-focused": {
+        transform: "translateY(-1px)",
+        boxShadow: `0 4px 20px ${settings?.primaryColor || '#894444'}40`,
+        backgroundColor: "rgba(255, 255, 255, 1)",
+      },
+    },
+    "& .MuiInputLabel-root": {
+      fontWeight: 500,
+    },
+  })), [settings]);
+
+  // Session management
   const isSessionValid = () => {
     const sessionData = sessionStorage.getItem('auditLogsSession');
     if (!sessionData) return false;
@@ -75,7 +221,6 @@ const AuditLogs = () => {
     }
   };
 
-  // Store session data
   const storeSession = () => {
     const sessionData = {
       timestamp: Date.now(),
@@ -84,22 +229,10 @@ const AuditLogs = () => {
     sessionStorage.setItem('auditLogsSession', JSON.stringify(sessionData));
   };
 
-  // Clear session data
   const clearSession = () => {
     sessionStorage.removeItem('auditLogsSession');
     setIsAuthenticated(false);
     setPasswordDialogOpen(true);
-  };
-
-  // Get auth headers
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem('token');
-    return {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    };
   };
 
   // Get current user
@@ -144,7 +277,6 @@ const AuditLogs = () => {
     }
   };
 
-  // Load logs when authenticated
   useEffect(() => {
     if (isAuthenticated) {
       loadAuditLogs();
@@ -155,26 +287,22 @@ const AuditLogs = () => {
   useEffect(() => {
     let filtered = [...auditLogs];
 
-    // Filter by user role (non-admin see only their logs)
     if (userRole && userRole !== 'administrator' && userRole !== 'superadmin') {
       filtered = filtered.filter((log) => log.employeeNumber === currentUser?.employeeNumber);
     }
 
-    // Filter by action
     if (actionFilter) {
       filtered = filtered.filter((log) => 
         log.action?.toLowerCase().includes(actionFilter.toLowerCase())
       );
     }
 
-    // Filter by module (table_name)
     if (moduleFilter) {
       filtered = filtered.filter((log) => 
         log.table_name?.toLowerCase().includes(moduleFilter.toLowerCase())
       );
     }
 
-    // Filter by date
     if (dateFilter) {
       filtered = filtered.filter((log) => {
         if (!log.timestamp) return false;
@@ -183,7 +311,6 @@ const AuditLogs = () => {
       });
     }
 
-    // Sort by timestamp (newest first)
     filtered.sort((a, b) => {
       const dateA = new Date(a.timestamp || 0);
       const dateB = new Date(b.timestamp || 0);
@@ -222,27 +349,42 @@ const AuditLogs = () => {
     navigate(-1);
   };
 
-  // Get action color
+  // ENHANCED: Get action color with distinct colors for each action type
   const getActionColor = (action) => {
     if (!action) return '#6b7280';
     const actionUpper = action.toUpperCase();
     const colors = {
-      CREATE: '#10b981',
-      INSERT: '#10b981',
-      UPDATE: '#3b82f6',
-      DELETE: '#ef4444',
-      REMOVE: '#ef4444',
-      LOGIN: '#8b5cf6',
-      LOGOUT: '#6b7280',
-      VIEW: '#06b6d4',
-      SEARCH: '#06b6d4',
-      EXPORT: '#f59e0b',
-      REPORT: '#f59e0b',
+      // Creation actions - Green shades
+      CREATE: '#10b981',     // Emerald green
+      INSERT: '#059669',     // Darker green
+      
+      // Modification actions - Blue shades
+      UPDATE: '#3b82f6',     // Blue
+      EDIT: '#2563eb',       // Darker blue
+      
+      // Deletion actions - Red shades
+      DELETE: '#ef4444',     // Red
+      REMOVE: '#dc2626',     // Darker red
+      
+      // Authentication actions - Purple shades
+      LOGIN: '#8b5cf6',      // Purple
+      LOGOUT: '#7c3aed',     // Darker purple
+      
+      // View/Read actions - Cyan shades
+      VIEW: '#06b6d4',       // Cyan
+      SEARCH: '#0891b2',     // Darker cyan
+      
+      // Export/Report actions - Orange shades
+      EXPORT: '#f59e0b',     // Orange
+      REPORT: '#d97706',     // Darker orange
+      
+      // Default
+      DEFAULT: '#6b7280',    // Gray
     };
-    return colors[actionUpper] || '#6b7280';
+    return colors[actionUpper] || colors.DEFAULT;
   };
 
-  // Get action icon
+  // ENHANCED: Get action icon for each action type
   const getActionIcon = (action) => {
     if (!action) return <CheckCircleIcon sx={{ fontSize: 16 }} />;
     const actionUpper = action.toUpperCase();
@@ -250,31 +392,33 @@ const AuditLogs = () => {
       CREATE: <AddIcon sx={{ fontSize: 16 }} />,
       INSERT: <AddIcon sx={{ fontSize: 16 }} />,
       UPDATE: <EditIcon sx={{ fontSize: 16 }} />,
+      EDIT: <EditIcon sx={{ fontSize: 16 }} />,
       DELETE: <RemoveIcon sx={{ fontSize: 16 }} />,
-      REMOVE: <RemoveIcon sx={{ fontSize: 16 }} />,
+      REMOVE: <DeleteIcon sx={{ fontSize: 16 }} />,
       LOGIN: <LockOpenIcon sx={{ fontSize: 16 }} />,
       LOGOUT: <LockIcon sx={{ fontSize: 16 }} />,
       VIEW: <VisibilityIcon sx={{ fontSize: 16 }} />,
       SEARCH: <SearchIcon sx={{ fontSize: 16 }} />,
       EXPORT: <FileDownloadIcon sx={{ fontSize: 16 }} />,
-      REPORT: <FileDownloadIcon sx={{ fontSize: 16 }} />,
+      REPORT: <Assessment sx={{ fontSize: 16 }} />,
     };
     return icons[actionUpper] || <CheckCircleIcon sx={{ fontSize: 16 }} />;
   };
 
-  // Format audit log entry
+  // Format audit log entry with color-coded action
   const formatAuditLog = (log) => {
     const timestamp = new Date(log.timestamp);
     const formattedTime = `${timestamp.toLocaleDateString()} ${timestamp.toLocaleTimeString()}`;
     const employeeNumber = log.employeeNumber || 'Unknown';
     const action = log.action?.toUpperCase() || 'UNKNOWN';
+    const actionColor = getActionColor(log.action);
     const module = log.table_name?.toUpperCase() || 'UNKNOWN';
     const recordId = log.record_id ? ` #${log.record_id}` : '';
     const targetEmployee = log.targetEmployeeNumber ? ` (Target: ${log.targetEmployeeNumber})` : '';
 
     let logString = `[${formattedTime}] - `;
     logString += `<strong>Employee ${employeeNumber}</strong> `;
-    logString += `performed <strong style="color: #2563eb;">${action}</strong> `;
+    logString += `performed <strong style="color: ${actionColor};">${action}</strong> `;
     logString += `on <strong>${module}${recordId}</strong>${targetEmployee}.`;
 
     return logString;
@@ -302,6 +446,7 @@ const AuditLogs = () => {
 
   // Refresh logs
   const handleRefresh = () => {
+    setRefreshing(true);
     loadAuditLogs();
     setToast({ message: 'Logs refreshed', type: 'success' });
   };
@@ -329,14 +474,14 @@ const AuditLogs = () => {
         PaperProps={{
           sx: {
             borderRadius: 4,
-            bgcolor: '#FEF9E1',
+            bgcolor: settings?.accentColor || '#FEF9E1',
           },
         }}
       >
         <DialogTitle
           sx={{
-            background: 'linear-gradient(135deg, #A31D1D 0%, #8a4747 100%)',
-            color: '#FEF9E1',
+            background: `linear-gradient(135deg, ${settings?.primaryColor || '#A31D1D'} 0%, ${settings?.secondaryColor || '#8a4747'} 100%)`,
+            color: settings?.accentColor || '#FEF9E1',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -351,7 +496,7 @@ const AuditLogs = () => {
           <IconButton
             onClick={handleCloseDialog}
             sx={{
-              color: '#FEF9E1',
+              color: settings?.accentColor || '#FEF9E1',
               '&:hover': {
                 backgroundColor: 'rgba(255, 255, 255, 0.1)',
               },
@@ -364,12 +509,12 @@ const AuditLogs = () => {
           <Typography
             variant="body1"
             color="text.secondary"
-            sx={{ mb: 3, textAlign: 'center', color: '#A31D1D' }}
+            sx={{ mb: 3, textAlign: 'center', color: settings?.primaryColor || '#A31D1D' }}
           >
             This section contains sensitive audit information. Please enter the
             access password.
           </Typography>
-          <TextField
+          <ModernTextField
             fullWidth
             type={showPassword ? 'text' : 'password'}
             label="Access Password"
@@ -395,19 +540,21 @@ const AuditLogs = () => {
             }}
           />
         </DialogContent>
-        <DialogActions sx={{ p: 3, bgcolor: 'rgba(254, 249, 225, 0.5)' }}>
-          <Button
+        <DialogActions sx={{ p: 3, bgcolor: alpha(settings?.accentColor || '#FEF9E1', 0.5) }}>
+          <ProfessionalButton
             onClick={handlePasswordSubmit}
             variant="contained"
             fullWidth
             sx={{
-              bgcolor: '#A31D1D',
-              color: '#FEF9E1',
-              '&:hover': { bgcolor: '#8a1a1a' },
+              bgcolor: settings?.primaryColor || '#A31D1D',
+              color: settings?.accentColor || '#FEF9E1',
+              "&:hover": {
+                bgcolor: settings?.secondaryColor || '#8a1a1a',
+              },
             }}
           >
             Access Audit Logs
-          </Button>
+          </ProfessionalButton>
         </DialogActions>
       </Dialog>
     );
@@ -415,10 +562,20 @@ const AuditLogs = () => {
 
   if (loading && auditLogs.length === 0) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-        <CircularProgress />
-        <Typography sx={{ ml: 2 }}>Loading...</Typography>
-      </Box>
+      <Container maxWidth="md" sx={{ py: 8 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+          }}
+        >
+          <CircularProgress sx={{ color: settings?.primaryColor || '#A31D1D', mb: 2 }} />
+          <Typography variant="h6" sx={{ color: settings?.primaryColor || '#A31D1D' }}>
+            Loading audit logs...
+          </Typography>
+        </Box>
+      </Container>
     );
   }
 
@@ -426,279 +583,527 @@ const AuditLogs = () => {
   const pageTitle = isAdmin ? 'Audit Trail (All Users)' : 'My Activity Log';
 
   return (
-    <div style={{ 
-      padding: '20px', 
-      backgroundColor: 'white', 
-      minHeight: '100vh', 
-      paddingTop: '100px' 
-    }}>
-      {/* Header */}
-      <div style={{ 
-        marginBottom: '30px', 
-        background: 'linear-gradient(to right, #D84040, #A31D1D)', 
-        padding: '30px', 
-        borderRadius: '12px', 
-        boxShadow: '0 4px 15px rgba(216, 64, 64, 0.2)' 
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h2 style={{ margin: '0 0 5px 0', color: 'white', fontSize: '24px', fontWeight: 'bold' }}>
-              📋 {pageTitle}
-            </h2>
-            <p style={{ margin: 0, color: '#F8F2DE', fontSize: '16px' }}>
-              {isAdmin ? 'System-wide activity tracking and security monitoring' : 'Your personal activity history and access logs'}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Card */}
-      <Paper
-        sx={{
-          p: 3,
-          backgroundColor: 'white',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-          borderRadius: '8px',
-        }}
-      >
-        {/* Card Header with Filters */}
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            mb: 3,
-            flexWrap: 'wrap',
-            gap: 2,
-          }}
-        >
-          <Typography
-            variant="h6"
-            sx={{
-              fontWeight: 700,
-              color: '#333',
-            }}
-          >
-            {isAdmin ? 'System Activity Log' : 'My Activity History'}
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-            <FormControl size="small" sx={{ minWidth: 180 }}>
-              <InputLabel id="action-filter-label">All Actions</InputLabel>
-              <Select
-                labelId="action-filter-label"
-                value={actionFilter}
-                onChange={(e) => setActionFilter(e.target.value)}
-                label="All Actions"
-              >
-                <MenuItem value="">All Actions</MenuItem>
-                {getUniqueActions().map((action) => (
-                  <MenuItem key={action} value={action}>
-                    {action}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <FormControl size="small" sx={{ minWidth: 180 }}>
-              <InputLabel id="module-filter-label">All Modules</InputLabel>
-              <Select
-                labelId="module-filter-label"
-                value={moduleFilter}
-                onChange={(e) => setModuleFilter(e.target.value)}
-                label="All Modules"
-              >
-                <MenuItem value="">All Modules</MenuItem>
-                {getUniqueModules().map((module) => (
-                  <MenuItem key={module} value={module}>
-                    {module}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <TextField
-              type="date"
-              size="small"
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-              sx={{ minWidth: 160 }}
-            />
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<RefreshIcon />}
-              onClick={handleRefresh}
-              disabled={loading}
-              sx={{
-                textTransform: 'none',
-                borderColor: '#d0d0d0',
-                color: '#333',
-                '&:hover': {
-                  borderColor: '#999',
-                  backgroundColor: 'rgba(0,0,0,0.05)',
-                },
-              }}
-            >
-              Refresh
-            </Button>
-            {isAdmin && (
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<FileDownloadIcon />}
-                onClick={handleExportLog}
+    <Box
+      sx={{
+        py: 4,
+        borderRadius: "14px",
+        width: "100vw",
+        mx: "auto",
+        maxWidth: "100%",
+        overflow: "hidden",
+        position: "relative",
+        left: "50%",
+        transform: "translateX(-50%)",
+        minHeight: "92vh",
+      }}
+    >
+      <Box sx={{ px: 6, mx: "auto", maxWidth: "1600px" }}>
+        {/* Header */}
+        <Fade in timeout={500}>
+          <Box sx={{ mb: 4 }}>
+            <GlassCard>
+              <Box
                 sx={{
-                  textTransform: 'none',
-                  borderColor: '#d0d0d0',
-                  color: '#333',
-                  '&:hover': {
-                    borderColor: '#999',
-                    backgroundColor: 'rgba(0,0,0,0.05)',
+                  p: 5,
+                  background: `linear-gradient(135deg, ${settings?.accentColor || '#FEF9E1'} 0%, ${alpha(settings?.accentColor || '#FEF9E1', 0.9)} 100%)`,
+                  color: settings?.primaryColor || '#A31D1D',
+                  position: "relative",
+                  overflow: "hidden",
+                }}
+              >
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: -50,
+                    right: -50,
+                    width: 200,
+                    height: 200,
+                    background: `radial-gradient(circle, ${alpha(settings?.primaryColor || '#A31D1D', 0.1)} 0%, ${alpha(settings?.primaryColor || '#A31D1D', 0)} 70%)`,
+                  }}
+                />
+                <Box
+                  sx={{
+                    position: "absolute",
+                    bottom: -30,
+                    left: "30%",
+                    width: 150,
+                    height: 150,
+                    background: `radial-gradient(circle, ${alpha(settings?.primaryColor || '#A31D1D', 0.08)} 0%, ${alpha(settings?.primaryColor || '#A31D1D', 0)} 70%)`,
+                  }}
+                />
+
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="space-between"
+                  position="relative"
+                  zIndex={1}
+                >
+                  <Box display="flex" alignItems="center">
+                    <Avatar
+                      sx={{
+                        bgcolor: alpha(settings?.primaryColor || '#A31D1D', 0.15),
+                        mr: 4,
+                        width: 64,
+                        height: 64,
+                        boxShadow: `0 8px 24px ${alpha(settings?.primaryColor || '#A31D1D', 0.15)}`,
+                      }}
+                    >
+                      <Security sx={{ fontSize: 32, color: settings?.primaryColor || '#A31D1D' }} />
+                    </Avatar>
+                    <Box>
+                      <Typography
+                        variant="h4"
+                        component="h1"
+                        sx={{
+                          fontWeight: 700,
+                          mb: 1,
+                          lineHeight: 1.2,
+                          color: settings?.primaryColor || '#A31D1D',
+                        }}
+                      >
+                        {pageTitle}
+                      </Typography>
+                      <Typography
+                        variant="body1"
+                        sx={{
+                          opacity: 0.8,
+                          fontWeight: 400,
+                          color: settings?.textPrimaryColor || '#6D2323',
+                        }}
+                      >
+                        {isAdmin ? 'System-wide activity tracking and security monitoring' : 'Your personal activity history and access logs'}
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Box display="flex" alignItems="center" gap={2}>
+                    <Chip
+                      label={`${filteredLogs.length} Logs`}
+                      size="small"
+                      sx={{
+                        bgcolor: alpha(settings?.primaryColor || '#A31D1D', 0.15),
+                        color: settings?.primaryColor || '#A31D1D',
+                        fontWeight: 500,
+                        "& .MuiChip-label": { px: 1 },
+                      }}
+                    />
+                    <Tooltip title="Refresh Logs">
+                      <IconButton
+                        onClick={handleRefresh}
+                        disabled={loading}
+                        sx={{
+                          bgcolor: alpha(settings?.primaryColor || '#A31D1D', 0.1),
+                          "&:hover": { bgcolor: alpha(settings?.primaryColor || '#A31D1D', 0.2) },
+                          color: settings?.primaryColor || '#A31D1D',
+                          width: 48,
+                          height: 48,
+                          "&:disabled": {
+                            bgcolor: alpha(settings?.primaryColor || '#A31D1D', 0.05),
+                            color: alpha(settings?.primaryColor || '#A31D1D', 0.3),
+                          },
+                        }}
+                      >
+                        {loading ? (
+                          <CircularProgress
+                            size={24}
+                            sx={{ color: settings?.primaryColor || '#A31D1D' }}
+                          />
+                        ) : (
+                          <Refresh />
+                        )}
+                      </IconButton>
+                    </Tooltip>
+
+                    {isAdmin && (
+                      <ProfessionalButton
+                        variant="contained"
+                        startIcon={<FileDownloadIcon />}
+                        onClick={handleExportLog}
+                        sx={{
+                          bgcolor: settings?.primaryColor || '#A31D1D',
+                          color: settings?.accentColor || '#FEF9E1',
+                          "&:hover": {
+                            bgcolor: settings?.secondaryColor || '#8a1a1a',
+                          },
+                        }}
+                      >
+                        Export
+                      </ProfessionalButton>
+                    )}
+                  </Box>
+                </Box>
+              </Box>
+            </GlassCard>
+          </Box>
+        </Fade>
+
+        {/* Toast Messages */}
+        {toast && toast.type === 'success' && (
+          <Backdrop
+            open={true}
+            sx={{
+              zIndex: 9999,
+              backdropFilter: "blur(8px)",
+              backgroundColor: "rgba(0, 0, 0, 0.5)",
+            }}
+            onClick={() => setToast(null)}
+          >
+            <Fade in timeout={300}>
+              <Box
+                onClick={(e) => e.stopPropagation()}
+                sx={{
+                  position: "relative",
+                  minWidth: "400px",
+                  maxWidth: "600px",
+                }}
+              >
+                <Alert
+                  severity="success"
+                  sx={{
+                    borderRadius: 4,
+                    boxShadow: "0 12px 48px rgba(0, 0, 0, 0.4)",
+                    fontSize: "1.1rem",
+                    p: 3,
+                    "& .MuiAlert-message": { fontWeight: 500 },
+                    "& .MuiAlert-icon": { fontSize: "2rem" },
+                  }}
+                  icon={<CheckCircleIcon />}
+                  onClose={() => setToast(null)}
+                >
+                  {toast.message}
+                </Alert>
+              </Box>
+            </Fade>
+          </Backdrop>
+        )}
+
+        {toast && toast.type === 'error' && (
+          <Backdrop
+            open={true}
+            sx={{
+              zIndex: 9999,
+              backdropFilter: "blur(8px)",
+              backgroundColor: "rgba(0, 0, 0, 0.5)",
+            }}
+            onClick={() => setToast(null)}
+          >
+            <Fade in timeout={300}>
+              <Box
+                onClick={(e) => e.stopPropagation()}
+                sx={{
+                  position: "relative",
+                  minWidth: "400px",
+                  maxWidth: "600px",
+                }}
+              >
+                <Alert
+                  severity="error"
+                  sx={{
+                    borderRadius: 4,
+                    boxShadow: "0 12px 48px rgba(0, 0, 0, 0.4)",
+                    fontSize: "1.1rem",
+                    p: 3,
+                    "& .MuiAlert-message": { fontWeight: 500 },
+                    "& .MuiAlert-icon": { fontSize: "2rem" },
+                  }}
+                  icon={<Error />}
+                  onClose={() => setToast(null)}
+                >
+                  {toast.message}
+                </Alert>
+              </Box>
+            </Fade>
+          </Backdrop>
+        )}
+
+        {/* Search & Filter */}
+        <Fade in timeout={700}>
+          <GlassCard sx={{ mb: 4 }}>
+            <CardHeader
+              title={
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <Avatar
+                    sx={{
+                      bgcolor: alpha(settings?.accentColor || '#FEF9E1', 0.8),
+                      color: settings?.textPrimaryColor || '#6D2323',
+                    }}
+                  >
+                    <FilterList />
+                  </Avatar>
+                  <Box>
+                    <Typography
+                      variant="h5"
+                      component="div"
+                      sx={{ fontWeight: 600, color: settings?.textPrimaryColor || '#6D2323' }}
+                    >
+                      Search & Filter
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ color: settings?.textPrimaryColor || '#6D2323' }}
+                    >
+                      Find and filter audit logs by various criteria
+                    </Typography>
+                  </Box>
+                </Box>
+              }
+              sx={{
+                bgcolor: alpha(settings?.accentColor || '#FEF9E1', 0.5),
+                pb: 2,
+                borderBottom: `1px solid ${alpha(settings?.primaryColor || '#A31D1D', 0.1)}`,
+              }}
+            />
+            <CardContent sx={{ p: 4 }}>
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={4}>
+                  <ModernTextField
+                    select
+                    fullWidth
+                    label="All Actions"
+                    value={actionFilter}
+                    onChange={(e) => setActionFilter(e.target.value)}
+                  >
+                    <MenuItem value="">All Actions</MenuItem>
+                    {getUniqueActions().map((action) => (
+                      <MenuItem key={action} value={action}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          {getActionIcon(action)}
+                          <span style={{ color: getActionColor(action), fontWeight: 600 }}>
+                            {action}
+                          </span>
+                        </Box>
+                      </MenuItem>
+                    ))}
+                  </ModernTextField>
+                </Grid>
+                <Grid item xs={12} md={4}>
+                  <ModernTextField
+                    select
+                    fullWidth
+                    label="All Modules"
+                    value={moduleFilter}
+                    onChange={(e) => setModuleFilter(e.target.value)}
+                  >
+                    <MenuItem value="">All Modules</MenuItem>
+                    {getUniqueModules().map((module) => (
+                      <MenuItem key={module} value={module}>
+                        {module}
+                      </MenuItem>
+                    ))}
+                  </ModernTextField>
+                </Grid>
+                <Grid item xs={12} md={4}>
+                  <ModernTextField
+                    type="date"
+                    fullWidth
+                    label="Filter by Date"
+                    value={dateFilter}
+                    onChange={(e) => setDateFilter(e.target.value)}
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+              </Grid>
+            </CardContent>
+          </GlassCard>
+        </Fade>
+
+        {/* Loading Backdrop */}
+        <Backdrop
+          sx={{
+            color: settings?.accentColor || '#FEF9E1',
+            zIndex: (theme) => theme.zIndex.drawer + 1,
+          }}
+          open={loading && !refreshing}
+        >
+          <Box sx={{ textAlign: "center" }}>
+            <CircularProgress color="inherit" size={60} thickness={4} />
+            <Typography variant="h6" sx={{ mt: 2, color: settings?.accentColor || '#FEF9E1' }}>
+              Loading audit logs...
+            </Typography>
+          </Box>
+        </Backdrop>
+
+        {/* Audit Log Entries */}
+        {!loading && (
+          <Fade in timeout={900}>
+            <GlassCard>
+              <Box
+                sx={{
+                  p: 3,
+                  background: `linear-gradient(135deg, ${settings?.accentColor || '#FEF9E1'} 0%, ${alpha(settings?.accentColor || '#FEF9E1', 0.9)} 100%)`,
+                  color: settings?.primaryColor || '#A31D1D',
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  borderBottom: `1px solid ${alpha(settings?.primaryColor || '#A31D1D', 0.1)}`,
+                }}
+              >
+                <Box>
+                  <Typography
+                    variant="h5"
+                    sx={{ fontWeight: 600, color: settings?.primaryColor || '#A31D1D' }}
+                  >
+                    {isAdmin ? 'System Activity Log' : 'My Activity History'}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ opacity: 0.8, color: settings?.textPrimaryColor || '#6D2323' }}
+                  >
+                    {actionFilter || moduleFilter || dateFilter
+                      ? `Showing ${filteredLogs.length} of ${auditLogs.length} logs matching filters`
+                      : `Total: ${auditLogs.length} registered logs`}
+                  </Typography>
+                </Box>
+              </Box>
+
+              {/* Scrollable container for log entries */}
+              <Box
+                sx={{
+                  height: '500px',
+                  overflowY: 'auto',
+                  p: 3,
+                  '&::-webkit-scrollbar': {
+                    width: '8px',
+                  },
+                  '&::-webkit-scrollbar-track': {
+                    background: alpha(settings?.accentColor || '#FEF9E1', 0.2),
+                    borderRadius: '4px',
+                  },
+                  '&::-webkit-scrollbar-thumb': {
+                    background: alpha(settings?.primaryColor || '#A31D1D', 0.5),
+                    borderRadius: '4px',
+                    '&:hover': {
+                      background: alpha(settings?.primaryColor || '#A31D1D', 0.7),
+                    },
                   },
                 }}
               >
-                Export
-              </Button>
-            )}
-          </Box>
-        </Box>
-
-        {/* Audit Log Entries */}
-        <Box>
-          {filteredLogs.length === 0 ? (
-            <Box
-              sx={{
-                textAlign: 'center',
-                py: 8,
-                color: '#666',
-              }}
-            >
-              <Typography variant="h6" sx={{ mb: 1 }}>
-                No audit logs found
-              </Typography>
-              <Typography variant="body2" sx={{ color: '#999' }}>
-                {isAdmin ? 'System activities will be logged here' : 'Your activities will be logged here'}
-              </Typography>
-            </Box>
-          ) : (
-            <Box>
-              {filteredLogs.map((log, index) => {
-                const actionColor = getActionColor(log.action);
-                const status = 'success'; // Default status
-
-                return (
+                {filteredLogs.length === 0 ? (
                   <Box
-                    key={log.id || index}
                     sx={{
-                      p: 2,
-                      mb: 1.5,
-                      backgroundColor: '#f9fafb',
-                      borderLeft: `4px solid ${actionColor}`,
-                      borderRadius: '8px',
-                      fontFamily: 'monospace',
-                      fontSize: '13px',
-                      lineHeight: 1.8,
+                      textAlign: 'center',
+                      py: 8,
+                      color: '#666',
                     }}
                   >
-                    <Box
+                    <Info
                       sx={{
-                        color: '#1f2937',
-                        '& strong': {
-                          fontWeight: 600,
-                        },
+                        fontSize: 80,
+                        color: alpha(settings?.primaryColor || '#A31D1D', 0.3),
+                        mb: 3,
                       }}
-                      dangerouslySetInnerHTML={{ __html: formatAuditLog(log) }}
                     />
-                    <Box
-                      sx={{
-                        mt: 1,
-                        pt: 1,
-                        borderTop: '1px solid #e5e7eb',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 0.5,
-                        fontSize: '11px',
-                        color: '#6b7280',
-                        fontFamily: 'sans-serif',
-                      }}
-                    >
-                      <Chip
-                        icon={getActionIcon(log.action)}
-                        label={log.action?.toUpperCase() || 'UNKNOWN'}
-                        size="small"
-                        sx={{
-                          height: 20,
-                          fontSize: '10px',
-                          backgroundColor: actionColor,
-                          color: 'white',
-                          '& .MuiChip-icon': {
-                            color: 'white',
-                          },
-                        }}
-                      />
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <CheckCircleIcon sx={{ fontSize: 14, color: '#10b981' }} />
-                        <Typography sx={{ fontSize: '11px' }}>
-                          Status: Success
-                        </Typography>
-                      </Box>
-                    </Box>
+                    <Typography variant="h6" sx={{ mb: 1, color: settings?.primaryColor || '#A31D1D' }}>
+                      No audit logs found
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: alpha(settings?.primaryColor || '#A31D1D', 0.6) }}>
+                      {isAdmin ? 'System activities will be logged here' : 'Your activities will be logged here'}
+                    </Typography>
                   </Box>
-                );
-              })}
-            </Box>
-          )}
-        </Box>
+                ) : (
+                  <Box>
+                    {filteredLogs.map((log, index) => {
+                      const actionColor = getActionColor(log.action);
 
-        {/* Footer */}
-        <Box
-          sx={{
-            mt: 3,
-            pt: 2,
-            borderTop: '1px solid #e5e7eb',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <Typography sx={{ color: '#666', fontSize: '14px' }}>
-            <strong>Total Logs:</strong> {filteredLogs.length}{' '}
-            <span style={{ color: '#999' }}>
-              | {actionFilter || moduleFilter || dateFilter ? `Showing ${filteredLogs.length} of ${auditLogs.length} entries` : 'Showing all entries'}
-            </span>
-          </Typography>
-        </Box>
-      </Paper>
+                      return (
+                        <Box
+                          key={log.id || index}
+                          sx={{
+                            p: 2,
+                            mb: 1.5,
+                            backgroundColor: '#f9fafb',
+                            borderLeft: `4px solid ${actionColor}`,
+                            borderRadius: '8px',
+                            fontFamily: 'monospace',
+                            fontSize: '13px',
+                            lineHeight: 1.8,
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                              backgroundColor: alpha(settings?.accentColor || '#FEF9E1', 0.3),
+                              transform: 'translateX(4px)',
+                              boxShadow: `0 2px 8px ${alpha(actionColor, 0.2)}`,
+                            },
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              color: '#1f2937',
+                              '& strong': {
+                                fontWeight: 600,
+                              },
+                            }}
+                            dangerouslySetInnerHTML={{ __html: formatAuditLog(log) }}
+                          />
+                          <Box
+                            sx={{
+                              mt: 1,
+                              pt: 1,
+                              borderTop: '1px solid #e5e7eb',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 1,
+                              fontSize: '11px',
+                              color: '#6b7280',
+                              fontFamily: 'sans-serif',
+                            }}
+                          >
+                            <Chip
+                              icon={getActionIcon(log.action)}
+                              label={log.action?.toUpperCase() || 'UNKNOWN'}
+                              size="small"
+                              sx={{
+                                height: 20,
+                                fontSize: '10px',
+                                backgroundColor: actionColor,
+                                color: 'white',
+                                fontWeight: 600,
+                                '& .MuiChip-icon': {
+                                  color: 'white',
+                                },
+                              }}
+                            />
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              <CheckCircleIcon sx={{ fontSize: 14, color: '#10b981' }} />
+                              <Typography sx={{ fontSize: '11px' }}>
+                                Status: Success
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </Box>
+                      );
+                    })}
+                  </Box>
+                )}
+              </Box>
 
-      {/* Toast Notification */}
-      {toast && (
-        <Box
-          sx={{
-            position: 'fixed',
-            bottom: 20,
-            right: 20,
-            backgroundColor:
-              toast.type === 'success'
-                ? '#4caf50'
-                : toast.type === 'error'
-                ? '#f44336'
-                : '#1976d2',
-            color: 'white',
-            padding: '16px 20px',
-            borderRadius: '8px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            minWidth: '300px',
-            zIndex: 9999,
-            animation: 'slideIn 0.3s ease',
-          }}
-        >
-          <Typography sx={{ fontSize: '14px' }}>{toast.message}</Typography>
-        </Box>
-      )}
-    </div>
+              {/* Footer */}
+              <Box
+                sx={{
+                  mt: 0,
+                  pt: 2,
+                  pb: 2,
+                  borderTop: '1px solid #e5e7eb',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  px: 3,
+                  backgroundColor: alpha(settings?.accentColor || '#FEF9E1', 0.5),
+                }}
+              >
+                <Typography sx={{ color: '#666', fontSize: '14px' }}>
+                  <strong>Total Logs:</strong> {filteredLogs.length}{' '}
+                  <span style={{ color: '#999' }}>
+                    | {actionFilter || moduleFilter || dateFilter ? `Showing ${filteredLogs.length} of ${auditLogs.length} entries` : 'Showing all entries'}
+                  </span>
+                </Typography>
+              </Box>
+            </GlassCard>
+          </Fade>
+        )}
+      </Box>
+    </Box>
   );
 };
 
-export default AuditLogs;
+export default AuditLogs

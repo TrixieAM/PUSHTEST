@@ -1049,10 +1049,10 @@ router.post('/users/reset-password', authenticateToken, async (req, res) => {
         return res.status(400).json({ error: 'User does not have an email address' });
       }
 
-      // Convert surname to ALL CAPS for the password
-      const surnameUpperCase = surname.toUpperCase();
+      // Convert surname to ALL CAPS and remove ALL spaces for the password
+      const surnameUpperCase = surname.toUpperCase().replace(/\s+/g, '');
 
-      // Hash the surname (in uppercase) as the new password
+      // Hash the surname (in uppercase with no spaces) as the new password
       const hashedPassword = await bcrypt.hash(surnameUpperCase, 10);
 
       // Update password in database
@@ -1115,7 +1115,7 @@ router.post('/users/reset-password', authenticateToken, async (req, res) => {
                     <div class="email-body">
                       <p class="greeting">Hello <strong>${user.fullName || user.username}</strong>,</p>
                       <p class="intro-text">
-                        Your password has been reset by an administrator. Your account password has been set to your surname (last name).
+                        Your password has been reset by an administrator. Your account password has been set to your surname (last name) in ALL CAPS with no spaces.
                       </p>
                       <div class="credentials-box">
                         <div class="credential-row">
@@ -1130,7 +1130,7 @@ router.post('/users/reset-password', authenticateToken, async (req, res) => {
                       <div class="note-box">
                         <p>
                           <strong>Important:</strong> For security reasons, please change your password after logging in. 
-                          This is a temporary password set to your surname.
+                          This is a temporary password set to your surname in ALL CAPS with no spaces.
                         </p>
                       </div>
                       <div class="action-section">
@@ -1189,4 +1189,3 @@ router.post('/users/reset-password', authenticateToken, async (req, res) => {
 });
 
 module.exports = router;
-

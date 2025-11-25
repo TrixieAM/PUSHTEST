@@ -1,5 +1,5 @@
 import API_BASE_URL from "../apiConfig";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAuthHeaders } from "../utils/auth";
 import {
@@ -91,78 +91,55 @@ import {
   Assessment,
 } from "@mui/icons-material";
 import SearchIcon from "@mui/icons-material/Search";
+import axios from "axios";
 
-// Professional styled components matching AttendanceDevice.jsx
-const GlassCard = styled(Card)(({ theme }) => ({
-  borderRadius: 20,
-  background: "rgba(254, 249, 225, 0.95)",
-  backdropFilter: "blur(10px)",
-  boxShadow: "0 8px 40px rgba(109, 35, 35, 0.08)",
-  border: "1px solid rgba(109, 35, 35, 0.1)",
-  overflow: "hidden",
-  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-  "&:hover": {
-    boxShadow: "0 12px 48px rgba(109, 35, 35, 0.15)",
-    transform: "translateY(-4px)",
-  },
-}));
+// System Settings Hook (from AdminHome)
+const useSystemSettings = () => {
+  const [settings, setSettings] = useState({
+    primaryColor: '#894444',
+    secondaryColor: '#6d2323',
+    accentColor: '#FEF9E1',
+    textColor: '#FFFFFF',
+    textPrimaryColor: '#6D2323', 
+    textSecondaryColor: '#FEF9E1', 
+    hoverColor: '#6D2323',
+    backgroundColor: '#FFFFFF',
+  });
 
-const ProfessionalButton = styled(Button)(({ theme, variant }) => ({
-  borderRadius: 12,
-  fontWeight: 600,
-  padding: "12px 24px",
-  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-  textTransform: "none",
-  fontSize: "0.95rem",
-  letterSpacing: "0.025em",
-  boxShadow:
-    variant === "contained" ? "0 4px 14px rgba(109, 35, 35, 0.25)" : "none",
-  "&:hover": {
-    transform: "translateY(-2px)",
-    boxShadow:
-      variant === "contained" ? "0 6px 20px rgba(109, 35, 35, 0.35)" : "none",
-  },
-  "&:active": {
-    transform: "translateY(0)",
-  },
-}));
+  useEffect(() => {
+    const storedSettings = localStorage.getItem('systemSettings');
+    if (storedSettings) {
+      try {
+        const parsedSettings = JSON.parse(storedSettings);
+        if (parsedSettings && typeof parsedSettings === 'object') {
+          setSettings(parsedSettings);
+        }
+      } catch (error) {
+        console.error('Error parsing stored settings:', error);
+      }
+    }
 
-const ModernTextField = styled(TextField)(({ theme }) => ({
-  "& .MuiOutlinedInput-root": {
-    borderRadius: 12,
-    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-    backgroundColor: "rgba(255, 255, 255, 0.8)",
-    "&:hover": {
-      transform: "translateY(-1px)",
-      backgroundColor: "rgba(255, 255, 255, 0.95)",
-    },
-    "&.Mui-focused": {
-      transform: "translateY(-1px)",
-      boxShadow: "0 4px 20px rgba(109, 35, 35, 0.25)",
-      backgroundColor: "rgba(255, 255, 255, 1)",
-    },
-  },
-  "& .MuiInputLabel-root": {
-    fontWeight: 500,
-  },
-}));
+    const fetchSettings = async () => {
+      try {
+        const url = API_BASE_URL.includes('/api') 
+          ? `${API_BASE_URL}/system-settings`
+          : `${API_BASE_URL}/api/system-settings`;
+        
+        const response = await axios.get(url);
+        if (response.data && typeof response.data === 'object') {
+          setSettings(response.data);
+          localStorage.setItem('systemSettings', JSON.stringify(response.data));
+        }
+      } catch (error) {
+        console.error('Error fetching system settings:', error);
+      }
+    };
 
-const PremiumTableContainer = styled(TableContainer)(({ theme }) => ({
-  borderRadius: 16,
-  overflow: "hidden",
-  boxShadow: "0 4px 24px rgba(109, 35, 35, 0.06)",
-  border: "1px solid rgba(109, 35, 35, 0.08)",
-}));
+    fetchSettings();
+  }, []);
 
-const PremiumTableCell = styled(TableCell)(({ theme, isHeader = false }) => ({
-  fontWeight: isHeader ? 600 : 500,
-  padding: "18px 20px",
-  borderBottom: isHeader
-    ? "2px solid rgba(109, 35, 35, 0.3)"
-    : "1px solid rgba(109, 35, 35, 0.06)",
-  fontSize: "0.95rem",
-  letterSpacing: "0.025em",
-}));
+  return settings;
+};
 
 const UsersList = () => {
   const [users, setUsers] = useState([]);
@@ -200,14 +177,78 @@ const UsersList = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const navigate = useNavigate();
 
-  // Color scheme matching AttendanceDevice.jsx
-  const primaryColor = "#FEF9E1";
-  const secondaryColor = "#FFF8E7";
-  const accentColor = "#6d2323";
-  const accentDark = "#8B3333";
-  const blackColor = "#1a1a1a";
-  const whiteColor = "#FFFFFF";
-  const grayColor = "#6c757d";
+  // Use system settings
+  const settings = useSystemSettings();
+  
+  // Memoize styled components to prevent recreation on every render
+  const GlassCard = useMemo(() => styled(Card)(({ theme }) => ({
+    borderRadius: 20,
+    background: `${settings?.accentColor || '#FEF9E1'}F2`,
+    backdropFilter: "blur(10px)",
+    boxShadow: `0 8px 40px ${settings?.primaryColor || '#894444'}14`,
+    border: `1px solid ${settings?.primaryColor || '#894444'}1A`,
+    overflow: "hidden",
+    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+    "&:hover": {
+      boxShadow: `0 12px 48px ${settings?.primaryColor || '#894444'}26`,
+      transform: "translateY(-4px)",
+    },
+  })), [settings]);
+
+  const ProfessionalButton = useMemo(() => styled(Button)(({ theme, variant }) => ({
+    borderRadius: 12,
+    fontWeight: 600,
+    padding: "12px 24px",
+    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+    textTransform: "none",
+    fontSize: "0.95rem",
+    letterSpacing: "0.025em",
+    boxShadow: variant === "contained" ? `0 4px 14px ${settings?.primaryColor || '#894444'}40` : "none",
+    "&:hover": {
+      transform: "translateY(-2px)",
+      boxShadow: variant === "contained" ? `0 6px 20px ${settings?.primaryColor || '#894444'}59` : "none",
+    },
+    "&:active": {
+      transform: "translateY(0)",
+    },
+  })), [settings]);
+
+  const ModernTextField = useMemo(() => styled(TextField)(({ theme }) => ({
+    "& .MuiOutlinedInput-root": {
+      borderRadius: 12,
+      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+      backgroundColor: "rgba(255, 255, 255, 0.8)",
+      "&:hover": {
+        transform: "translateY(-1px)",
+        backgroundColor: "rgba(255, 255, 255, 0.95)",
+      },
+      "&.Mui-focused": {
+        transform: "translateY(-1px)",
+        boxShadow: `0 4px 20px ${settings?.primaryColor || '#894444'}40`,
+        backgroundColor: "rgba(255, 255, 255, 1)",
+      },
+    },
+    "& .MuiInputLabel-root": {
+      fontWeight: 500,
+    },
+  })), [settings]);
+
+  const PremiumTableContainer = useMemo(() => styled(TableContainer)(({ theme }) => ({
+    borderRadius: 16,
+    overflow: "hidden",
+    boxShadow: `0 4px 24px ${settings?.primaryColor || '#894444'}0F`,
+    border: `1px solid ${settings?.primaryColor || '#894444'}14`,
+  })), [settings]);
+
+  const PremiumTableCell = useMemo(() => styled(TableCell)(({ theme, isHeader = false }) => ({
+    fontWeight: isHeader ? 600 : 500,
+    padding: "18px 20px",
+    borderBottom: isHeader
+      ? `2px solid ${settings?.primaryColor || '#894444'}4D`
+      : `1px solid ${settings?.primaryColor || '#894444'}0F`,
+    fontSize: "0.95rem",
+    letterSpacing: "0.025em",
+  })), [settings]);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -666,22 +707,22 @@ const UsersList = () => {
     switch ((role || "").toLowerCase()) {
       case "superadmin":
         return {
-          sx: { bgcolor: alpha(accentColor, 0.15), color: accentColor },
+          sx: { bgcolor: alpha(settings?.primaryColor || '#894444', 0.15), color: settings?.primaryColor || '#894444' },
           icon: <SupervisorAccount />,
         };
       case "administrator":
         return {
-          sx: { bgcolor: alpha(accentDark, 0.15), color: accentDark },
+          sx: { bgcolor: alpha(settings?.secondaryColor || '#6d2323', 0.15), color: settings?.secondaryColor || '#6d2323' },
           icon: <AdminPanelSettings />,
         };
       case "staff":
         return {
-          sx: { bgcolor: alpha(accentColor, 0.1), color: accentColor },
+          sx: { bgcolor: alpha(settings?.primaryColor || '#894444', 0.1), color: settings?.primaryColor || '#894444' },
           icon: <Work />,
         };
       default:
         return {
-          sx: { bgcolor: alpha(accentColor, 0.1), color: accentColor },
+          sx: { bgcolor: alpha(settings?.primaryColor || '#894444', 0.1), color: settings?.primaryColor || '#894444' },
           icon: <Person />,
         };
     }
@@ -702,7 +743,6 @@ const UsersList = () => {
   return (
     <Box
       sx={{
-        background: `linear-gradient(135deg, ${accentColor} 0%, ${accentDark} 50%, ${accentColor} 100%)`,
         py: 4,
         borderRadius: "14px",
         width: "100vw",
@@ -716,39 +756,6 @@ const UsersList = () => {
       }}
     >
       <Box sx={{ px: 6, mx: "auto", maxWidth: "1600px" }}>
-        {/* Breadcrumbs */}
-        <Fade in timeout={300}>
-          <Box sx={{ mb: 3 }}>
-            <Breadcrumbs aria-label="breadcrumb" sx={{ fontSize: "0.9rem" }}>
-              <Link
-                underline="hover"
-                color="inherit"
-                href="/dashboard"
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  color: primaryColor,
-                }}
-              >
-                <Home sx={{ mr: 0.5, fontSize: 20 }} />
-                Dashboard
-              </Link>
-              <Typography
-                color="text.primary"
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  fontWeight: 600,
-                  color: primaryColor,
-                }}
-              >
-                <People sx={{ mr: 0.5, fontSize: 20 }} />
-                User Management
-              </Typography>
-            </Breadcrumbs>
-          </Box>
-        </Fade>
-
         {/* Header */}
         <Fade in timeout={500}>
           <Box sx={{ mb: 4 }}>
@@ -756,8 +763,8 @@ const UsersList = () => {
               <Box
                 sx={{
                   p: 5,
-                  background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
-                  color: accentColor,
+                  background: `linear-gradient(135deg, ${settings?.accentColor || '#FEF9E1'} 0%, ${alpha(settings?.accentColor || '#FEF9E1', 0.9)} 100%)`,
+                  color: settings?.primaryColor || '#894444',
                   position: "relative",
                   overflow: "hidden",
                 }}
@@ -769,8 +776,7 @@ const UsersList = () => {
                     right: -50,
                     width: 200,
                     height: 200,
-                    background:
-                      "radial-gradient(circle, rgba(109,35,35,0.1) 0%, rgba(109,35,35,0) 70%)",
+                    background: `radial-gradient(circle, ${alpha(settings?.primaryColor || '#894444', 0.1)} 0%, ${alpha(settings?.primaryColor || '#894444', 0)} 70%)`,
                   }}
                 />
                 <Box
@@ -780,8 +786,7 @@ const UsersList = () => {
                     left: "30%",
                     width: 150,
                     height: 150,
-                    background:
-                      "radial-gradient(circle, rgba(109,35,35,0.08) 0%, rgba(109,35,35,0) 70%)",
+                    background: `radial-gradient(circle, ${alpha(settings?.primaryColor || '#894444', 0.08)} 0%, ${alpha(settings?.primaryColor || '#894444', 0)} 70%)`,
                   }}
                 />
 
@@ -795,14 +800,14 @@ const UsersList = () => {
                   <Box display="flex" alignItems="center">
                     <Avatar
                       sx={{
-                        bgcolor: "rgba(109,35,35,0.15)",
+                        bgcolor: alpha(settings?.primaryColor || '#894444', 0.15),
                         mr: 4,
                         width: 64,
                         height: 64,
-                        boxShadow: "0 8px 24px rgba(109,35,35,0.15)",
+                        boxShadow: `0 8px 24px ${alpha(settings?.primaryColor || '#894444', 0.15)}`,
                       }}
                     >
-                      <People sx={{ fontSize: 32, color: accentColor }} />
+                      <People sx={{ fontSize: 32, color: settings?.primaryColor || '#894444' }} />
                     </Avatar>
                     <Box>
                       <Typography
@@ -812,7 +817,7 @@ const UsersList = () => {
                           fontWeight: 700,
                           mb: 1,
                           lineHeight: 1.2,
-                          color: accentColor,
+                          color: settings?.primaryColor || '#894444',
                         }}
                       >
                         User Management
@@ -822,7 +827,7 @@ const UsersList = () => {
                         sx={{
                           opacity: 0.8,
                           fontWeight: 400,
-                          color: accentDark,
+                          color: settings?.textPrimaryColor || '#6D2323',
                         }}
                       >
                         Manage user accounts, roles, and page access permissions
@@ -834,8 +839,8 @@ const UsersList = () => {
                       label={`${users.length} Users`}
                       size="small"
                       sx={{
-                        bgcolor: "rgba(109,35,35,0.15)",
-                        color: accentColor,
+                        bgcolor: alpha(settings?.primaryColor || '#894444', 0.15),
+                        color: settings?.primaryColor || '#894444',
                         fontWeight: 500,
                         "& .MuiChip-label": { px: 1 },
                       }}
@@ -845,21 +850,21 @@ const UsersList = () => {
                         onClick={fetchUsers}
                         disabled={loading}
                         sx={{
-                          bgcolor: "rgba(109,35,35,0.1)",
-                          "&:hover": { bgcolor: "rgba(109,35,35,0.2)" },
-                          color: accentColor,
+                          bgcolor: alpha(settings?.primaryColor || '#894444', 0.1),
+                          "&:hover": { bgcolor: alpha(settings?.primaryColor || '#894444', 0.2) },
+                          color: settings?.primaryColor || '#894444',
                           width: 48,
                           height: 48,
                           "&:disabled": {
-                            bgcolor: "rgba(109,35,35,0.05)",
-                            color: "rgba(109,35,35,0.3)",
+                            bgcolor: alpha(settings?.primaryColor || '#894444', 0.05),
+                            color: alpha(settings?.primaryColor || '#894444', 0.3),
                           },
                         }}
                       >
                         {loading ? (
                           <CircularProgress
                             size={24}
-                            sx={{ color: accentColor }}
+                            sx={{ color: settings?.primaryColor || '#894444' }}
                           />
                         ) : (
                           <Refresh />
@@ -872,10 +877,10 @@ const UsersList = () => {
                       startIcon={<PersonAdd />}
                       onClick={() => navigate("/registration")}
                       sx={{
-                        bgcolor: accentColor,
-                        color: primaryColor,
+                        bgcolor: settings?.primaryColor || '#894444',
+                        color: settings?.accentColor || '#FEF9E1',
                         "&:hover": {
-                          bgcolor: accentDark,
+                          bgcolor: settings?.secondaryColor || '#6d2323',
                         },
                       }}
                     >
@@ -887,10 +892,10 @@ const UsersList = () => {
                       startIcon={<Pages />}
                       onClick={() => navigate("/pages-list")}
                       sx={{
-                        bgcolor: accentColor,
-                        color: primaryColor,
+                        bgcolor: settings?.primaryColor || '#894444',
+                        color: settings?.accentColor || '#FEF9E1',
                         "&:hover": {
-                          bgcolor: accentDark,
+                          bgcolor: settings?.secondaryColor || '#6d2323',
                         },
                       }}
                     >
@@ -903,38 +908,84 @@ const UsersList = () => {
           </Box>
         </Fade>
 
-        {/* Success Message */}
+        {/* Success Message - Center Modal Overlay */}
         {successMessage && (
-          <Fade in timeout={300}>
-            <Alert
-              severity="success"
-              sx={{
-                mb: 3,
-                borderRadius: 3,
-                "& .MuiAlert-message": { fontWeight: 500 },
-              }}
-              icon={<CheckCircle />}
-            >
-              {successMessage}
-            </Alert>
-          </Fade>
+          <Backdrop
+            open={true}
+            sx={{
+              zIndex: 9999,
+              backdropFilter: "blur(8px)",
+              backgroundColor: "rgba(0, 0, 0, 0.5)",
+            }}
+            onClick={() => setSuccessMessage("")}
+          >
+            <Fade in timeout={300}>
+              <Box
+                onClick={(e) => e.stopPropagation()}
+                sx={{
+                  position: "relative",
+                  minWidth: "400px",
+                  maxWidth: "600px",
+                }}
+              >
+                <Alert
+                  severity="success"
+                  sx={{
+                    borderRadius: 4,
+                    boxShadow: "0 12px 48px rgba(0, 0, 0, 0.4)",
+                    fontSize: "1.1rem",
+                    p: 3,
+                    "& .MuiAlert-message": { fontWeight: 500 },
+                    "& .MuiAlert-icon": { fontSize: "2rem" },
+                  }}
+                  icon={<CheckCircle />}
+                  onClose={() => setSuccessMessage("")}
+                >
+                  {successMessage}
+                </Alert>
+              </Box>
+            </Fade>
+          </Backdrop>
         )}
 
-        {/* Error Alert */}
+        {/* Error Alert - Center Modal Overlay */}
         {error && (
-          <Fade in timeout={300}>
-            <Alert
-              severity="error"
-              sx={{
-                mb: 3,
-                borderRadius: 3,
-                "& .MuiAlert-message": { fontWeight: 500 },
-              }}
-              icon={<Cancel />}
-            >
-              {error}
-            </Alert>
-          </Fade>
+          <Backdrop
+            open={true}
+            sx={{
+              zIndex: 9999,
+              backdropFilter: "blur(8px)",
+              backgroundColor: "rgba(0, 0, 0, 0.5)",
+            }}
+            onClick={() => setError("")}
+          >
+            <Fade in timeout={300}>
+              <Box
+                onClick={(e) => e.stopPropagation()}
+                sx={{
+                  position: "relative",
+                  minWidth: "400px",
+                  maxWidth: "600px",
+                }}
+              >
+                <Alert
+                  severity="error"
+                  sx={{
+                    borderRadius: 4,
+                    boxShadow: "0 12px 48px rgba(0, 0, 0, 0.4)",
+                    fontSize: "1.1rem",
+                    p: 3,
+                    "& .MuiAlert-message": { fontWeight: 500 },
+                    "& .MuiAlert-icon": { fontSize: "2rem" },
+                  }}
+                  icon={<Cancel />}
+                  onClose={() => setError("")}
+                >
+                  {error}
+                </Alert>
+              </Box>
+            </Fade>
+          </Backdrop>
         )}
 
         {/* Stats Cards */}
@@ -944,15 +995,15 @@ const UsersList = () => {
               <GlassCard>
                 <CardContent sx={{ textAlign: "center", p: 3 }}>
                   <AccountCircle
-                    sx={{ fontSize: 44, color: accentColor, mb: 1 }}
+                    sx={{ fontSize: 44, color: settings?.textPrimaryColor || '#6D2323', mb: 1 }}
                   />
                   <Typography
                     variant="h5"
-                    sx={{ color: accentColor, fontWeight: 700 }}
+                    sx={{ color: settings?.textPrimaryColor || '#6D2323', fontWeight: 700 }}
                   >
                     {users.length}
                   </Typography>
-                  <Typography variant="body2" sx={{ color: accentDark }}>
+                  <Typography variant="body2" sx={{ color: settings?.textPrimaryColor || '#6D2323' }}>
                     Total Users
                   </Typography>
                 </CardContent>
@@ -963,15 +1014,15 @@ const UsersList = () => {
               <GlassCard>
                 <CardContent sx={{ textAlign: "center", p: 3 }}>
                   <SupervisorAccount
-                    sx={{ fontSize: 44, color: accentColor, mb: 1 }}
+                    sx={{ fontSize: 44, color: settings?.textPrimaryColor || '#6D2323', mb: 1 }}
                   />
                   <Typography
                     variant="h5"
-                    sx={{ color: accentColor, fontWeight: 700 }}
+                    sx={{ color: settings?.textPrimaryColor || '#6D2323', fontWeight: 700 }}
                   >
                     {users.filter((u) => u.role === "superadmin").length}
                   </Typography>
-                  <Typography variant="body2" sx={{ color: accentDark }}>
+                  <Typography variant="body2" sx={{ color: settings?.textPrimaryColor || '#6D2323' }}>
                     Superadmins
                   </Typography>
                 </CardContent>
@@ -982,15 +1033,15 @@ const UsersList = () => {
               <GlassCard>
                 <CardContent sx={{ textAlign: "center", p: 3 }}>
                   <AdminPanelSettings
-                    sx={{ fontSize: 44, color: accentColor, mb: 1 }}
+                    sx={{ fontSize: 44, color: settings?.textPrimaryColor || '#6D2323', mb: 1 }}
                   />
                   <Typography
                     variant="h5"
-                    sx={{ color: accentColor, fontWeight: 700 }}
+                    sx={{ color: settings?.textPrimaryColor || '#6D2323', fontWeight: 700 }}
                   >
                     {users.filter((u) => u.role === "administrator").length}
                   </Typography>
-                  <Typography variant="body2" sx={{ color: accentDark }}>
+                  <Typography variant="body2" sx={{ color: settings?.textPrimaryColor || '#6D2323' }}>
                     Administrators
                   </Typography>
                 </CardContent>
@@ -1000,14 +1051,14 @@ const UsersList = () => {
             <Grid item xs={12} sm={6} md={2.4}>
               <GlassCard>
                 <CardContent sx={{ textAlign: "center", p: 3 }}>
-                  <Work sx={{ fontSize: 44, color: accentColor, mb: 1 }} />
+                  <Work sx={{ fontSize: 44, color: settings?.textPrimaryColor || '#6D2323', mb: 1 }} />
                   <Typography
                     variant="h5"
-                    sx={{ color: accentColor, fontWeight: 700 }}
+                    sx={{ color: settings?.textPrimaryColor || '#6D2323', fontWeight: 700 }}
                   >
                     {users.filter((u) => u.role === "staff").length}
                   </Typography>
-                  <Typography variant="body2" sx={{ color: accentDark }}>
+                  <Typography variant="body2" sx={{ color: settings?.textPrimaryColor || '#6D2323' }}>
                     Staff Members
                   </Typography>
                 </CardContent>
@@ -1018,15 +1069,15 @@ const UsersList = () => {
               <GlassCard>
                 <CardContent sx={{ textAlign: "center", p: 3 }}>
                   <Visibility
-                    sx={{ fontSize: 44, color: accentColor, mb: 1 }}
+                    sx={{ fontSize: 44, color: settings?.textPrimaryColor || '#6D2323', mb: 1 }}
                   />
                   <Typography
                     variant="h5"
-                    sx={{ color: accentColor, fontWeight: 700 }}
+                    sx={{ color: settings?.textPrimaryColor || '#6D2323', fontWeight: 700 }}
                   >
                     {filteredUsers.length}
                   </Typography>
-                  <Typography variant="body2" sx={{ color: accentDark }}>
+                  <Typography variant="body2" sx={{ color: settings?.textPrimaryColor || '#6D2323' }}>
                     Filtered Results
                   </Typography>
                 </CardContent>
@@ -1043,8 +1094,8 @@ const UsersList = () => {
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                   <Avatar
                     sx={{
-                      bgcolor: alpha(primaryColor, 0.8),
-                      color: accentColor,
+                      bgcolor: alpha(settings?.accentColor || '#FEF9E1', 0.8),
+                      color: settings?.textPrimaryColor || '#6D2323',
                     }}
                   >
                     <FilterList />
@@ -1053,14 +1104,14 @@ const UsersList = () => {
                     <Typography
                       variant="h5"
                       component="div"
-                      sx={{ fontWeight: 600, color: accentColor }}
+                      sx={{ fontWeight: 600, color: settings?.textPrimaryColor || '#6D2323' }}
                     >
                       Search & Filter
                     </Typography>
                     <Typography
                       variant="body2"
                       color="text.secondary"
-                      sx={{ color: accentDark }}
+                      sx={{ color: settings?.textPrimaryColor || '#6D2323' }}
                     >
                       Find and filter users by various criteria
                     </Typography>
@@ -1068,9 +1119,9 @@ const UsersList = () => {
                 </Box>
               }
               sx={{
-                bgcolor: alpha(primaryColor, 0.5),
+                bgcolor: alpha(settings?.accentColor || '#FEF9E1', 0.5),
                 pb: 2,
-                borderBottom: "1px solid rgba(109,35,35,0.1)",
+                borderBottom: `1px solid ${alpha(settings?.primaryColor || '#894444', 0.1)}`,
               }}
             />
             <CardContent sx={{ p: 4 }}>
@@ -1085,7 +1136,7 @@ const UsersList = () => {
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <SearchIcon sx={{ color: accentColor }} />
+                          <SearchIcon sx={{ color: settings?.textPrimaryColor || '#6D2323' }} />
                         </InputAdornment>
                       ),
                     }}
@@ -1113,14 +1164,14 @@ const UsersList = () => {
         {/* Loading Backdrop */}
         <Backdrop
           sx={{
-            color: primaryColor,
+            color: settings?.accentColor || '#FEF9E1',
             zIndex: (theme) => theme.zIndex.drawer + 1,
           }}
           open={loading && !refreshing}
         >
           <Box sx={{ textAlign: "center" }}>
             <CircularProgress color="inherit" size={60} thickness={4} />
-            <Typography variant="h6" sx={{ mt: 2, color: primaryColor }}>
+            <Typography variant="h6" sx={{ mt: 2, color: settings?.accentColor || '#FEF9E1' }}>
               Loading users...
             </Typography>
           </Box>
@@ -1133,24 +1184,24 @@ const UsersList = () => {
               <Box
                 sx={{
                   p: 3,
-                  background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
-                  color: accentColor,
+                  background: `linear-gradient(135deg, ${settings?.accentColor || '#FEF9E1'} 0%, ${alpha(settings?.accentColor || '#FEF9E1', 0.9)} 100%)`,
+                  color: settings?.primaryColor || '#894444',
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  borderBottom: "1px solid rgba(109,35,35,0.1)",
+                  borderBottom: `1px solid ${alpha(settings?.primaryColor || '#894444', 0.1)}`,
                 }}
               >
                 <Box>
                   <Typography
                     variant="h5"
-                    sx={{ fontWeight: 600, color: accentColor }}
+                    sx={{ fontWeight: 600, color: settings?.primaryColor || '#894444' }}
                   >
                     Registered Users
                   </Typography>
                   <Typography
                     variant="body2"
-                    sx={{ opacity: 0.8, color: accentDark }}
+                    sx={{ opacity: 0.8, color: settings?.accentColor || '#FEF9E1' }}
                   >
                     {searchTerm
                       ? `Showing ${filteredUsers.length} of ${users.length} users matching "${searchTerm}"`
@@ -1161,27 +1212,27 @@ const UsersList = () => {
 
               <PremiumTableContainer component={Paper} elevation={0}>
                 <Table sx={{ minWidth: 800 }}>
-                  <TableHead sx={{ bgcolor: alpha(primaryColor, 0.7) }}>
+                  <TableHead sx={{ bgcolor: alpha(settings?.accentColor || '#FEF9E1', 0.7) }}>
                     <TableRow>
-                      <PremiumTableCell isHeader sx={{ color: accentColor }}>
+                      <PremiumTableCell isHeader sx={{ color: settings?.textPrimaryColor || '#6D2323' }}>
                         <BadgeIcon sx={{ mr: 1, verticalAlign: "middle" }} />
                         Employee #
                       </PremiumTableCell>
-                      <PremiumTableCell isHeader sx={{ color: accentColor }}>
+                      <PremiumTableCell isHeader sx={{ color: settings?.textPrimaryColor || '#6D2323' }}>
                         <Person sx={{ mr: 1, verticalAlign: "middle" }} />
                         Full Name
                       </PremiumTableCell>
-                      <PremiumTableCell isHeader sx={{ color: accentColor }}>
+                      <PremiumTableCell isHeader sx={{ color: settings?.textPrimaryColor || '#6D2323' }}>
                         <Email sx={{ mr: 1, verticalAlign: "middle" }} />
                         Email
                       </PremiumTableCell>
-                      <PremiumTableCell isHeader sx={{ color: accentColor }}>
+                      <PremiumTableCell isHeader sx={{ color: settings?.textPrimaryColor || '#6D2323' }}>
                         <Business sx={{ mr: 1, verticalAlign: "middle" }} />
                         Role
                       </PremiumTableCell>
                       <PremiumTableCell
                         isHeader
-                        sx={{ color: accentColor, textAlign: "center" }}
+                        sx={{ color: settings?.textPrimaryColor || '#6D2323', textAlign: "center" }}
                       >
                         <Security sx={{ mr: 1, verticalAlign: "middle" }} />
                         Page Access
@@ -1195,14 +1246,14 @@ const UsersList = () => {
                           key={user.employeeNumber}
                           sx={{
                             "&:nth-of-type(even)": {
-                              bgcolor: alpha(primaryColor, 0.3),
+                              bgcolor: alpha(settings?.accentColor || '#FEF9E1', 0.3),
                             },
-                            "&:hover": { bgcolor: alpha(accentColor, 0.05) },
+                            "&:hover": { bgcolor: alpha(settings?.primaryColor || '#894444', 0.05) },
                             transition: "all 0.2s ease",
                           }}
                         >
                           <PremiumTableCell
-                            sx={{ fontWeight: 600, color: accentColor }}
+                            sx={{ fontWeight: 600, color: settings?.textPrimaryColor || '#6D2323' }}
                           >
                             {user.employeeNumber}
                           </PremiumTableCell>
@@ -1221,11 +1272,11 @@ const UsersList = () => {
                                 sx={{
                                   width: 48,
                                   height: 48,
-                                  bgcolor: accentColor,
-                                  color: primaryColor,
+                                  bgcolor: settings?.primaryColor || '#894444',
+                                  color: settings?.accentColor || '#FEF9E1',
                                   fontWeight: 700,
                                   fontSize: "1rem",
-                                  boxShadow: "0 4px 12px rgba(109,35,35,0.2)",
+                                  boxShadow: `0 4px 12px ${alpha(settings?.primaryColor || '#894444', 0.2)}`,
                                   border: "2px solid #fff",
                                 }}
                               >
@@ -1234,14 +1285,14 @@ const UsersList = () => {
                               <Box>
                                 <Typography
                                   variant="body1"
-                                  sx={{ fontWeight: 600, color: accentColor }}
+                                  sx={{ fontWeight: 600, color: settings?.textPrimaryColor || '#6D2323' }}
                                 >
                                   {user.fullName}
                                 </Typography>
                                 {user.nameExtension && (
                                   <Typography
                                     variant="caption"
-                                    sx={{ color: accentDark }}
+                                    sx={{ color: settings?.textPrimaryColor || '#6D2323' }}
                                   >
                                     ({user.nameExtension})
                                   </Typography>
@@ -1250,7 +1301,7 @@ const UsersList = () => {
                             </Box>
                           </PremiumTableCell>
 
-                          <PremiumTableCell sx={{ color: accentDark }}>
+                          <PremiumTableCell sx={{ color: settings?.textPrimaryColor || '#6D2323' }}>
                             {user.email}
                           </PremiumTableCell>
 
@@ -1280,10 +1331,10 @@ const UsersList = () => {
                               size="small"
                               variant="contained"
                               sx={{
-                                bgcolor: accentColor,
-                                color: primaryColor,
+                                bgcolor: settings?.primaryColor || '#894444',
+                                color: settings?.accentColor || '#FEF9E1',
                                 "&:hover": {
-                                  bgcolor: accentDark,
+                                  bgcolor: settings?.secondaryColor || '#6d2323',
                                 },
                               }}
                             >
@@ -1302,13 +1353,13 @@ const UsersList = () => {
                             <Info
                               sx={{
                                 fontSize: 80,
-                                color: alpha(accentColor, 0.3),
+                                color: alpha(settings?.primaryColor || '#894444', 0.3),
                                 mb: 3,
                               }}
                             />
                             <Typography
                               variant="h5"
-                              color={alpha(accentColor, 0.6)}
+                              color={alpha(settings?.primaryColor || '#894444', 0.6)}
                               gutterBottom
                               sx={{ fontWeight: 600 }}
                             >
@@ -1316,7 +1367,7 @@ const UsersList = () => {
                             </Typography>
                             <Typography
                               variant="body1"
-                              color={alpha(accentColor, 0.4)}
+                              color={alpha(settings?.primaryColor || '#894444', 0.4)}
                             >
                               {searchTerm
                                 ? "Try adjusting your search criteria"
@@ -1344,7 +1395,7 @@ const UsersList = () => {
                     sx={{
                       "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows":
                         {
-                          color: accentColor,
+                          color: settings?.textPrimaryColor || '#6D2323',
                           fontWeight: 600,
                         },
                     }}
@@ -1364,14 +1415,14 @@ const UsersList = () => {
           PaperProps={{
             sx: {
               borderRadius: 4,
-              bgcolor: primaryColor,
+              bgcolor: settings?.accentColor || '#FEF9E1',
             },
           }}
         >
           <DialogTitle
             sx={{
-              background: `linear-gradient(135deg, ${accentColor} 0%, ${accentDark} 100%)`,
-              color: primaryColor,
+              background: `linear-gradient(135deg, ${settings?.primaryColor || '#894444'} 0%, ${settings?.secondaryColor || '#6d2323'} 100%)`,
+              color: settings?.accentColor || '#FEF9E1',
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
@@ -1385,7 +1436,7 @@ const UsersList = () => {
             </Box>
             <IconButton
               onClick={closePageAccessDialog}
-              sx={{ color: primaryColor }}
+              sx={{ color: settings?.accentColor || '#FEF9E1' }}
             >
               <Close />
             </IconButton>
@@ -1399,8 +1450,8 @@ const UsersList = () => {
                     mb: 4,
                     p: 3,
                     borderRadius: 3,
-                    border: `1px solid ${alpha(accentColor, 0.2)}`,
-                    bgcolor: alpha(primaryColor, 0.5),
+                    border: `1px solid ${alpha(settings?.primaryColor || '#894444', 0.2)}`,
+                    bgcolor: alpha(settings?.accentColor || '#FEF9E1', 0.5),
                   }}
                 >
                   <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -1408,13 +1459,13 @@ const UsersList = () => {
                       src={selectedUser.avatar || ""}
                       alt={selectedUser.fullName}
                       sx={{
-                        bgcolor: accentColor,
+                        bgcolor: settings?.primaryColor || '#894444',
                         width: 64,
                         height: 64,
                         fontWeight: 700,
                         fontSize: "1.2rem",
                         border: "3px solid #fff",
-                        boxShadow: "0 4px 12px rgba(109,35,35,0.2)",
+                        boxShadow: `0 4px 12px ${alpha(settings?.primaryColor || '#894444', 0.2)}`,
                       }}
                     >
                       {!selectedUser.avatar &&
@@ -1423,13 +1474,13 @@ const UsersList = () => {
                     <Box>
                       <Typography
                         variant="h6"
-                        sx={{ fontWeight: 700, color: accentColor }}
+                        sx={{ fontWeight: 700, color: settings?.textPrimaryColor || '#6D2323' }}
                       >
                         {selectedUser.fullName}
                       </Typography>
                       <Typography
                         variant="body2"
-                        sx={{ color: accentDark, mt: 1 }}
+                        sx={{ color: settings?.textPrimaryColor || '#6D2323', mt: 1 }}
                       >
                         Employee: <strong>{selectedUser.employeeNumber}</strong>{" "}
                         | Role: <strong>{selectedUser.role}</strong>
@@ -1448,7 +1499,7 @@ const UsersList = () => {
                       gap: 2,
                     }}
                   >
-                    <Typography sx={{ fontWeight: 600, color: accentColor }}>
+                    <Typography sx={{ fontWeight: 600, color: settings?.textPrimaryColor || '#6D2323' }}>
                       Toggle All Pages:
                     </Typography>
                     <Switch
@@ -1464,11 +1515,11 @@ const UsersList = () => {
                       }}
                       sx={{
                         "& .MuiSwitch-switchBase.Mui-checked": {
-                          color: accentColor,
+                          color: settings?.primaryColor || '#894444',
                         },
                         "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
                           {
-                            backgroundColor: accentColor,
+                            backgroundColor: settings?.primaryColor || '#894444',
                           },
                       }}
                     />
@@ -1477,7 +1528,7 @@ const UsersList = () => {
 
                 {pageAccessLoading ? (
                   <Box sx={{ display: "flex", justifyContent: "center", p: 5 }}>
-                    <CircularProgress sx={{ color: accentColor }} />
+                    <CircularProgress sx={{ color: settings?.primaryColor || '#894444' }} />
                   </Box>
                 ) : pages.length > 0 ? (
                   <Box sx={{ maxHeight: 400, overflow: "auto" }}>
@@ -1489,10 +1540,10 @@ const UsersList = () => {
                             p: 2,
                             mb: 1,
                             borderRadius: 2,
-                            bgcolor: alpha(primaryColor, 0.3),
-                            border: `1px solid ${alpha(accentColor, 0.1)}`,
+                            bgcolor: alpha(settings?.accentColor || '#FEF9E1', 0.3),
+                            border: `1px solid ${alpha(settings?.primaryColor || '#894444', 0.1)}`,
                             "&:hover": {
-                              bgcolor: alpha(accentColor, 0.05),
+                              bgcolor: alpha(settings?.primaryColor || '#894444', 0.05),
                             },
                           }}
                         >
@@ -1500,7 +1551,7 @@ const UsersList = () => {
                             primary={
                               <Typography
                                 variant="subtitle1"
-                                sx={{ fontWeight: 600, color: accentColor }}
+                                sx={{ fontWeight: 600, color: settings?.textPrimaryColor || '#6D2323' }}
                               >
                                 {page.page_name}
                               </Typography>
@@ -1508,7 +1559,7 @@ const UsersList = () => {
                             secondary={
                               <Typography
                                 variant="body2"
-                                sx={{ color: accentDark }}
+                                sx={{ color: settings?.textPrimaryColor || '#6D2323' }}
                               >
                                 Page ID: {page.id}
                               </Typography>
@@ -1524,14 +1575,14 @@ const UsersList = () => {
                             {accessChangeInProgress[page.id] ? (
                               <CircularProgress
                                 size={24}
-                                sx={{ color: accentColor }}
+                                sx={{ color: settings?.primaryColor || '#894444' }}
                               />
                             ) : (
                               <>
                                 {pageAccess[page.id] ? (
-                                  <LockOpen sx={{ color: accentColor }} />
+                                  <LockOpen sx={{ color: settings?.primaryColor || '#894444' }} />
                                 ) : (
-                                  <Lock sx={{ color: accentDark }} />
+                                  <Lock sx={{ color: settings?.textPrimaryColor || '#6D2323' }} />
                                 )}
                                 <Switch
                                   checked={!!pageAccess[page.id]}
@@ -1543,11 +1594,11 @@ const UsersList = () => {
                                   }
                                   sx={{
                                     "& .MuiSwitch-switchBase.Mui-checked": {
-                                      color: accentColor,
+                                      color: settings?.primaryColor || '#894444',
                                     },
                                     "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
                                       {
-                                        backgroundColor: accentColor,
+                                        backgroundColor: settings?.primaryColor || '#894444',
                                       },
                                   }}
                                 />
@@ -1561,7 +1612,7 @@ const UsersList = () => {
                 ) : (
                   <Typography
                     variant="body1"
-                    sx={{ textAlign: "center", p: 4, color: accentDark }}
+                    sx={{ textAlign: "center", p: 4, color: settings?.textPrimaryColor || '#6D2323' }}
                   >
                     No pages found in the system.
                   </Typography>
@@ -1575,10 +1626,10 @@ const UsersList = () => {
               onClick={closePageAccessDialog}
               variant="contained"
               sx={{
-                bgcolor: accentColor,
-                color: primaryColor,
+                bgcolor: settings?.primaryColor || '#894444',
+                color: settings?.accentColor || '#FEF9E1',
                 "&:hover": {
-                  bgcolor: accentDark,
+                  bgcolor: settings?.secondaryColor || '#6d2323',
                 },
               }}
             >
@@ -1595,7 +1646,7 @@ const UsersList = () => {
           PaperProps={{
             sx: {
               width: isMobile ? "100%" : "520px",
-              bgcolor: primaryColor,
+              bgcolor: settings?.accentColor || '#FEF9E1',
             },
           }}
         >
@@ -1607,8 +1658,8 @@ const UsersList = () => {
               <Box
                 sx={{
                   p: 4,
-                  background: `linear-gradient(135deg, ${accentColor} 0%, ${accentDark} 100%)`,
-                  color: primaryColor,
+                  background: `linear-gradient(135deg, ${settings?.primaryColor || '#894444'} 0%, ${settings?.secondaryColor || '#6d2323'} 100%)`,
+                  color: settings?.accentColor || '#FEF9E1',
                 }}
               >
                 <Box
@@ -1625,8 +1676,8 @@ const UsersList = () => {
                       sx={{
                         width: 80,
                         height: 80,
-                        bgcolor: primaryColor,
-                        color: accentColor,
+                        bgcolor: settings?.accentColor || '#FEF9E1',
+                        color: settings?.primaryColor || '#894444',
                         fontWeight: 700,
                         fontSize: "2rem",
                         border: "4px solid rgba(255,255,255,0.8)",
@@ -1652,7 +1703,7 @@ const UsersList = () => {
                   </Box>
                   <IconButton
                     onClick={closeUserDetails}
-                    sx={{ color: primaryColor }}
+                    sx={{ color: settings?.accentColor || '#FEF9E1' }}
                   >
                     <Close />
                   </IconButton>
@@ -1663,8 +1714,8 @@ const UsersList = () => {
               <Box
                 sx={{
                   display: "flex",
-                  bgcolor: whiteColor,
-                  borderBottom: `2px solid ${alpha(accentColor, 0.1)}`,
+                  bgcolor: settings?.backgroundColor || '#FFFFFF',
+                  borderBottom: `2px solid ${alpha(settings?.primaryColor || '#894444', 0.1)}`,
                 }}
               >
                 <Box
@@ -1676,12 +1727,12 @@ const UsersList = () => {
                     cursor: "pointer",
                     borderBottom:
                       activeTab === "info"
-                        ? `3px solid ${accentColor}`
+                        ? `3px solid ${settings?.primaryColor || '#894444'}`
                         : "none",
-                    color: activeTab === "info" ? accentColor : accentDark,
+                    color: activeTab === "info" ? settings?.primaryColor || '#894444' : settings?.textPrimaryColor || '#6D2323',
                     fontWeight: activeTab === "info" ? 600 : 500,
                     "&:hover": {
-                      bgcolor: alpha(accentColor, 0.05),
+                      bgcolor: alpha(settings?.primaryColor || '#894444', 0.05),
                     },
                   }}
                 >
@@ -1697,12 +1748,12 @@ const UsersList = () => {
                     cursor: "pointer",
                     borderBottom:
                       activeTab === "access"
-                        ? `3px solid ${accentColor}`
+                        ? `3px solid ${settings?.primaryColor || '#894444'}`
                         : "none",
-                    color: activeTab === "access" ? accentColor : accentDark,
+                    color: activeTab === "access" ? settings?.primaryColor || '#894444' : settings?.textPrimaryColor || '#6D2323',
                     fontWeight: activeTab === "access" ? 600 : 500,
                     "&:hover": {
-                      bgcolor: alpha(accentColor, 0.05),
+                      bgcolor: alpha(settings?.primaryColor || '#894444', 0.05),
                     },
                   }}
                 >
@@ -1726,29 +1777,29 @@ const UsersList = () => {
                               gap: 1,
                             }}
                           >
-                            <AssignmentInd sx={{ color: accentColor }} />
+                            <AssignmentInd sx={{ color: settings?.primaryColor || '#894444' }} />
                             <Typography
                               variant="h6"
-                              sx={{ fontWeight: 600, color: accentColor }}
+                              sx={{ fontWeight: 600, color: settings?.textPrimaryColor || '#6D2323' }}
                             >
                               Personal Information
                             </Typography>
                           </Box>
                         }
-                        sx={{ bgcolor: alpha(accentColor, 0.05) }}
+                        sx={{ bgcolor: alpha(settings?.primaryColor || '#894444', 0.05) }}
                       />
                       <CardContent>
                         <Stack spacing={2}>
                           <Box>
                             <Typography
                               variant="caption"
-                              sx={{ color: accentDark }}
+                              sx={{ color: settings?.textPrimaryColor || '#6D2323' }}
                             >
                               Full Name
                             </Typography>
                             <Typography
                               variant="body1"
-                              sx={{ fontWeight: 600, color: accentColor }}
+                              sx={{ fontWeight: 600, color: settings?.textPrimaryColor || '#6D2323' }}
                             >
                               {selectedUserForDetails.fullName}
                             </Typography>
@@ -1756,13 +1807,13 @@ const UsersList = () => {
                           <Box>
                             <Typography
                               variant="caption"
-                              sx={{ color: accentDark }}
+                              sx={{ color: settings?.textPrimaryColor || '#6D2323' }}
                             >
                               Employee Number
                             </Typography>
                             <Typography
                               variant="body1"
-                              sx={{ fontWeight: 600, color: accentColor }}
+                              sx={{ fontWeight: 600, color: settings?.textPrimaryColor || '#6D2323' }}
                             >
                               {selectedUserForDetails.employeeNumber}
                             </Typography>
@@ -1770,13 +1821,13 @@ const UsersList = () => {
                           <Box>
                             <Typography
                               variant="caption"
-                              sx={{ color: accentDark }}
+                              sx={{ color: settings?.textPrimaryColor || '#6D2323' }}
                             >
                               Email Address
                             </Typography>
                             <Typography
                               variant="body1"
-                              sx={{ fontWeight: 600, color: accentColor }}
+                              sx={{ fontWeight: 600, color: settings?.textPrimaryColor || '#6D2323' }}
                             >
                               {selectedUserForDetails.email}
                             </Typography>
@@ -1784,7 +1835,7 @@ const UsersList = () => {
                           <Box>
                             <Typography
                               variant="caption"
-                              sx={{ color: accentDark }}
+                              sx={{ color: settings?.textPrimaryColor || '#6D2323' }}
                             >
                               Role
                             </Typography>
@@ -1805,13 +1856,13 @@ const UsersList = () => {
                           <Box>
                             <Typography
                               variant="caption"
-                              sx={{ color: accentDark }}
+                              sx={{ color: settings?.textPrimaryColor || '#6D2323' }}
                             >
                               Last Login
                             </Typography>
                             <Typography
                               variant="body1"
-                              sx={{ fontWeight: 600, color: accentColor }}
+                              sx={{ fontWeight: 600, color: settings?.textPrimaryColor || '#6D2323' }}
                             >
                               {formatDate(selectedUserForDetails.lastLogin)}
                             </Typography>
@@ -1835,29 +1886,29 @@ const UsersList = () => {
                               gap: 1,
                             }}
                           >
-                            <TrendingUp sx={{ color: accentColor }} />
+                            <TrendingUp sx={{ color: settings?.primaryColor || '#894444' }} />
                             <Typography
                               variant="h6"
-                              sx={{ fontWeight: 600, color: accentColor }}
+                              sx={{ fontWeight: 600, color: settings?.textPrimaryColor || '#6D2323' }}
                             >
                               Page Access Summary
                             </Typography>
                           </Box>
                         }
-                        sx={{ bgcolor: alpha(accentColor, 0.05) }}
+                        sx={{ bgcolor: alpha(settings?.primaryColor || '#894444', 0.05) }}
                       />
                       <CardContent>
                         <Box sx={{ textAlign: "center", mb: 3 }}>
                           <Typography
                             variant="h2"
-                            sx={{ color: accentColor, fontWeight: 700 }}
+                            sx={{ color: settings?.primaryColor || '#894444', fontWeight: 700 }}
                           >
                             {selectedUserForDetails.accessiblePages?.length ||
                               0}
                           </Typography>
                           <Typography
                             variant="body2"
-                            sx={{ color: accentDark }}
+                            sx={{ color: settings?.textPrimaryColor || '#6D2323' }}
                           >
                             of {selectedUserForDetails.totalPages || 0} pages
                             accessible
@@ -1869,9 +1920,9 @@ const UsersList = () => {
                           sx={{
                             height: 10,
                             borderRadius: 5,
-                            bgcolor: alpha(accentColor, 0.1),
+                            bgcolor: alpha(settings?.primaryColor || '#894444', 0.1),
                             "& .MuiLinearProgress-bar": {
-                              bgcolor: accentColor,
+                              bgcolor: settings?.primaryColor || '#894444',
                             },
                           }}
                         />
@@ -1889,16 +1940,16 @@ const UsersList = () => {
                               gap: 1,
                             }}
                           >
-                            <Shield sx={{ color: accentColor }} />
+                            <Shield sx={{ color: settings?.primaryColor || '#894444' }} />
                             <Typography
                               variant="h6"
-                              sx={{ fontWeight: 600, color: accentColor }}
+                              sx={{ fontWeight: 600, color: settings?.textPrimaryColor || '#6D2323' }}
                             >
                               Accessible Pages
                             </Typography>
                           </Box>
                         }
-                        sx={{ bgcolor: alpha(accentColor, 0.05) }}
+                        sx={{ bgcolor: alpha(settings?.primaryColor || '#894444', 0.05) }}
                       />
                       <CardContent>
                         {selectedUserForDetails.accessiblePages &&
@@ -1911,9 +1962,9 @@ const UsersList = () => {
                                   sx={{
                                     p: 2,
                                     borderRadius: 2,
-                                    bgcolor: alpha(accentColor, 0.05),
+                                    bgcolor: alpha(settings?.primaryColor || '#894444', 0.05),
                                     border: `1px solid ${alpha(
-                                      accentColor,
+                                      settings?.primaryColor || '#894444',
                                       0.1
                                     )}`,
                                     display: "flex",
@@ -1921,20 +1972,20 @@ const UsersList = () => {
                                     gap: 2,
                                   }}
                                 >
-                                  <CheckCircle sx={{ color: accentColor }} />
+                                  <CheckCircle sx={{ color: settings?.primaryColor || '#894444' }} />
                                   <Box sx={{ flex: 1 }}>
                                     <Typography
                                       variant="body1"
                                       sx={{
                                         fontWeight: 600,
-                                        color: accentColor,
+                                        color: settings?.textPrimaryColor || '#6D2323',
                                       }}
                                     >
                                       {page.page_name}
                                     </Typography>
                                     <Typography
                                       variant="caption"
-                                      sx={{ color: accentDark }}
+                                      sx={{ color: settings?.textPrimaryColor || '#6D2323' }}
                                     >
                                       ID: {page.id}
                                     </Typography>
@@ -1948,13 +1999,13 @@ const UsersList = () => {
                             <Cancel
                               sx={{
                                 fontSize: 60,
-                                color: alpha(accentColor, 0.3),
+                                color: alpha(settings?.primaryColor || '#894444', 0.3),
                                 mb: 2,
                               }}
                             />
                             <Typography
                               variant="body1"
-                              sx={{ color: accentDark }}
+                              sx={{ color: settings?.textPrimaryColor || '#6D2323' }}
                             >
                               No page access granted
                             </Typography>
@@ -1968,7 +2019,7 @@ const UsersList = () => {
 
               {/* Action Button */}
               <Box
-                sx={{ p: 3, borderTop: `1px solid ${alpha(accentColor, 0.1)}` }}
+                sx={{ p: 3, borderTop: `1px solid ${alpha(settings?.primaryColor || '#894444', 0.1)}` }}
               >
                 <ProfessionalButton
                   variant="contained"
@@ -1979,11 +2030,11 @@ const UsersList = () => {
                     handlePageAccessClick(selectedUserForDetails);
                   }}
                   sx={{
-                    bgcolor: accentColor,
-                    color: primaryColor,
+                    bgcolor: settings?.primaryColor || '#894444',
+                    color: settings?.accentColor || '#FEF9E1',
                     py: 1.5,
                     "&:hover": {
-                      bgcolor: accentDark,
+                      bgcolor: settings?.secondaryColor || '#6d2323',
                     },
                   }}
                 >
@@ -2003,14 +2054,14 @@ const UsersList = () => {
           PaperProps={{
             sx: {
               borderRadius: 4,
-              bgcolor: primaryColor,
+              bgcolor: settings?.accentColor || '#FEF9E1',
             },
           }}
         >
           <DialogTitle
             sx={{
-              background: `linear-gradient(135deg, ${accentColor} 0%, ${accentDark} 100%)`,
-              color: primaryColor,
+              background: `linear-gradient(135deg, ${settings?.primaryColor || '#894444'} 0%, ${settings?.secondaryColor || '#6d2323'} 100%)`,
+              color: settings?.accentColor || '#FEF9E1',
               display: "flex",
               alignItems: "center",
               gap: 2,
@@ -2030,8 +2081,8 @@ const UsersList = () => {
                     mb: 3,
                     p: 3,
                     borderRadius: 3,
-                    border: `1px solid ${alpha(accentColor, 0.2)}`,
-                    bgcolor: alpha(primaryColor, 0.5),
+                    border: `1px solid ${alpha(settings?.primaryColor || '#894444', 0.2)}`,
+                    bgcolor: alpha(settings?.accentColor || '#FEF9E1', 0.5),
                   }}
                 >
                   <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -2039,13 +2090,13 @@ const UsersList = () => {
                       src={pendingRoleChange.user.avatar || ""}
                       alt={pendingRoleChange.user.fullName}
                       sx={{
-                        bgcolor: accentColor,
+                        bgcolor: settings?.primaryColor || '#894444',
                         width: 64,
                         height: 64,
                         fontWeight: 700,
                         fontSize: "1.2rem",
                         border: "3px solid #fff",
-                        boxShadow: "0 4px 12px rgba(109,35,35,0.2)",
+                        boxShadow: `0 4px 12px ${alpha(settings?.primaryColor || '#894444', 0.2)}`,
                       }}
                     >
                       {!pendingRoleChange.user.avatar &&
@@ -2054,13 +2105,13 @@ const UsersList = () => {
                     <Box>
                       <Typography
                         variant="h6"
-                        sx={{ fontWeight: 700, color: accentColor }}
+                        sx={{ fontWeight: 700, color: settings?.textPrimaryColor || '#6D2323' }}
                       >
                         {pendingRoleChange.user.fullName}
                       </Typography>
                       <Typography
                         variant="body2"
-                        sx={{ color: accentDark, mt: 1 }}
+                        sx={{ color: settings?.textPrimaryColor || '#6D2323', mt: 1 }}
                       >
                         Employee: <strong>{pendingRoleChange.user.employeeNumber}</strong>
                       </Typography>
@@ -2084,13 +2135,13 @@ const UsersList = () => {
                   sx={{
                     p: 3,
                     borderRadius: 2,
-                    bgcolor: alpha(accentColor, 0.05),
-                    border: `1px solid ${alpha(accentColor, 0.1)}`,
+                    bgcolor: alpha(settings?.primaryColor || '#894444', 0.05),
+                    border: `1px solid ${alpha(settings?.primaryColor || '#894444', 0.1)}`,
                   }}
                 >
                   <Typography
                     variant="body1"
-                    sx={{ mb: 2, fontWeight: 600, color: accentColor }}
+                    sx={{ mb: 2, fontWeight: 600, color: settings?.textPrimaryColor || '#6D2323' }}
                   >
                     Role Change Details:
                   </Typography>
@@ -2104,7 +2155,7 @@ const UsersList = () => {
                         fontWeight: 600,
                       }}
                     />
-                    <Typography sx={{ color: accentDark }}>→</Typography>
+                    <Typography sx={{ color: settings?.textPrimaryColor || '#6D2323' }}>→</Typography>
                     <Chip
                       label={pendingRoleChange.newRole.toUpperCase()}
                       size="small"
@@ -2126,11 +2177,11 @@ const UsersList = () => {
               variant="outlined"
               disabled={roleChangeLoading}
               sx={{
-                borderColor: accentColor,
-                color: accentColor,
+                borderColor: settings?.primaryColor || '#894444',
+                color: settings?.primaryColor || '#894444',
                 "&:hover": {
-                  borderColor: accentDark,
-                  bgcolor: alpha(accentColor, 0.05),
+                  borderColor: settings?.secondaryColor || '#6d2323',
+                  bgcolor: alpha(settings?.primaryColor || '#894444', 0.05),
                 },
               }}
             >
@@ -2142,13 +2193,13 @@ const UsersList = () => {
               disabled={roleChangeLoading}
               startIcon={roleChangeLoading ? <CircularProgress size={20} /> : <CheckCircle />}
               sx={{
-                bgcolor: accentColor,
-                color: primaryColor,
+                bgcolor: settings?.primaryColor || '#894444',
+                color: settings?.accentColor || '#FEF9E1',
                 "&:hover": {
-                  bgcolor: accentDark,
+                  bgcolor: settings?.secondaryColor || '#6d2323',
                 },
                 "&:disabled": {
-                  bgcolor: alpha(accentColor, 0.5),
+                  bgcolor: alpha(settings?.primaryColor || '#894444', 0.5),
                 },
               }}
             >

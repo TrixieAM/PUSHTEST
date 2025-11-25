@@ -1,5 +1,5 @@
 import API_BASE_URL from '../apiConfig';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -72,78 +72,66 @@ import {
   FolderSpecial,
 } from '@mui/icons-material';
 import AccessDenied from './AccessDenied';
+import axios from 'axios';
 
-// Professional styled components matching UsersList.jsx
-const GlassCard = styled(Card)(({ theme }) => ({
-  borderRadius: 20,
-  background: 'rgba(254, 249, 225, 0.95)',
-  backdropFilter: 'blur(10px)',
-  boxShadow: '0 8px 40px rgba(109, 35, 35, 0.08)',
-  border: '1px solid rgba(109, 35, 35, 0.1)',
-  overflow: 'hidden',
-  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-  '&:hover': {
-    boxShadow: '0 12px 48px rgba(109, 35, 35, 0.15)',
-    transform: 'translateY(-4px)',
-  },
-}));
-
-const ProfessionalButton = styled(Button)(({ theme, variant }) => ({
-  borderRadius: 12,
-  fontWeight: 600,
-  padding: '12px 24px',
-  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-  textTransform: 'none',
-  fontSize: '0.95rem',
-  letterSpacing: '0.025em',
-  boxShadow:
-    variant === 'contained' ? '0 4px 14px rgba(109, 35, 35, 0.25)' : 'none',
-  '&:hover': {
-    transform: 'translateY(-2px)',
-    boxShadow:
-      variant === 'contained' ? '0 6px 20px rgba(109, 35, 35, 0.35)' : 'none',
-  },
-  '&:active': {
-    transform: 'translateY(0)',
-  },
-}));
-
-const ModernTextField = styled(TextField)(({ theme }) => ({
-  '& .MuiOutlinedInput-root': {
-    borderRadius: 12,
-    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    '&:hover': {
-      transform: 'translateY(-1px)',
-      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+// Get auth headers function
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('token');
+  return {
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
     },
-    '&.Mui-focused': {
-      transform: 'translateY(-1px)',
-      boxShadow: '0 4px 20px rgba(109, 35, 35, 0.25)',
-      backgroundColor: 'rgba(255, 255, 255, 1)',
-    },
-  },
-  '& .MuiInputLabel-root': {
-    fontWeight: 500,
-  },
-}));
+  };
+};
 
-const PremiumTableContainer = styled(TableContainer)(({ theme }) => ({
-  borderRadius: 16,
-  overflow: 'hidden',
-  boxShadow: '0 4px 24px rgba(109, 35, 35, 0.06)',
-  border: '1px solid rgba(109, 35, 35, 0.08)',
-}));
+// System Settings Hook (from AdminHome)
+const useSystemSettings = () => {
+  const [settings, setSettings] = useState({
+    primaryColor: '#894444',
+    secondaryColor: '#6d2323',
+    accentColor: '#FEF9E1',
+    textColor: '#FFFFFF',
+    textPrimaryColor: '#6D2323', 
+    textSecondaryColor: '#FEF9E1', 
+    hoverColor: '#6D2323',
+    backgroundColor: '#FFFFFF',
+  });
 
-const PremiumTableCell = styled(TableCell)(({ theme, isHeader = false }) => ({
-  fontWeight: isHeader ? 600 : 500,
-  padding: '18px 20px',
-  borderBottom: isHeader
-    ? '2px solid rgba(109, 35, 35, 0.3)'
-    : '1px solid rgba(109, 35, 35, 0.06)',
-  fontSize: '0.95rem',
-  letterSpacing: '0.025em',
-}));
+  useEffect(() => {
+    const storedSettings = localStorage.getItem('systemSettings');
+    if (storedSettings) {
+      try {
+        const parsedSettings = JSON.parse(storedSettings);
+        if (parsedSettings && typeof parsedSettings === 'object') {
+          setSettings(parsedSettings);
+        }
+      } catch (error) {
+        console.error('Error parsing stored settings:', error);
+      }
+    }
+
+    const fetchSettings = async () => {
+      try {
+        const url = API_BASE_URL.includes('/api') 
+          ? `${API_BASE_URL}/system-settings`
+          : `${API_BASE_URL}/api/system-settings`;
+        
+        const response = await axios.get(url, getAuthHeaders());
+        if (response.data && typeof response.data === 'object') {
+          setSettings(response.data);
+          localStorage.setItem('systemSettings', JSON.stringify(response.data));
+        }
+      } catch (error) {
+        console.error('Error fetching system settings:', error);
+      }
+    };
+
+    fetchSettings();
+  }, []);
+
+  return settings;
+};
 
 const PagesList = () => {
   const [pages, setPages] = useState([]);
@@ -171,11 +159,78 @@ const PagesList = () => {
   // Page access control states
   const [hasAccess, setHasAccess] = useState(null);
 
-  // Color scheme matching UsersList.jsx
-  const primaryColor = '#FEF9E1';
-  const secondaryColor = '#FFF8E7';
-  const accentColor = '#6d2323';
-  const accentDark = '#8B3333';
+  // Use system settings
+  const settings = useSystemSettings();
+  
+  // Memoize styled components to prevent recreation on every render
+  const GlassCard = useMemo(() => styled(Card)(({ theme }) => ({
+    borderRadius: 20,
+    background: `${settings?.accentColor || '#FEF9E1'}F2`,
+    backdropFilter: "blur(10px)",
+    boxShadow: `0 8px 40px ${settings?.primaryColor || '#894444'}14`,
+    border: `1px solid ${settings?.primaryColor || '#894444'}1A`,
+    overflow: "hidden",
+    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+    "&:hover": {
+      boxShadow: `0 12px 48px ${settings?.primaryColor || '#894444'}26`,
+      transform: "translateY(-4px)",
+    },
+  })), [settings]);
+
+  const ProfessionalButton = useMemo(() => styled(Button)(({ theme, variant }) => ({
+    borderRadius: 12,
+    fontWeight: 600,
+    padding: "12px 24px",
+    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+    textTransform: "none",
+    fontSize: "0.95rem",
+    letterSpacing: "0.025em",
+    boxShadow: variant === "contained" ? `0 4px 14px ${settings?.primaryColor || '#894444'}40` : "none",
+    "&:hover": {
+      transform: "translateY(-2px)",
+      boxShadow: variant === "contained" ? `0 6px 20px ${settings?.primaryColor || '#894444'}59` : "none",
+    },
+    "&:active": {
+      transform: "translateY(0)",
+    },
+  })), [settings]);
+
+  const ModernTextField = useMemo(() => styled(TextField)(({ theme }) => ({
+    "& .MuiOutlinedInput-root": {
+      borderRadius: 12,
+      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+      backgroundColor: "rgba(255, 255, 255, 0.8)",
+      "&:hover": {
+        transform: "translateY(-1px)",
+        backgroundColor: "rgba(255, 255, 255, 0.95)",
+      },
+      "&.Mui-focused": {
+        transform: "translateY(-1px)",
+        boxShadow: `0 4px 20px ${settings?.primaryColor || '#894444'}40`,
+        backgroundColor: "rgba(255, 255, 255, 1)",
+      },
+    },
+    "& .MuiInputLabel-root": {
+      fontWeight: 500,
+    },
+  })), [settings]);
+
+  const PremiumTableContainer = useMemo(() => styled(TableContainer)(({ theme }) => ({
+    borderRadius: 16,
+    overflow: "hidden",
+    boxShadow: `0 4px 24px ${settings?.primaryColor || '#894444'}0F`,
+    border: `1px solid ${settings?.primaryColor || '#894444'}14`,
+  })), [settings]);
+
+  const PremiumTableCell = useMemo(() => styled(TableCell)(({ theme, isHeader = false }) => ({
+    fontWeight: isHeader ? 600 : 500,
+    padding: "18px 20px",
+    borderBottom: isHeader
+      ? `2px solid ${settings?.primaryColor || '#894444'}4D`
+      : `1px solid ${settings?.primaryColor || '#894444'}0F`,
+    fontSize: "0.95rem",
+    letterSpacing: "0.025em",
+  })), [settings]);
 
   // Page description options for dropdown
   const descriptionOptions = [
@@ -279,7 +334,7 @@ const PagesList = () => {
     try {
       const response = await fetch(`${API_BASE_URL}/pages`, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
+        ...getAuthHeaders(),
       });
 
       if (response.ok) {
@@ -333,7 +388,7 @@ const PagesList = () => {
 
       const response = await fetch(url, {
         method: method,
-        headers: { 'Content-Type': 'application/json' },
+        ...getAuthHeaders(),
         body: JSON.stringify(pageData),
       });
 
@@ -393,7 +448,7 @@ const PagesList = () => {
     setPageName(pg.page_name || '');
     setPageDescription(pg.page_description || '');
     setPageUrl(pg.page_url || '');
-    // Split the comma-separated groups into an array
+    // Split comma-separated groups into an array
     const groups = pg.page_group ? pg.page_group.split(',').map(g => g.trim()) : [];
     setPageGroups(groups);
     setEditDialog(true);
@@ -411,7 +466,7 @@ const PagesList = () => {
     try {
       const response = await fetch(`${API_BASE_URL}/pages/${deletePageId}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        ...getAuthHeaders(),
       });
 
       if (response.ok) {
@@ -435,47 +490,47 @@ const PagesList = () => {
     switch (description?.toLowerCase()) {
       case 'general':
         return {
-          sx: { bgcolor: alpha(accentColor, 0.15), color: accentColor },
+          sx: { bgcolor: alpha(settings?.primaryColor || '#894444', 0.15), color: settings?.primaryColor || '#894444' },
           icon: <Category />,
         };
       case 'registration':
         return {
-          sx: { bgcolor: alpha(accentDark, 0.15), color: accentDark },
+          sx: { bgcolor: alpha(settings?.secondaryColor || '#6d2323', 0.15), color: settings?.secondaryColor || '#6d2323' },
           icon: <Assignment />,
         };
       case 'information management':
         return {
-          sx: { bgcolor: alpha(accentColor, 0.1), color: accentColor },
+          sx: { bgcolor: alpha(settings?.primaryColor || '#894444', 0.1), color: settings?.primaryColor || '#894444' },
           icon: <Info />,
         };
       case 'attendance management':
         return {
-          sx: { bgcolor: alpha(accentColor, 0.12), color: accentColor },
+          sx: { bgcolor: alpha(settings?.primaryColor || '#894444', 0.12), color: settings?.primaryColor || '#894444' },
           icon: <Assessment />,
         };
       case 'payroll management':
         return {
-          sx: { bgcolor: alpha(accentDark, 0.12), color: accentDark },
+          sx: { bgcolor: alpha(settings?.secondaryColor || '#6d2323', 0.12), color: settings?.secondaryColor || '#6d2323' },
           icon: <Payment />,
         };
       case 'form':
         return {
-          sx: { bgcolor: alpha(accentColor, 0.08), color: accentColor },
+          sx: { bgcolor: alpha(settings?.primaryColor || '#894444', 0.08), color: settings?.primaryColor || '#894444' },
           icon: <FormIcon />,
         };
       case 'pages management':
         return {
-          sx: { bgcolor: alpha(accentColor, 0.18), color: accentColor },
+          sx: { bgcolor: alpha(settings?.primaryColor || '#894444', 0.18), color: settings?.primaryColor || '#894444' },
           icon: <FolderSpecial />,
         };
       case 'personal data sheets':
         return {
-          sx: { bgcolor: alpha(accentDark, 0.18), color: accentDark },
+          sx: { bgcolor: alpha(settings?.secondaryColor || '#6d2323', 0.18), color: settings?.secondaryColor || '#6d2323' },
           icon: <Folder />,
         };
       default:
         return {
-          sx: { bgcolor: alpha(accentColor, 0.1), color: accentColor },
+          sx: { bgcolor: alpha(settings?.primaryColor || '#894444', 0.1), color: settings?.primaryColor || '#894444' },
           icon: <Description />,
         };
     }
@@ -485,22 +540,22 @@ const PagesList = () => {
     switch (group?.toLowerCase()) {
       case 'superadmin':
         return {
-          sx: { bgcolor: alpha(accentColor, 0.15), color: accentColor },
+          sx: { bgcolor: alpha(settings?.primaryColor || '#894444', 0.15), color: settings?.primaryColor || '#894444' },
           icon: <SupervisorAccount />,
         };
       case 'administrator':
         return {
-          sx: { bgcolor: alpha(accentDark, 0.15), color: accentDark },
+          sx: { bgcolor: alpha(settings?.secondaryColor || '#6d2323', 0.15), color: settings?.secondaryColor || '#6d2323' },
           icon: <AdminPanelSettings />,
         };
       case 'staff':
         return {
-          sx: { bgcolor: alpha(accentColor, 0.1), color: accentColor },
+          sx: { bgcolor: alpha(settings?.primaryColor || '#894444', 0.1), color: settings?.primaryColor || '#894444' },
           icon: <Work />,
         };
       default:
         return {
-          sx: { bgcolor: alpha(accentColor, 0.1), color: accentColor },
+          sx: { bgcolor: alpha(settings?.primaryColor || '#894444', 0.1), color: settings?.primaryColor || '#894444' },
           icon: <Person />,
         };
     }
@@ -531,8 +586,8 @@ const PagesList = () => {
             alignItems: 'center',
           }}
         >
-          <CircularProgress sx={{ color: accentColor, mb: 2 }} />
-          <Typography variant="h6" sx={{ color: accentColor }}>
+          <CircularProgress sx={{ color: settings?.primaryColor || '#894444', mb: 2 }} />
+          <Typography variant="h6" sx={{ color: settings?.primaryColor || '#894444' }}>
             Loading access information...
           </Typography>
         </Box>
@@ -555,53 +610,19 @@ const PagesList = () => {
   return (
     <Box
       sx={{
-        background: `linear-gradient(135deg, ${accentColor} 0%, ${accentDark} 50%, ${accentColor} 100%)`,
         py: 4,
-        borderRadius: '14px',
-        width: '100vw',
-        mx: 'auto',
-        maxWidth: '100%',
-        overflow: 'hidden',
-        position: 'relative',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        minHeight: '92vh',
+        borderRadius: "14px",
+        width: "100vw",
+        mx: "auto",
+        maxWidth: "100%",
+        overflow: "hidden",
+        position: "relative",
+        left: "50%",
+        transform: "translateX(-50%)",
+        minHeight: "92vh",
       }}
     >
-      <Box sx={{ px: 6, mx: 'auto', maxWidth: '1600px' }}>
-        {/* Breadcrumbs */}
-        <Fade in timeout={300}>
-          <Box sx={{ mb: 3 }}>
-            <Breadcrumbs aria-label="breadcrumb" sx={{ fontSize: '0.9rem' }}>
-              <Link
-                underline="hover"
-                color="inherit"
-                href="/dashboard"
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  color: primaryColor,
-                }}
-              >
-                <Home sx={{ mr: 0.5, fontSize: 20 }} />
-                Dashboard
-              </Link>
-              <Typography
-                color="text.primary"
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  fontWeight: 600,
-                  color: primaryColor,
-                }}
-              >
-                <Pages sx={{ mr: 0.5, fontSize: 20 }} />
-                Page Management
-              </Typography>
-            </Breadcrumbs>
-          </Box>
-        </Fade>
-
+      <Box sx={{ px: 6, mx: "auto", maxWidth: "1600px" }}>
         {/* Header */}
         <Fade in timeout={500}>
           <Box sx={{ mb: 4 }}>
@@ -609,32 +630,30 @@ const PagesList = () => {
               <Box
                 sx={{
                   p: 5,
-                  background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
-                  color: accentColor,
-                  position: 'relative',
-                  overflow: 'hidden',
+                  background: `linear-gradient(135deg, ${settings?.accentColor || '#FEF9E1'} 0%, ${alpha(settings?.accentColor || '#FEF9E1', 0.9)} 100%)`,
+                  color: settings?.primaryColor || '#894444',
+                  position: "relative",
+                  overflow: "hidden",
                 }}
               >
                 <Box
                   sx={{
-                    position: 'absolute',
+                    position: "absolute",
                     top: -50,
                     right: -50,
                     width: 200,
                     height: 200,
-                    background:
-                      'radial-gradient(circle, rgba(109,35,35,0.1) 0%, rgba(109,35,35,0) 70%)',
+                    background: `radial-gradient(circle, ${alpha(settings?.primaryColor || '#894444', 0.1)} 0%, ${alpha(settings?.primaryColor || '#894444', 0)} 70%)`,
                   }}
                 />
                 <Box
                   sx={{
-                    position: 'absolute',
+                    position: "absolute",
                     bottom: -30,
-                    left: '30%',
+                    left: "30%",
                     width: 150,
                     height: 150,
-                    background:
-                      'radial-gradient(circle, rgba(109,35,35,0.08) 0%, rgba(109,35,35,0) 70%)',
+                    background: `radial-gradient(circle, ${alpha(settings?.primaryColor || '#894444', 0.08)} 0%, ${alpha(settings?.primaryColor || '#894444', 0)} 70%)`,
                   }}
                 />
 
@@ -648,14 +667,14 @@ const PagesList = () => {
                   <Box display="flex" alignItems="center">
                     <Avatar
                       sx={{
-                        bgcolor: 'rgba(109,35,35,0.15)',
+                        bgcolor: alpha(settings?.primaryColor || '#894444', 0.15),
                         mr: 4,
                         width: 64,
                         height: 64,
-                        boxShadow: '0 8px 24px rgba(109,35,35,0.15)',
+                        boxShadow: `0 8px 24px ${alpha(settings?.primaryColor || '#894444', 0.15)}`,
                       }}
                     >
-                      <Pages sx={{ fontSize: 32, color: accentColor }} />
+                      <Pages sx={{ fontSize: 32, color: settings?.primaryColor || '#894444' }} />
                     </Avatar>
                     <Box>
                       <Typography
@@ -665,7 +684,7 @@ const PagesList = () => {
                           fontWeight: 700,
                           mb: 1,
                           lineHeight: 1.2,
-                          color: accentColor,
+                          color: settings?.primaryColor || '#894444',
                         }}
                       >
                         Page Management
@@ -675,7 +694,7 @@ const PagesList = () => {
                         sx={{
                           opacity: 0.8,
                           fontWeight: 400,
-                          color: accentDark,
+                          color: settings?.textPrimaryColor || '#6D2323',
                         }}
                       >
                         Manage system pages and access groups
@@ -687,10 +706,10 @@ const PagesList = () => {
                       label={`${pages.length} Pages`}
                       size="small"
                       sx={{
-                        bgcolor: 'rgba(109,35,35,0.15)',
-                        color: accentColor,
+                        bgcolor: alpha(settings?.primaryColor || '#894444', 0.15),
+                        color: settings?.primaryColor || '#894444',
                         fontWeight: 500,
-                        '& .MuiChip-label': { px: 1 },
+                        "& .MuiChip-label": { px: 1 },
                       }}
                     />
                     <Tooltip title="Refresh Pages">
@@ -698,21 +717,21 @@ const PagesList = () => {
                         onClick={fetchPages}
                         disabled={loading}
                         sx={{
-                          bgcolor: 'rgba(109,35,35,0.1)',
-                          '&:hover': { bgcolor: 'rgba(109,35,35,0.2)' },
-                          color: accentColor,
+                          bgcolor: alpha(settings?.primaryColor || '#894444', 0.1),
+                          "&:hover": { bgcolor: alpha(settings?.primaryColor || '#894444', 0.2) },
+                          color: settings?.primaryColor || '#894444',
                           width: 48,
                           height: 48,
-                          '&:disabled': {
-                            bgcolor: 'rgba(109,35,35,0.05)',
-                            color: 'rgba(109,35,35,0.3)',
+                          "&:disabled": {
+                            bgcolor: alpha(settings?.primaryColor || '#894444', 0.05),
+                            color: alpha(settings?.primaryColor || '#894444', 0.3),
                           },
                         }}
                       >
                         {loading ? (
                           <CircularProgress
                             size={24}
-                            sx={{ color: accentColor }}
+                            sx={{ color: settings?.primaryColor || '#894444' }}
                           />
                         ) : (
                           <Refresh />
@@ -725,10 +744,10 @@ const PagesList = () => {
                       startIcon={<Group />}
                       onClick={() => navigate('/users-list')}
                       sx={{
-                        bgcolor: accentColor,
-                        color: primaryColor,
-                        '&:hover': {
-                          bgcolor: accentDark,
+                        bgcolor: settings?.primaryColor || '#894444',
+                        color: settings?.accentColor || '#FEF9E1',
+                        "&:hover": {
+                          bgcolor: settings?.secondaryColor || '#6d2323',
                         },
                       }}
                     >
@@ -741,39 +760,84 @@ const PagesList = () => {
           </Box>
         </Fade>
 
-        {/* Success/Error Messages */}
+        {/* Success Message - Center Modal Overlay */}
         {successMessage && (
-          <Fade in timeout={300}>
-            <Alert
-              severity="success"
-              sx={{
-                mb: 3,
-                borderRadius: 3,
-                '& .MuiAlert-message': { fontWeight: 500 },
-              }}
-              icon={<CheckCircle />}
-              onClose={() => setSuccessMessage('')}
-            >
-              {successMessage}
-            </Alert>
-          </Fade>
+          <Backdrop
+            open={true}
+            sx={{
+              zIndex: 9999,
+              backdropFilter: "blur(8px)",
+              backgroundColor: "rgba(0, 0, 0, 0.5)",
+            }}
+            onClick={() => setSuccessMessage("")}
+          >
+            <Fade in timeout={300}>
+              <Box
+                onClick={(e) => e.stopPropagation()}
+                sx={{
+                  position: "relative",
+                  minWidth: "400px",
+                  maxWidth: "600px",
+                }}
+              >
+                <Alert
+                  severity="success"
+                  sx={{
+                    borderRadius: 4,
+                    boxShadow: "0 12px 48px rgba(0, 0, 0, 0.4)",
+                    fontSize: "1.1rem",
+                    p: 3,
+                    "& .MuiAlert-message": { fontWeight: 500 },
+                    "& .MuiAlert-icon": { fontSize: "2rem" },
+                  }}
+                  icon={<CheckCircle />}
+                  onClose={() => setSuccessMessage("")}
+                >
+                  {successMessage}
+                </Alert>
+              </Box>
+            </Fade>
+          </Backdrop>
         )}
 
+        {/* Error Alert - Center Modal Overlay */}
         {errorMessage && (
-          <Fade in timeout={300}>
-            <Alert
-              severity="error"
-              sx={{
-                mb: 3,
-                borderRadius: 3,
-                '& .MuiAlert-message': { fontWeight: 500 },
-              }}
-              icon={<Error />}
-              onClose={() => setErrorMessage('')}
-            >
-              {errorMessage}
-            </Alert>
-          </Fade>
+          <Backdrop
+            open={true}
+            sx={{
+              zIndex: 9999,
+              backdropFilter: "blur(8px)",
+              backgroundColor: "rgba(0, 0, 0, 0.5)",
+            }}
+            onClick={() => setErrorMessage("")}
+          >
+            <Fade in timeout={300}>
+              <Box
+                onClick={(e) => e.stopPropagation()}
+                sx={{
+                  position: "relative",
+                  minWidth: "400px",
+                  maxWidth: "600px",
+                }}
+              >
+                <Alert
+                  severity="error"
+                  sx={{
+                    borderRadius: 4,
+                    boxShadow: "0 12px 48px rgba(0, 0, 0, 0.4)",
+                    fontSize: "1.1rem",
+                    p: 3,
+                    "& .MuiAlert-message": { fontWeight: 500 },
+                    "& .MuiAlert-icon": { fontSize: "2rem" },
+                  }}
+                  icon={<Error />}
+                  onClose={() => setErrorMessage("")}
+                >
+                  {errorMessage}
+                </Alert>
+              </Box>
+            </Fade>
+          </Backdrop>
         )}
 
         {/* Search & Filter */}
@@ -781,11 +845,11 @@ const PagesList = () => {
           <GlassCard sx={{ mb: 4 }}>
             <CardHeader
               title={
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                   <Avatar
                     sx={{
-                      bgcolor: alpha(primaryColor, 0.8),
-                      color: accentColor,
+                      bgcolor: alpha(settings?.accentColor || '#FEF9E1', 0.8),
+                      color: settings?.textPrimaryColor || '#6D2323',
                     }}
                   >
                     <FilterList />
@@ -794,14 +858,14 @@ const PagesList = () => {
                     <Typography
                       variant="h5"
                       component="div"
-                      sx={{ fontWeight: 600, color: accentColor }}
+                      sx={{ fontWeight: 600, color: settings?.textPrimaryColor || '#6D2323' }}
                     >
                       Search & Filter
                     </Typography>
                     <Typography
                       variant="body2"
                       color="text.secondary"
-                      sx={{ color: accentDark }}
+                      sx={{ color: settings?.textPrimaryColor || '#6D2323' }}
                     >
                       Find and filter pages by various criteria
                     </Typography>
@@ -809,9 +873,9 @@ const PagesList = () => {
                 </Box>
               }
               sx={{
-                bgcolor: alpha(primaryColor, 0.5),
+                bgcolor: alpha(settings?.accentColor || '#FEF9E1', 0.5),
                 pb: 2,
-                borderBottom: '1px solid rgba(109,35,35,0.1)',
+                borderBottom: `1px solid ${alpha(settings?.primaryColor || '#894444', 0.1)}`,
               }}
             />
             <CardContent sx={{ p: 4 }}>
@@ -826,42 +890,20 @@ const PagesList = () => {
                   />
                 </Grid>
                 <Grid item xs={12} md={4}>
-                  <TextField
+                  <ModernTextField
                     select
                     fullWidth
                     label="Filter by Description"
                     value={descriptionFilter}
                     onChange={(e) => setDescriptionFilter(e.target.value)}
-                    InputLabelProps={{
-                      shrink: true,
-                    }}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 3,
-                        backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                        '&:hover': {
-                          backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                        },
-                        '&.Mui-focused': {
-                          boxShadow: '0 4px 20px rgba(109, 35, 35, 0.25)',
-                          backgroundColor: 'rgba(255, 255, 255, 1)',
-                        },
-                      },
-                      '& .MuiInputLabel-root': {
-                        fontWeight: 500,
-                      },
-                    }}
-                    SelectProps={{
-                      native: true,
-                    }}
                   >
-                    <option value="">All Descriptions</option>
+                    <MenuItem value="">All Descriptions</MenuItem>
                     {descriptionOptions.map((option) => (
-                      <option key={option} value={option}>
+                      <MenuItem key={option} value={option}>
                         {option}
-                      </option>
+                      </MenuItem>
                     ))}
-                  </TextField>
+                  </ModernTextField>
                 </Grid>
               </Grid>
             </CardContent>
@@ -871,14 +913,14 @@ const PagesList = () => {
         {/* Loading Backdrop */}
         <Backdrop
           sx={{
-            color: primaryColor,
+            color: settings?.accentColor || '#FEF9E1',
             zIndex: (theme) => theme.zIndex.drawer + 1,
           }}
           open={loading && !refreshing}
         >
-          <Box sx={{ textAlign: 'center' }}>
+          <Box sx={{ textAlign: "center" }}>
             <CircularProgress color="inherit" size={60} thickness={4} />
-            <Typography variant="h6" sx={{ mt: 2, color: primaryColor }}>
+            <Typography variant="h6" sx={{ mt: 2, color: settings?.accentColor || '#FEF9E1' }}>
               Loading pages...
             </Typography>
           </Box>
@@ -891,24 +933,24 @@ const PagesList = () => {
               <Box
                 sx={{
                   p: 3,
-                  background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
-                  color: accentColor,
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  borderBottom: '1px solid rgba(109,35,35,0.1)',
+                  background: `linear-gradient(135deg, ${settings?.accentColor || '#FEF9E1'} 0%, ${alpha(settings?.accentColor || '#FEF9E1', 0.9)} 100%)`,
+                  color: settings?.primaryColor || '#894444',
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  borderBottom: `1px solid ${alpha(settings?.primaryColor || '#894444', 0.1)}`,
                 }}
               >
                 <Box>
                   <Typography
                     variant="h5"
-                    sx={{ fontWeight: 600, color: accentColor }}
+                    sx={{ fontWeight: 600, color: settings?.primaryColor || '#894444' }}
                   >
                     Pages List
                   </Typography>
                   <Typography
                     variant="body2"
-                    sx={{ opacity: 0.8, color: accentDark }}
+                    sx={{ opacity: 0.8, color: settings?.accentColor || '#FEF9E1' }}
                   >
                     {searchTerm
                       ? `Showing ${filteredPages.length} of ${pages.length} pages matching "${searchTerm}"`
@@ -920,10 +962,10 @@ const PagesList = () => {
                   startIcon={<Add />}
                   onClick={() => setAddDialog(true)}
                   sx={{
-                    bgcolor: accentColor,
-                    color: primaryColor,
-                    '&:hover': {
-                      bgcolor: accentDark,
+                    bgcolor: settings?.primaryColor || '#894444',
+                    color: settings?.accentColor || '#FEF9E1',
+                    "&:hover": {
+                      bgcolor: settings?.secondaryColor || '#6d2323',
                     },
                   }}
                 >
@@ -933,28 +975,28 @@ const PagesList = () => {
 
               <PremiumTableContainer component={Paper} elevation={0}>
                 <Table sx={{ minWidth: 800 }}>
-                  <TableHead sx={{ bgcolor: alpha(primaryColor, 0.7) }}>
+                  <TableHead sx={{ bgcolor: alpha(settings?.accentColor || '#FEF9E1', 0.7) }}>
                     <TableRow>
-                      <PremiumTableCell isHeader sx={{ color: accentColor }}>
+                      <PremiumTableCell isHeader sx={{ color: settings?.textPrimaryColor || '#6D2323' }}>
                         ID
                       </PremiumTableCell>
-                      <PremiumTableCell isHeader sx={{ color: accentColor }}>
-                        <Description sx={{ mr: 1, verticalAlign: 'middle' }} />
+                      <PremiumTableCell isHeader sx={{ color: settings?.textPrimaryColor || '#6D2323' }}>
+                        <Description sx={{ mr: 1, verticalAlign: "middle" }} />
                         Page Name
                       </PremiumTableCell>
-                      <PremiumTableCell isHeader sx={{ color: accentColor }}>
+                      <PremiumTableCell isHeader sx={{ color: settings?.textPrimaryColor || '#6D2323' }}>
                         Page Description
                       </PremiumTableCell>
-                      <PremiumTableCell isHeader sx={{ color: accentColor }}>
+                      <PremiumTableCell isHeader sx={{ color: settings?.textPrimaryColor || '#6D2323' }}>
                         URL
                       </PremiumTableCell>
-                      <PremiumTableCell isHeader sx={{ color: accentColor }}>
-                        <Group sx={{ mr: 1, verticalAlign: 'middle' }} />
+                      <PremiumTableCell isHeader sx={{ color: settings?.textPrimaryColor || '#6D2323' }}>
+                        <Group sx={{ mr: 1, verticalAlign: "middle" }} />
                         Access Groups
                       </PremiumTableCell>
                       <PremiumTableCell
                         isHeader
-                        sx={{ color: accentColor, textAlign: 'center' }}
+                        sx={{ color: settings?.textPrimaryColor || '#6D2323', textAlign: "center" }}
                       >
                         Actions
                       </PremiumTableCell>
@@ -966,15 +1008,15 @@ const PagesList = () => {
                         <TableRow
                           key={pg.id}
                           sx={{
-                            '&:nth-of-type(even)': {
-                              bgcolor: alpha(primaryColor, 0.3),
+                            "&:nth-of-type(even)": {
+                              bgcolor: alpha(settings?.accentColor || '#FEF9E1', 0.3),
                             },
-                            '&:hover': { bgcolor: alpha(accentColor, 0.05) },
-                            transition: 'all 0.2s ease',
+                            "&:hover": { bgcolor: alpha(settings?.primaryColor || '#894444', 0.05) },
+                            transition: "all 0.2s ease",
                           }}
                         >
                           <PremiumTableCell
-                            sx={{ fontWeight: 600, color: accentColor }}
+                            sx={{ fontWeight: 600, color: settings?.textPrimaryColor || '#6D2323' }}
                           >
                             {pg.id}
                           </PremiumTableCell>
@@ -982,13 +1024,13 @@ const PagesList = () => {
                           <PremiumTableCell>
                             <Typography
                               variant="body1"
-                              sx={{ fontWeight: 600, color: accentColor }}
+                              sx={{ fontWeight: 600, color: settings?.textPrimaryColor || '#6D2323' }}
                             >
                               {pg.page_name}
                             </Typography>
                           </PremiumTableCell>
 
-                          <PremiumTableCell sx={{ color: accentDark }}>
+                          <PremiumTableCell sx={{ color: settings?.textPrimaryColor || '#6D2323' }}>
                             <Chip
                               label={pg.page_description}
                               size="small"
@@ -996,7 +1038,7 @@ const PagesList = () => {
                               sx={{
                                 ...getDescriptionColor(pg.page_description).sx,
                                 fontWeight: 600,
-                                padding: '4px 8px',
+                                padding: "4px 8px",
                               }}
                             />
                           </PremiumTableCell>
@@ -1005,22 +1047,22 @@ const PagesList = () => {
                             <Typography
                               variant="body2"
                               sx={{
-                                fontFamily: 'monospace',
-                                color: accentDark,
-                                bgcolor: alpha(accentColor, 0.05),
+                                fontFamily: "monospace",
+                                color: settings?.textPrimaryColor || '#6D2323',
+                                bgcolor: alpha(settings?.primaryColor || '#894444', 0.05),
                                 px: 1,
                                 py: 0.5,
                                 borderRadius: 1,
-                                display: 'inline-block',
+                                display: "inline-block",
                               }}
                             >
-                              {pg.page_url || 'N/A'}
+                              {pg.page_url || "N/A"}
                             </Typography>
                           </PremiumTableCell>
 
                           <PremiumTableCell>
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                              {pg.page_group && pg.page_group.split(',').map((group, index) => (
+                            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                              {pg.page_group && pg.page_group.split(",").map((group, index) => (
                                 <Chip
                                   key={index}
                                   label={group.trim().toUpperCase()}
@@ -1029,23 +1071,23 @@ const PagesList = () => {
                                   sx={{
                                     ...getGroupColor(group.trim()).sx,
                                     fontWeight: 600,
-                                    padding: '2px 6px',
-                                    fontSize: '0.75rem',
+                                    padding: "2px 6px",
+                                    fontSize: "0.75rem",
                                   }}
                                 />
                               ))}
                             </Box>
                           </PremiumTableCell>
 
-                          <PremiumTableCell sx={{ textAlign: 'center' }}>
+                          <PremiumTableCell sx={{ textAlign: "center" }}>
                             <Tooltip title="Edit Page">
                               <IconButton
                                 onClick={() => handleEdit(pg)}
                                 sx={{
-                                  color: accentColor,
+                                  color: settings?.primaryColor || '#894444',
                                   mr: 1,
-                                  '&:hover': {
-                                    bgcolor: alpha(accentColor, 0.1),
+                                  "&:hover": {
+                                    bgcolor: alpha(settings?.primaryColor || '#894444', 0.1),
                                   },
                                 }}
                               >
@@ -1057,9 +1099,9 @@ const PagesList = () => {
                               <IconButton
                                 onClick={() => handleDeleteConfirm(pg.id)}
                                 sx={{
-                                  color: '#000000',
-                                  '&:hover': {
-                                    bgcolor: alpha('#000000', 0.1),
+                                  color: "#000000",
+                                  "&:hover": {
+                                    bgcolor: alpha("#000000", 0.1),
                                   },
                                 }}
                               >
@@ -1073,19 +1115,19 @@ const PagesList = () => {
                       <TableRow>
                         <TableCell
                           colSpan={6}
-                          sx={{ textAlign: 'center', py: 8 }}
+                          sx={{ textAlign: "center", py: 8 }}
                         >
-                          <Box sx={{ textAlign: 'center' }}>
+                          <Box sx={{ textAlign: "center" }}>
                             <Info
                               sx={{
                                 fontSize: 80,
-                                color: alpha(accentColor, 0.3),
+                                color: alpha(settings?.primaryColor || '#894444', 0.3),
                                 mb: 3,
                               }}
                             />
                             <Typography
                               variant="h5"
-                              color={alpha(accentColor, 0.6)}
+                              color={alpha(settings?.primaryColor || '#894444', 0.6)}
                               gutterBottom
                               sx={{ fontWeight: 600 }}
                             >
@@ -1093,11 +1135,11 @@ const PagesList = () => {
                             </Typography>
                             <Typography
                               variant="body1"
-                              color={alpha(accentColor, 0.4)}
+                              color={alpha(settings?.primaryColor || '#894444', 0.4)}
                             >
                               {searchTerm
-                                ? 'Try adjusting your search criteria'
-                                : 'No pages registered yet'}
+                                ? "Try adjusting your search criteria"
+                                : "No pages registered yet"}
                             </Typography>
                           </Box>
                         </TableCell>
@@ -1109,7 +1151,7 @@ const PagesList = () => {
 
               {/* Pagination */}
               {filteredPages.length > 0 && (
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 2 }}>
+                <Box sx={{ display: "flex", justifyContent: "flex-end", p: 2 }}>
                   <TablePagination
                     component="div"
                     count={filteredPages.length}
@@ -1119,9 +1161,9 @@ const PagesList = () => {
                     onRowsPerPageChange={handleChangeRowsPerPage}
                     rowsPerPageOptions={[5, 10, 25, 50, 100]}
                     sx={{
-                      '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows':
+                      "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows":
                         {
-                          color: accentColor,
+                          color: settings?.textPrimaryColor || '#6D2323',
                           fontWeight: 600,
                         },
                     }}
@@ -1141,26 +1183,26 @@ const PagesList = () => {
           PaperProps={{
             sx: {
               borderRadius: 4,
-              bgcolor: primaryColor,
+              bgcolor: settings?.accentColor || '#FEF9E1',
             },
           }}
         >
           <DialogTitle
             sx={{
-              background: `linear-gradient(135deg, ${accentColor} 0%, ${accentDark} 100%)`,
-              color: primaryColor,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
+              background: `linear-gradient(135deg, ${settings?.primaryColor || '#894444'} 0%, ${settings?.secondaryColor || '#6d2323'} 100%)`,
+              color: settings?.accentColor || '#FEF9E1',
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
               p: 3,
               fontWeight: 700,
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
               <Edit sx={{ fontSize: 30 }} />
               Edit Page
             </Box>
-            <IconButton onClick={cancelEdit} sx={{ color: primaryColor }}>
+            <IconButton onClick={cancelEdit} sx={{ color: settings?.accentColor || '#FEF9E1' }}>
               <Cancel />
             </IconButton>
           </DialogTitle>
@@ -1180,39 +1222,20 @@ const PagesList = () => {
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                  <TextField
+                  <ModernTextField
                     select
                     fullWidth
                     label="Page Description"
                     value={pageDescription}
                     onChange={(e) => setPageDescription(e.target.value)}
-                    sx={{
-                      mt: 2,
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 3,
-                        backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                        '&:hover': {
-                          backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                        },
-                        '&.Mui-focused': {
-                          boxShadow: '0 4px 20px rgba(109, 35, 35, 0.25)',
-                          backgroundColor: 'rgba(255, 255, 255, 1)',
-                        },
-                      },
-                      '& .MuiInputLabel-root': {
-                        fontWeight: 500,
-                      },
-                    }}
-                    SelectProps={{
-                      native: true,
-                    }}
+                    sx={{ mt: 2 }}
                   >
                     {descriptionOptions.map((option) => (
-                      <option key={option} value={option}>
+                      <MenuItem key={option} value={option}>
                         {option}
-                      </option>
+                      </MenuItem>
                     ))}
-                  </TextField>
+                  </ModernTextField>
                 </Grid>
 
                 <Grid item xs={12} md={6}>
@@ -1230,8 +1253,8 @@ const PagesList = () => {
                     <InputLabel
                       sx={{
                         fontWeight: 500,
-                        color: accentColor,
-                        '&.Mui-focused': { color: accentColor },
+                        color: settings?.primaryColor || '#894444',
+                        "&.Mui-focused": { color: settings?.primaryColor || '#894444' },
                       }}
                     >
                       Access Groups
@@ -1243,34 +1266,34 @@ const PagesList = () => {
                       label="Access Groups"
                       sx={{
                         borderRadius: 3,
-                        backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                        '&:hover': {
-                          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        backgroundColor: "rgba(255, 255, 255, 0.8)",
+                        "&:hover": {
+                          backgroundColor: "rgba(255, 255, 255, 0.95)",
                         },
-                        '&.Mui-focused': {
-                          boxShadow: '0 4px 20px rgba(109, 35, 35, 0.25)',
-                          backgroundColor: 'rgba(255, 255, 255, 1)',
+                        "&.Mui-focused": {
+                          boxShadow: `0 4px 20px ${settings?.primaryColor || '#894444'}40`,
+                          backgroundColor: "rgba(255, 255, 255, 1)",
                         },
-                        '& .MuiOutlinedInput-notchedOutline': {
-                          borderColor: alpha(accentColor, 0.3),
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          borderColor: alpha(settings?.primaryColor || '#894444', 0.3),
                         },
-                        '&:hover .MuiOutlinedInput-notchedOutline': {
-                          borderColor: alpha(accentColor, 0.5),
+                        "&:hover .MuiOutlinedInput-notchedOutline": {
+                          borderColor: alpha(settings?.primaryColor || '#894444', 0.5),
                         },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                          borderColor: accentColor,
+                        "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                          borderColor: settings?.primaryColor || '#894444',
                         },
                       }}
                       renderValue={(selected) => (
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
                           {selected.map((value) => (
                             <Chip
                               key={value}
                               label={value.toUpperCase()}
                               size="small"
                               sx={{
-                                bgcolor: alpha(accentColor, 0.15),
-                                color: accentColor,
+                                bgcolor: alpha(settings?.primaryColor || '#894444', 0.15),
+                                color: settings?.primaryColor || '#894444',
                                 fontWeight: 600,
                               }}
                             />
@@ -1284,7 +1307,7 @@ const PagesList = () => {
                         </MenuItem>
                       ))}
                     </Select>
-                    <FormHelperText sx={{ color: alpha(accentColor, 0.7), fontSize: '0.8rem' }}>
+                    <FormHelperText sx={{ color: alpha(settings?.primaryColor || '#894444', 0.7), fontSize: "0.8rem" }}>
                       You can select multiple access groups
                     </FormHelperText>
                   </FormControl>
@@ -1293,17 +1316,17 @@ const PagesList = () => {
             </form>
           </DialogContent>
 
-          <DialogActions sx={{ p: 3, bgcolor: alpha(primaryColor, 0.5) }}>
+          <DialogActions sx={{ p: 3, bgcolor: alpha(settings?.accentColor || '#FEF9E1', 0.5) }}>
             <ProfessionalButton
               onClick={cancelEdit}
               startIcon={<Cancel />}
               variant="outlined"
               sx={{
-                borderColor: accentColor,
-                color: accentColor,
-                '&:hover': {
-                  borderColor: accentDark,
-                  bgcolor: alpha(accentColor, 0.05),
+                borderColor: settings?.primaryColor || '#894444',
+                color: settings?.primaryColor || '#894444',
+                "&:hover": {
+                  borderColor: settings?.secondaryColor || '#6d2323',
+                  bgcolor: alpha(settings?.primaryColor || '#894444', 0.05),
                 },
               }}
             >
@@ -1315,14 +1338,14 @@ const PagesList = () => {
               startIcon={<Save />}
               disabled={loading}
               sx={{
-                bgcolor: accentColor,
-                color: primaryColor,
-                '&:hover': {
-                  bgcolor: accentDark,
+                bgcolor: settings?.primaryColor || '#894444',
+                color: settings?.accentColor || '#FEF9E1',
+                "&:hover": {
+                  bgcolor: settings?.secondaryColor || '#6d2323',
                 },
               }}
             >
-              {loading ? 'Updating...' : 'Update Page'}
+              {loading ? "Updating..." : "Update Page"}
             </ProfessionalButton>
           </DialogActions>
         </Dialog>
@@ -1336,26 +1359,26 @@ const PagesList = () => {
           PaperProps={{
             sx: {
               borderRadius: 4,
-              bgcolor: primaryColor,
+              bgcolor: settings?.accentColor || '#FEF9E1',
             },
           }}
         >
           <DialogTitle
             sx={{
-              background: `linear-gradient(135deg, ${accentColor} 0%, ${accentDark} 100%)`,
-              color: primaryColor,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
+              background: `linear-gradient(135deg, ${settings?.primaryColor || '#894444'} 0%, ${settings?.secondaryColor || '#6d2323'} 100%)`,
+              color: settings?.accentColor || '#FEF9E1',
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
               p: 3,
               fontWeight: 700,
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
               <Add sx={{ fontSize: 30 }} />
               Add New Page
             </Box>
-            <IconButton onClick={cancelAdd} sx={{ color: primaryColor }}>
+            <IconButton onClick={cancelAdd} sx={{ color: settings?.accentColor || '#FEF9E1' }}>
               <Cancel />
             </IconButton>
           </DialogTitle>
@@ -1375,39 +1398,20 @@ const PagesList = () => {
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                  <TextField
+                  <ModernTextField
                     select
                     fullWidth
                     label="Page Description"
                     value={pageDescription}
                     onChange={(e) => setPageDescription(e.target.value)}
-                    sx={{
-                      mt: 2,
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 3,
-                        backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                        '&:hover': {
-                          backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                        },
-                        '&.Mui-focused': {
-                          boxShadow: '0 4px 20px rgba(109, 35, 35, 0.25)',
-                          backgroundColor: 'rgba(255, 255, 255, 1)',
-                        },
-                      },
-                      '& .MuiInputLabel-root': {
-                        fontWeight: 500,
-                      },
-                    }}
-                    SelectProps={{
-                      native: true,
-                    }}
+                    sx={{ mt: 2 }}
                   >
                     {descriptionOptions.map((option) => (
-                      <option key={option} value={option}>
+                      <MenuItem key={option} value={option}>
                         {option}
-                      </option>
+                      </MenuItem>
                     ))}
-                  </TextField>
+                  </ModernTextField>
                 </Grid>
 
                 <Grid item xs={12} md={6}>
@@ -1425,8 +1429,8 @@ const PagesList = () => {
                     <InputLabel
                       sx={{
                         fontWeight: 500,
-                        color: accentColor,
-                        '&.Mui-focused': { color: accentColor },
+                        color: settings?.primaryColor || '#894444',
+                        "&.Mui-focused": { color: settings?.primaryColor || '#894444' },
                       }}
                     >
                       Access Groups
@@ -1438,34 +1442,34 @@ const PagesList = () => {
                       label="Access Groups"
                       sx={{
                         borderRadius: 3,
-                        backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                        '&:hover': {
-                          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        backgroundColor: "rgba(255, 255, 255, 0.8)",
+                        "&:hover": {
+                          backgroundColor: "rgba(255, 255, 255, 0.95)",
                         },
-                        '&.Mui-focused': {
-                          boxShadow: '0 4px 20px rgba(109, 35, 35, 0.25)',
-                          backgroundColor: 'rgba(255, 255, 255, 1)',
+                        "&.Mui-focused": {
+                          boxShadow: `0 4px 20px ${settings?.primaryColor || '#894444'}40`,
+                          backgroundColor: "rgba(255, 255, 255, 1)",
                         },
-                        '& .MuiOutlinedInput-notchedOutline': {
-                          borderColor: alpha(accentColor, 0.3),
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          borderColor: alpha(settings?.primaryColor || '#894444', 0.3),
                         },
-                        '&:hover .MuiOutlinedInput-notchedOutline': {
-                          borderColor: alpha(accentColor, 0.5),
+                        "&:hover .MuiOutlinedInput-notchedOutline": {
+                          borderColor: alpha(settings?.primaryColor || '#894444', 0.5),
                         },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                          borderColor: accentColor,
+                        "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                          borderColor: settings?.primaryColor || '#894444',
                         },
                       }}
                       renderValue={(selected) => (
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
                           {selected.map((value) => (
                             <Chip
                               key={value}
                               label={value.toUpperCase()}
                               size="small"
                               sx={{
-                                bgcolor: alpha(accentColor, 0.15),
-                                color: accentColor,
+                                bgcolor: alpha(settings?.primaryColor || '#894444', 0.15),
+                                color: settings?.primaryColor || '#894444',
                                 fontWeight: 600,
                               }}
                             />
@@ -1479,7 +1483,7 @@ const PagesList = () => {
                         </MenuItem>
                       ))}
                     </Select>
-                    <FormHelperText sx={{ color: alpha(accentColor, 0.7), fontSize: '0.8rem' }}>
+                    <FormHelperText sx={{ color: alpha(settings?.primaryColor || '#894444', 0.7), fontSize: "0.8rem" }}>
                       You can select multiple access groups
                     </FormHelperText>
                   </FormControl>
@@ -1488,17 +1492,17 @@ const PagesList = () => {
             </form>
           </DialogContent>
 
-          <DialogActions sx={{ p: 3, bgcolor: alpha(primaryColor, 0.5) }}>
+          <DialogActions sx={{ p: 3, bgcolor: alpha(settings?.accentColor || '#FEF9E1', 0.5) }}>
             <ProfessionalButton
               onClick={cancelAdd}
               startIcon={<Cancel />}
               variant="outlined"
               sx={{
-                borderColor: accentColor,
-                color: accentColor,
-                '&:hover': {
-                  borderColor: accentDark,
-                  bgcolor: alpha(accentColor, 0.05),
+                borderColor: settings?.primaryColor || '#894444',
+                color: settings?.primaryColor || '#894444',
+                "&:hover": {
+                  borderColor: settings?.secondaryColor || '#6d2323',
+                  bgcolor: alpha(settings?.primaryColor || '#894444', 0.05),
                 },
               }}
             >
@@ -1510,14 +1514,14 @@ const PagesList = () => {
               startIcon={<Save />}
               disabled={loading}
               sx={{
-                bgcolor: accentColor,
-                color: primaryColor,
-                '&:hover': {
-                  bgcolor: accentDark,
+                bgcolor: settings?.primaryColor || '#894444',
+                color: settings?.accentColor || '#FEF9E1',
+                "&:hover": {
+                  bgcolor: settings?.secondaryColor || '#6d2323',
                 },
               }}
             >
-              {loading ? 'Creating...' : 'Create Page'}
+              {loading ? "Creating..." : "Create Page"}
             </ProfessionalButton>
           </DialogActions>
         </Dialog>
@@ -1529,16 +1533,16 @@ const PagesList = () => {
           PaperProps={{
             sx: {
               borderRadius: 4,
-              bgcolor: primaryColor,
+              bgcolor: settings?.accentColor || '#FEF9E1',
             },
           }}
         >
           <DialogTitle
             sx={{
-              background: `linear-gradient(135deg, ${accentColor} 0%, ${accentDark} 100%)`,
-              color: primaryColor,
-              display: 'flex',
-              alignItems: 'center',
+              background: `linear-gradient(135deg, ${settings?.primaryColor || '#894444'} 0%, ${settings?.secondaryColor || '#6d2323'} 100%)`,
+              color: settings?.accentColor || '#FEF9E1',
+              display: "flex",
+              alignItems: "center",
               gap: 2,
               p: 3,
               fontWeight: 700,
@@ -1548,22 +1552,22 @@ const PagesList = () => {
             Confirm Delete
           </DialogTitle>
           <DialogContent sx={{ p: 4 }}>
-            <Typography sx={{ color: accentColor, fontSize: '1.1rem' }}>
+            <Typography sx={{ color: settings?.textPrimaryColor || '#6D2323', fontSize: "1.1rem" }}>
               Are you sure you want to delete this page? This action cannot be
               undone and will also remove all associated user access
               permissions.
             </Typography>
           </DialogContent>
-          <DialogActions sx={{ p: 3, bgcolor: alpha(primaryColor, 0.5) }}>
+          <DialogActions sx={{ p: 3, bgcolor: alpha(settings?.accentColor || '#FEF9E1', 0.5) }}>
             <ProfessionalButton
               onClick={() => setDeleteDialog(false)}
               variant="outlined"
               sx={{
-                borderColor: accentColor,
-                color: accentColor,
-                '&:hover': {
-                  borderColor: accentDark,
-                  bgcolor: alpha(accentColor, 0.05),
+                borderColor: settings?.primaryColor || '#894444',
+                color: settings?.primaryColor || '#894444',
+                "&:hover": {
+                  borderColor: settings?.secondaryColor || '#6d2323',
+                  bgcolor: alpha(settings?.primaryColor || '#894444', 0.05),
                 },
               }}
             >
@@ -1574,14 +1578,14 @@ const PagesList = () => {
               variant="contained"
               disabled={loading}
               sx={{
-                bgcolor: '#000000',
-                color: '#ffffff',
-                '&:hover': {
-                  bgcolor: '#333333',
+                bgcolor: "#000000",
+                color: "#ffffff",
+                "&:hover": {
+                  bgcolor: "#333333",
                 },
               }}
             >
-              {loading ? 'Deleting...' : 'Delete'}
+              {loading ? "Deleting..." : "Delete"}
             </ProfessionalButton>
           </DialogActions>
         </Dialog>

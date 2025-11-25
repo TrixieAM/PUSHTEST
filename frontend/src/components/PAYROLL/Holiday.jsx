@@ -1,5 +1,5 @@
 import API_BASE_URL from "../../apiConfig";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import {
   Button, TextField, Table, TableBody, TableCell,
@@ -18,83 +18,65 @@ import {
   Search as SearchIcon, Close as CloseIcon, Home,
   FilterList, Refresh, CheckCircle, Error, Info, Warning
 } from "@mui/icons-material";
-import { useSystemSettings } from '../../hooks/useSystemSettings';
 
-// Helper function to convert hex to rgb
-const hexToRgb = (hex) => {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '109, 35, 35';
+// Get auth headers function
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('token');
+  return {
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  };
 };
 
-// Professional styled components - colors will be applied via sx prop
-const GlassCard = styled(Card)(({ theme }) => ({
-  borderRadius: 20,
-  backdropFilter: 'blur(10px)',
-  overflow: 'hidden',
-  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-  '&:hover': {
-    transform: 'translateY(-4px)',
-  },
-}));
+// System Settings Hook (same as UsersList)
+const useSystemSettings = () => {
+  const [settings, setSettings] = useState({
+    primaryColor: '#894444',
+    secondaryColor: '#6d2323',
+    accentColor: '#FEF9E1',
+    textColor: '#FFFFFF',
+    textPrimaryColor: '#6D2323', 
+    textSecondaryColor: '#FEF9E1', 
+    hoverColor: '#6D2323',
+    backgroundColor: '#FFFFFF',
+  });
 
-const ProfessionalButton = styled(Button)(({ theme, variant }) => ({
-  borderRadius: 12,
-  fontWeight: 600,
-  padding: '12px 24px',
-  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-  textTransform: 'none',
-  fontSize: '0.95rem',
-  letterSpacing: '0.025em',
-  boxShadow:
-    variant === 'contained' ? '0 4px 14px rgba(109, 35, 35, 0.25)' : 'none',
-  '&:hover': {
-    transform: 'translateY(-2px)',
-    boxShadow:
-      variant === 'contained' ? '0 6px 20px rgba(109, 35, 35, 0.35)' : 'none',
-  },
-  '&:active': {
-    transform: 'translateY(0)',
-  },
-}));
+  useEffect(() => {
+    const storedSettings = localStorage.getItem('systemSettings');
+    if (storedSettings) {
+      try {
+        const parsedSettings = JSON.parse(storedSettings);
+        if (parsedSettings && typeof parsedSettings === 'object') {
+          setSettings(parsedSettings);
+        }
+      } catch (error) {
+        console.error('Error parsing stored settings:', error);
+      }
+    }
 
-const ModernTextField = styled(TextField)(({ theme }) => ({
-  '& .MuiOutlinedInput-root': {
-    borderRadius: 12,
-    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    '&:hover': {
-      transform: 'translateY(-1px)',
-      backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    },
-    '&.Mui-focused': {
-      transform: 'translateY(-1px)',
-      boxShadow: '0 4px 20px rgba(109, 35, 35, 0.25)',
-      backgroundColor: 'rgba(255, 255, 255, 1)',
-    },
-  },
-  '& .MuiInputLabel-root': {
-    fontWeight: 500,
-  },
-}));
+    const fetchSettings = async () => {
+      try {
+        const url = API_BASE_URL.includes('/api') 
+          ? `${API_BASE_URL}/system-settings`
+          : `${API_BASE_URL}/api/system-settings`;
+        
+        const response = await axios.get(url, getAuthHeaders());
+        if (response.data && typeof response.data === 'object') {
+          setSettings(response.data);
+          localStorage.setItem('systemSettings', JSON.stringify(response.data));
+        }
+      } catch (error) {
+        console.error('Error fetching system settings:', error);
+      }
+    };
 
-const PremiumTableContainer = styled(Paper)(({ theme }) => ({
-  borderRadius: 16,
-  overflow: 'hidden',
-  boxShadow: '0 4px 24px rgba(109, 35, 35, 0.06)',
-  border: '1px solid rgba(109, 35, 35, 0.08)',
-  background: 'rgba(255, 255, 255, 0.9)',
-  width: '100%',
-}));
+    fetchSettings();
+  }, []);
 
-const PremiumTableCell = styled(TableCell)(({ theme, isHeader = false }) => ({
-  fontWeight: isHeader ? 600 : 500,
-  padding: '18px 20px',
-  borderBottom: isHeader
-    ? '2px solid rgba(109, 35, 35, 0.3)'
-    : '1px solid rgba(109, 35, 35, 0.06)',
-  fontSize: '0.95rem',
-  letterSpacing: '0.025em',
-}));
+  return settings;
+};
 
 const Holiday = () => {
   const [data, setData] = useState([]);
@@ -120,16 +102,80 @@ const Holiday = () => {
 
   const statusOptions = ["Active", "Inactive"];
 
-  const { settings } = useSystemSettings();
+  // Use system settings
+  const settings = useSystemSettings();
   
-  // Get colors from system settings
-  const primaryColor = settings.accentColor || '#FEF9E1'; // Cards color
-  const secondaryColor = settings.backgroundColor || '#FFF8E7'; // Background
-  const accentColor = settings.primaryColor || '#6d2323'; // Primary accent
-  const accentDark = settings.secondaryColor || '#8B3333'; // Darker accent
-  const textPrimaryColor = settings.textPrimaryColor || '#6d2323';
-  const textSecondaryColor = settings.textSecondaryColor || '#FEF9E1';
-  const hoverColor = settings.hoverColor || '#6D2323';
+  // Memoize styled components to prevent recreation on every render
+  const GlassCard = useMemo(() => styled(Card)(({ theme }) => ({
+    borderRadius: 20,
+    background: `${settings?.accentColor || '#FEF9E1'}F2`,
+    backdropFilter: "blur(10px)",
+    boxShadow: `0 8px 40px ${settings?.primaryColor || '#894444'}14`,
+    border: `1px solid ${settings?.primaryColor || '#894444'}1A`,
+    overflow: "hidden",
+    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+    "&:hover": {
+      boxShadow: `0 12px 48px ${settings?.primaryColor || '#894444'}26`,
+      transform: "translateY(-4px)",
+    },
+  })), [settings]);
+
+  const ProfessionalButton = useMemo(() => styled(Button)(({ theme, variant }) => ({
+    borderRadius: 12,
+    fontWeight: 600,
+    padding: "12px 24px",
+    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+    textTransform: "none",
+    fontSize: "0.95rem",
+    letterSpacing: "0.025em",
+    boxShadow: variant === "contained" ? `0 4px 14px ${settings?.primaryColor || '#894444'}40` : "none",
+    "&:hover": {
+      transform: "translateY(-2px)",
+      boxShadow: variant === "contained" ? `0 6px 20px ${settings?.primaryColor || '#894444'}59` : "none",
+    },
+    "&:active": {
+      transform: "translateY(0)",
+    },
+  })), [settings]);
+
+  const ModernTextField = useMemo(() => styled(TextField)(({ theme }) => ({
+    "& .MuiOutlinedInput-root": {
+      borderRadius: 12,
+      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+      backgroundColor: "rgba(255, 255, 255, 0.8)",
+      "&:hover": {
+        transform: "translateY(-1px)",
+        backgroundColor: "rgba(255, 255, 255, 0.95)",
+      },
+      "&.Mui-focused": {
+        transform: "translateY(-1px)",
+        boxShadow: `0 4px 20px ${settings?.primaryColor || '#894444'}40`,
+        backgroundColor: "rgba(255, 255, 255, 1)",
+      },
+    },
+    "& .MuiInputLabel-root": {
+      fontWeight: 500,
+    },
+  })), [settings]);
+
+  const PremiumTableContainer = useMemo(() => styled(Paper)(({ theme }) => ({
+    borderRadius: 16,
+    overflow: "hidden",
+    boxShadow: `0 4px 24px ${settings?.primaryColor || '#894444'}0F`,
+    border: `1px solid ${settings?.primaryColor || '#894444'}14`,
+    background: "rgba(255, 255, 255, 0.9)",
+    width: "100%",
+  })), [settings]);
+
+  const PremiumTableCell = useMemo(() => styled(TableCell)(({ theme, isHeader = false }) => ({
+    fontWeight: isHeader ? 600 : 500,
+    padding: "18px 20px",
+    borderBottom: isHeader
+      ? `2px solid ${settings?.primaryColor || '#894444'}4D`
+      : `1px solid ${settings?.primaryColor || '#894444'}0F`,
+    fontSize: "0.95rem",
+    letterSpacing: "0.025em",
+  })), [settings]);
 
   const filteredData = data.filter(
     (item) =>
@@ -145,7 +191,7 @@ const Holiday = () => {
     try {
       setLoading(true);
       setRefreshing(true);
-      const response = await axios.get(`${API_BASE_URL}/holiday`);
+      const response = await axios.get(`${API_BASE_URL}/holiday`, getAuthHeaders());
       setData(response.data);
       
       setTimeout(() => {
@@ -181,7 +227,7 @@ const Holiday = () => {
         return;
       }
 
-      await axios.post(`${API_BASE_URL}/holiday`, newHoliday);
+      await axios.post(`${API_BASE_URL}/holiday`, newHoliday, getAuthHeaders());
       fetchHoliday();
       setNewHoliday({ description: "", date: "", status: "Active" });
       setSuccessMessage("Holiday added successfully");
@@ -211,7 +257,7 @@ const Holiday = () => {
       setSuccessMessage("");
       setLoading(true);
       
-      await axios.put(`${API_BASE_URL}/holiday/${editingId}`, editForm);
+      await axios.put(`${API_BASE_URL}/holiday/${editingId}`, editForm, getAuthHeaders());
       setOpenEditModal(false);
       setEditingId(null);
       fetchHoliday();
@@ -234,7 +280,7 @@ const Holiday = () => {
   const confirmDelete = async () => {
     try {
       setLoading(true);
-      await axios.delete(`${API_BASE_URL}/holiday/${deleteItemId}`);
+      await axios.delete(`${API_BASE_URL}/holiday/${deleteItemId}`, getAuthHeaders());
       fetchHoliday();
       setSuccessMessage("Holiday deleted successfully");
       setTimeout(() => setSuccessMessage(''), 3000);
@@ -274,17 +320,17 @@ const Holiday = () => {
     switch (status?.toLowerCase()) {
       case 'active':
         return {
-          sx: { bgcolor: alpha('#4caf50', 0.15), color: '#2e7d32' },
+          sx: { bgcolor: alpha(settings?.primaryColor || '#894444', 0.15), color: settings?.primaryColor || '#894444' },
           icon: <CheckCircle />,
         };
       case 'inactive':
         return {
-          sx: { bgcolor: alpha('#f44336', 0.15), color: '#c62828' },
+          sx: { bgcolor: alpha(settings?.secondaryColor || '#6d2323', 0.15), color: settings?.secondaryColor || '#6d2323' },
           icon: <Cancel />,
         };
       default:
         return {
-          sx: { bgcolor: alpha(accentColor, 0.15), color: textPrimaryColor },
+          sx: { bgcolor: alpha(settings?.primaryColor || '#894444', 0.15), color: settings?.primaryColor || '#894444' },
           icon: <Info />,
         };
     }
@@ -293,92 +339,50 @@ const Holiday = () => {
   return (
     <Box
       sx={{
-        background: `linear-gradient(135deg, ${accentColor} 0%, ${accentDark} 50%, ${accentColor} 100%)`,
         py: 4,
-        borderRadius: '14px',
-        width: '100vw',
-        mx: 'auto',
-        maxWidth: '100%',
-        overflow: 'hidden',
-        position: 'relative',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        minHeight: '92vh',
+        borderRadius: "14px",
+        width: "100vw",
+        mx: "auto",
+        maxWidth: "100%",
+        overflow: "hidden",
+        position: "relative",
+        left: "50%",
+        transform: "translateX(-50%)",
+        minHeight: "92vh",
       }}
     >
-      <Box sx={{ px: 6, mx: 'auto', maxWidth: '1600px' }}>
-        {/* Breadcrumbs */}
-        <Fade in timeout={300}>
-          <Box sx={{ mb: 3 }}>
-            <Breadcrumbs aria-label="breadcrumb" sx={{ fontSize: '0.9rem' }}>
-              <Link
-                underline="hover"
-                color="inherit"
-                href="/dashboard"
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  color: textSecondaryColor,
-                }}
-              >
-                <Home sx={{ mr: 0.5, fontSize: 20 }} />
-                Dashboard
-              </Link>
-              <Typography
-                color="text.primary"
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  fontWeight: 600,
-                  color: textSecondaryColor,
-                }}
-              >
-                <EventIcon sx={{ mr: 0.5, fontSize: 20 }} />
-                Holiday Management
-              </Typography>
-            </Breadcrumbs>
-          </Box>
-        </Fade>
-
+      <Box sx={{ px: 6, mx: "auto", maxWidth: "1600px" }}>
         {/* Header */}
         <Fade in timeout={500}>
           <Box sx={{ mb: 4 }}>
-            <GlassCard sx={{
-              background: `rgba(${hexToRgb(primaryColor)}, 0.95)`,
-              boxShadow: `0 8px 40px ${alpha(accentColor, 0.08)}`,
-              border: `1px solid ${alpha(accentColor, 0.1)}`,
-              '&:hover': {
-                boxShadow: `0 12px 48px ${alpha(accentColor, 0.15)}`,
-              },
-            }}>
+            <GlassCard>
               <Box
                 sx={{
                   p: 5,
-                  background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
-                  color: textPrimaryColor,
-                  position: 'relative',
-                  overflow: 'hidden',
+                  background: `linear-gradient(135deg, ${settings?.accentColor || '#FEF9E1'} 0%, ${alpha(settings?.accentColor || '#FEF9E1', 0.9)} 100%)`,
+                  color: settings?.primaryColor || '#894444',
+                  position: "relative",
+                  overflow: "hidden",
                 }}
               >
                 <Box
                   sx={{
-                    position: 'absolute',
+                    position: "absolute",
                     top: -50,
                     right: -50,
                     width: 200,
                     height: 200,
-                    background: `radial-gradient(circle, ${alpha(accentColor, 0.1)} 0%, ${alpha(accentColor, 0)} 70%)`,
+                    background: `radial-gradient(circle, ${alpha(settings?.primaryColor || '#894444', 0.1)} 0%, ${alpha(settings?.primaryColor || '#894444', 0)} 70%)`,
                   }}
                 />
                 <Box
                   sx={{
-                    position: 'absolute',
+                    position: "absolute",
                     bottom: -30,
-                    left: '30%',
+                    left: "30%",
                     width: 150,
                     height: 150,
-                    background:
-                      'radial-gradient(circle, rgba(109,35,35,0.08) 0%, rgba(109,35,35,0) 70%)',
+                    background: `radial-gradient(circle, ${alpha(settings?.primaryColor || '#894444', 0.08)} 0%, ${alpha(settings?.primaryColor || '#894444', 0)} 70%)`,
                   }}
                 />
 
@@ -392,14 +396,14 @@ const Holiday = () => {
                   <Box display="flex" alignItems="center">
                     <Avatar
                       sx={{
-                        bgcolor: 'rgba(109,35,35,0.15)',
+                        bgcolor: alpha(settings?.primaryColor || '#894444', 0.15),
                         mr: 4,
                         width: 64,
                         height: 64,
-                        boxShadow: '0 8px 24px rgba(109,35,35,0.15)',
+                        boxShadow: `0 8px 24px ${alpha(settings?.primaryColor || '#894444', 0.15)}`,
                       }}
                     >
-                      <EventIcon sx={{ fontSize: 32, color: textPrimaryColor }} />
+                      <EventIcon sx={{ fontSize: 32, color: settings?.primaryColor || '#894444' }} />
                     </Avatar>
                     <Box>
                       <Typography
@@ -409,7 +413,7 @@ const Holiday = () => {
                           fontWeight: 700,
                           mb: 1,
                           lineHeight: 1.2,
-                          color: textPrimaryColor,
+                          color: settings?.primaryColor || '#894444',
                         }}
                       >
                         Holiday Management
@@ -419,7 +423,7 @@ const Holiday = () => {
                         sx={{
                           opacity: 0.8,
                           fontWeight: 400,
-                          color: accentDark,
+                          color: settings?.textPrimaryColor || '#6D2323',
                         }}
                       >
                         Manage and track official holidays each year
@@ -432,10 +436,10 @@ const Holiday = () => {
                       label={`${data.length} Holidays`}
                       size="small"
                       sx={{
-                        bgcolor: 'rgba(109,35,35,0.15)',
-                        color: textPrimaryColor,
+                        bgcolor: alpha(settings?.primaryColor || '#894444', 0.15),
+                        color: settings?.primaryColor || '#894444',
                         fontWeight: 500,
-                        '& .MuiChip-label': { px: 1 },
+                        "& .MuiChip-label": { px: 1 },
                       }}
                     />
                     <Tooltip title="Refresh Holidays">
@@ -443,21 +447,21 @@ const Holiday = () => {
                         onClick={fetchHoliday}
                         disabled={loading}
                         sx={{
-                          bgcolor: 'rgba(109,35,35,0.1)',
-                          '&:hover': { bgcolor: 'rgba(109,35,35,0.2)' },
-                          color: textPrimaryColor,
+                          bgcolor: alpha(settings?.primaryColor || '#894444', 0.1),
+                          "&:hover": { bgcolor: alpha(settings?.primaryColor || '#894444', 0.2) },
+                          color: settings?.primaryColor || '#894444',
                           width: 48,
                           height: 48,
-                          '&:disabled': {
-                            bgcolor: 'rgba(109,35,35,0.05)',
-                            color: 'rgba(109,35,35,0.3)',
+                          "&:disabled": {
+                            bgcolor: alpha(settings?.primaryColor || '#894444', 0.05),
+                            color: alpha(settings?.primaryColor || '#894444', 0.3),
                           },
                         }}
                       >
                         {loading ? (
                           <CircularProgress
                             size={24}
-                            sx={{ color: accentColor }}
+                            sx={{ color: settings?.primaryColor || '#894444' }}
                           />
                         ) : (
                           <Refresh />
@@ -471,39 +475,84 @@ const Holiday = () => {
           </Box>
         </Fade>
 
-        {/* Success/Error Messages */}
+        {/* Success Message - Center Modal Overlay */}
         {successMessage && (
-          <Fade in timeout={300}>
-            <Alert
-              severity="success"
-              sx={{
-                mb: 3,
-                borderRadius: 3,
-                '& .MuiAlert-message': { fontWeight: 500 },
-              }}
-              icon={<CheckCircle />}
-              onClose={() => setSuccessMessage('')}
-            >
-              {successMessage}
-            </Alert>
-          </Fade>
+          <Backdrop
+            open={true}
+            sx={{
+              zIndex: 9999,
+              backdropFilter: "blur(8px)",
+              backgroundColor: "rgba(0, 0, 0, 0.5)",
+            }}
+            onClick={() => setSuccessMessage("")}
+          >
+            <Fade in timeout={300}>
+              <Box
+                onClick={(e) => e.stopPropagation()}
+                sx={{
+                  position: "relative",
+                  minWidth: "400px",
+                  maxWidth: "600px",
+                }}
+              >
+                <Alert
+                  severity="success"
+                  sx={{
+                    borderRadius: 4,
+                    boxShadow: "0 12px 48px rgba(0, 0, 0, 0.4)",
+                    fontSize: "1.1rem",
+                    p: 3,
+                    "& .MuiAlert-message": { fontWeight: 500 },
+                    "& .MuiAlert-icon": { fontSize: "2rem" },
+                  }}
+                  icon={<CheckCircle />}
+                  onClose={() => setSuccessMessage("")}
+                >
+                  {successMessage}
+                </Alert>
+              </Box>
+            </Fade>
+          </Backdrop>
         )}
 
+        {/* Error Alert - Center Modal Overlay */}
         {error && (
-          <Fade in timeout={300}>
-            <Alert
-              severity="error"
-              sx={{
-                mb: 3,
-                borderRadius: 3,
-                '& .MuiAlert-message': { fontWeight: 500 },
-              }}
-              icon={<Error />}
-              onClose={() => setError('')}
-            >
-              {error}
-            </Alert>
-          </Fade>
+          <Backdrop
+            open={true}
+            sx={{
+              zIndex: 9999,
+              backdropFilter: "blur(8px)",
+              backgroundColor: "rgba(0, 0, 0, 0.5)",
+            }}
+            onClick={() => setError("")}
+          >
+            <Fade in timeout={300}>
+              <Box
+                onClick={(e) => e.stopPropagation()}
+                sx={{
+                  position: "relative",
+                  minWidth: "400px",
+                  maxWidth: "600px",
+                }}
+              >
+                <Alert
+                  severity="error"
+                  sx={{
+                    borderRadius: 4,
+                    boxShadow: "0 12px 48px rgba(0, 0, 0, 0.4)",
+                    fontSize: "1.1rem",
+                    p: 3,
+                    "& .MuiAlert-message": { fontWeight: 500 },
+                    "& .MuiAlert-icon": { fontSize: "2rem" },
+                  }}
+                  icon={<Error />}
+                  onClose={() => setError("")}
+                >
+                  {error}
+                </Alert>
+              </Box>
+            </Fade>
+          </Backdrop>
         )}
 
         {/* Add Form */}
@@ -511,11 +560,11 @@ const Holiday = () => {
           <GlassCard sx={{ mb: 4 }}>
             <CardHeader
               title={
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                   <Avatar
                     sx={{
-                      bgcolor: alpha(primaryColor, 0.8),
-                      color: textPrimaryColor,
+                      bgcolor: alpha(settings?.accentColor || '#FEF9E1', 0.8),
+                      color: settings?.textPrimaryColor || '#6D2323',
                     }}
                   >
                     <AddIcon />
@@ -524,14 +573,14 @@ const Holiday = () => {
                     <Typography
                       variant="h5"
                       component="div"
-                      sx={{ fontWeight: 600, color: accentColor }}
+                      sx={{ fontWeight: 600, color: settings?.textPrimaryColor || '#6D2323' }}
                     >
                       Add New Holiday
                     </Typography>
                     <Typography
                       variant="body2"
                       color="text.secondary"
-                      sx={{ color: accentDark }}
+                      sx={{ color: settings?.textPrimaryColor || '#6D2323' }}
                     >
                       Create a new holiday record
                     </Typography>
@@ -539,9 +588,9 @@ const Holiday = () => {
                 </Box>
               }
               sx={{
-                bgcolor: alpha(primaryColor, 0.5),
+                bgcolor: alpha(settings?.accentColor || '#FEF9E1', 0.5),
                 pb: 2,
-                borderBottom: '1px solid rgba(109,35,35,0.1)',
+                borderBottom: `1px solid ${alpha(settings?.primaryColor || '#894444', 0.1)}`,
               }}
             />
             <CardContent sx={{ p: 4 }}>
@@ -573,8 +622,8 @@ const Holiday = () => {
                     <InputLabel
                       sx={{
                         fontWeight: 500,
-                        color: textPrimaryColor,
-                        '&.Mui-focused': { color: accentColor },
+                        color: settings?.textPrimaryColor || '#6D2323',
+                        "&.Mui-focused": { color: settings?.primaryColor || '#894444' },
                       }}
                     >
                       Status
@@ -586,22 +635,22 @@ const Holiday = () => {
                       label="Status"
                       sx={{
                         borderRadius: 3,
-                        backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                        '&:hover': {
-                          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        backgroundColor: "rgba(255, 255, 255, 0.8)",
+                        "&:hover": {
+                          backgroundColor: "rgba(255, 255, 255, 0.95)",
                         },
-                        '&.Mui-focused': {
-                          boxShadow: '0 4px 20px rgba(109, 35, 35, 0.25)',
-                          backgroundColor: 'rgba(255, 255, 255, 1)',
+                        "&.Mui-focused": {
+                          boxShadow: `0 4px 20px ${settings?.primaryColor || '#894444'}40`,
+                          backgroundColor: "rgba(255, 255, 255, 1)",
                         },
-                        '& .MuiOutlinedInput-notchedOutline': {
-                          borderColor: alpha(accentColor, 0.3),
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          borderColor: alpha(settings?.primaryColor || '#894444', 0.3),
                         },
-                        '&:hover .MuiOutlinedInput-notchedOutline': {
-                          borderColor: alpha(accentColor, 0.5),
+                        "&:hover .MuiOutlinedInput-notchedOutline": {
+                          borderColor: alpha(settings?.primaryColor || '#894444', 0.5),
                         },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                          borderColor: accentColor,
+                        "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                          borderColor: settings?.primaryColor || '#894444',
                         },
                       }}
                     >
@@ -621,9 +670,9 @@ const Holiday = () => {
                     disabled={loading}
                     fullWidth
                     sx={{
-                      bgcolor: accentColor,
-                      color: textSecondaryColor,
-                      '&:hover': { bgcolor: accentDark },
+                      bgcolor: settings?.primaryColor || '#894444',
+                      color: settings?.accentColor || '#FEF9E1',
+                      "&:hover": { bgcolor: settings?.secondaryColor || '#6d2323' },
                     }}
                   >
                     {loading ? 'Adding...' : 'Add Holiday'}
@@ -637,14 +686,14 @@ const Holiday = () => {
         {/* Loading Backdrop */}
         <Backdrop
           sx={{
-            color: primaryColor,
+            color: settings?.accentColor || '#FEF9E1',
             zIndex: (theme) => theme.zIndex.drawer + 1,
           }}
           open={loading && !refreshing}
         >
-          <Box sx={{ textAlign: 'center' }}>
+          <Box sx={{ textAlign: "center" }}>
             <CircularProgress color="inherit" size={60} thickness={4} />
-            <Typography variant="h6" sx={{ mt: 2, color: primaryColor }}>
+            <Typography variant="h6" sx={{ mt: 2, color: settings?.accentColor || '#FEF9E1' }}>
               Processing holiday...
             </Typography>
           </Box>
@@ -657,42 +706,42 @@ const Holiday = () => {
               <Box
                 sx={{
                   p: 3,
-                  background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
-                  color: textPrimaryColor,
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  borderBottom: '1px solid rgba(109,35,35,0.1)',
+                  background: `linear-gradient(135deg, ${settings?.accentColor || '#FEF9E1'} 0%, ${alpha(settings?.accentColor || '#FEF9E1', 0.9)} 100%)`,
+                  color: settings?.primaryColor || '#894444',
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  borderBottom: `1px solid ${alpha(settings?.primaryColor || '#894444', 0.1)}`,
                 }}
               >
                 <Box>
                   <Typography
                     variant="h5"
-                    sx={{ fontWeight: 600, color: accentColor }}
+                    sx={{ fontWeight: 600, color: settings?.primaryColor || '#894444' }}
                   >
                     Holiday Records
                   </Typography>
                   <Typography
                     variant="body2"
-                    sx={{ opacity: 0.8, color: accentDark }}
+                    sx={{ opacity: 0.8, color: settings?.accentColor || '#FEF9E1' }}
                   >
                     {searchQuery
                       ? `Showing ${filteredData.length} of ${data.length} holidays matching "${searchQuery}"`
                       : `Total: ${data.length} holidays`}
                   </Typography>
                 </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                   <ModernTextField
                     size="small"
                     variant="outlined"
                     placeholder="Search by Holiday"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    sx={{ width: '300px' }}
+                    sx={{ width: "300px" }}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <SearchIcon sx={{ color: accentColor }} />
+                          <SearchIcon sx={{ color: settings?.primaryColor || '#894444' }} />
                         </InputAdornment>
                       ),
                     }}
@@ -700,24 +749,24 @@ const Holiday = () => {
                 </Box>
               </Box>
 
-              <Box sx={{ width: '100%' }}>
+              <Box sx={{ width: "100%" }}>
                 <PremiumTableContainer elevation={0}>
-                  <Table sx={{ minWidth: 800, width: '100%' }}>
-                    <TableHead sx={{ bgcolor: alpha(primaryColor, 0.7) }}>
+                  <Table sx={{ minWidth: 800, width: "100%" }}>
+                    <TableHead sx={{ bgcolor: alpha(settings?.accentColor || '#FEF9E1', 0.7) }}>
                       <TableRow>
-                        <PremiumTableCell isHeader sx={{ color: accentColor, width: '10%' }}>
+                        <PremiumTableCell isHeader sx={{ color: settings?.textPrimaryColor || '#6D2323', width: "10%" }}>
                           No.
                         </PremiumTableCell>
-                        <PremiumTableCell isHeader sx={{ color: accentColor, width: '35%' }}>
+                        <PremiumTableCell isHeader sx={{ color: settings?.textPrimaryColor || '#6D2323', width: "35%" }}>
                           Description
                         </PremiumTableCell>
-                        <PremiumTableCell isHeader sx={{ color: accentColor, width: '20%' }}>
+                        <PremiumTableCell isHeader sx={{ color: settings?.textPrimaryColor || '#6D2323', width: "20%" }}>
                           Date
                         </PremiumTableCell>
-                        <PremiumTableCell isHeader sx={{ color: accentColor, width: '15%' }}>
+                        <PremiumTableCell isHeader sx={{ color: settings?.textPrimaryColor || '#6D2323', width: "15%" }}>
                           Status
                         </PremiumTableCell>
-                        <PremiumTableCell isHeader sx={{ color: accentColor, width: '20%', textAlign: 'center' }}>
+                        <PremiumTableCell isHeader sx={{ color: settings?.textPrimaryColor || '#6D2323', width: "20%", textAlign: "center" }}>
                           Actions
                         </PremiumTableCell>
                       </TableRow>
@@ -727,19 +776,19 @@ const Holiday = () => {
                         <TableRow>
                           <TableCell
                             colSpan={5}
-                            sx={{ textAlign: 'center', py: 8 }}
+                            sx={{ textAlign: "center", py: 8 }}
                           >
-                            <Box sx={{ textAlign: 'center' }}>
+                            <Box sx={{ textAlign: "center" }}>
                               <Info
                                 sx={{
                                   fontSize: 80,
-                                  color: alpha(accentColor, 0.3),
+                                  color: alpha(settings?.primaryColor || '#894444', 0.3),
                                   mb: 3,
                                 }}
                               />
                               <Typography
                                 variant="h5"
-                                color={alpha(accentColor, 0.6)}
+                                color={alpha(settings?.primaryColor || '#894444', 0.6)}
                                 gutterBottom
                                 sx={{ fontWeight: 600 }}
                               >
@@ -747,11 +796,11 @@ const Holiday = () => {
                               </Typography>
                               <Typography
                                 variant="body1"
-                                color={alpha(accentColor, 0.4)}
+                                color={alpha(settings?.primaryColor || '#894444', 0.4)}
                               >
                                 {searchQuery
-                                  ? 'Try adjusting your search criteria'
-                                  : 'No holidays available'}
+                                  ? "Try adjusting your search criteria"
+                                  : "No holidays available"}
                               </Typography>
                             </Box>
                           </TableCell>
@@ -761,23 +810,23 @@ const Holiday = () => {
                           <TableRow
                             key={item.id}
                             sx={{
-                              '&:nth-of-type(even)': {
-                                bgcolor: alpha(primaryColor, 0.3),
+                              "&:nth-of-type(even)": {
+                                bgcolor: alpha(settings?.accentColor || '#FEF9E1', 0.3),
                               },
-                              '&:hover': { bgcolor: alpha(accentColor, 0.05) },
-                              transition: 'all 0.2s ease',
+                              "&:hover": { bgcolor: alpha(settings?.primaryColor || '#894444', 0.05) },
+                              transition: "all 0.2s ease",
                             }}
                           >
-                            <PremiumTableCell sx={{ fontWeight: 600, color: accentColor, width: '10%' }}>
+                            <PremiumTableCell sx={{ fontWeight: 600, color: settings?.textPrimaryColor || '#6D2323', width: "10%" }}>
                               {index + 1}
                             </PremiumTableCell>
-                            <PremiumTableCell sx={{ color: accentDark, width: '35%' }}>
+                            <PremiumTableCell sx={{ color: settings?.textPrimaryColor || '#6D2323', width: "35%" }}>
                               {item.description}
                             </PremiumTableCell>
-                            <PremiumTableCell sx={{ color: accentDark, width: '20%' }}>
+                            <PremiumTableCell sx={{ color: settings?.textPrimaryColor || '#6D2323', width: "20%" }}>
                               {formatDateForDisplay(item.date)}
                             </PremiumTableCell>
-                            <PremiumTableCell sx={{ width: '15%' }}>
+                            <PremiumTableCell sx={{ width: "15%" }}>
                               <Chip
                                 label={item.status}
                                 size="small"
@@ -785,21 +834,21 @@ const Holiday = () => {
                                 sx={{
                                   ...getStatusColor(item.status).sx,
                                   fontWeight: 600,
-                                  padding: '4px 8px',
+                                  padding: "4px 8px",
                                 }}
                               />
                             </PremiumTableCell>
-                            <PremiumTableCell sx={{ textAlign: 'center', width: '20%' }}>
-                              <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
+                            <PremiumTableCell sx={{ textAlign: "center", width: "20%" }}>
+                              <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
                                 <Tooltip title="Edit Holiday">
                                   <ProfessionalButton
                                     onClick={() => handleEdit(item)}
                                     variant="contained"
                                     startIcon={<EditIcon />}
                                     sx={{
-                                      bgcolor: accentColor,
-                                      color: textSecondaryColor,
-                                      '&:hover': { bgcolor: accentDark },
+                                      bgcolor: settings?.primaryColor || '#894444',
+                                      color: settings?.accentColor || '#FEF9E1',
+                                      "&:hover": { bgcolor: settings?.secondaryColor || '#6d2323' },
                                     }}
                                   >
                                     Edit
@@ -811,9 +860,9 @@ const Holiday = () => {
                                     variant="contained"
                                     startIcon={<DeleteIcon />}
                                     sx={{
-                                      bgcolor: '#000000',
-                                      color: '#ffffff',
-                                      '&:hover': { bgcolor: '#333333' },
+                                      bgcolor: "#000000",
+                                      color: "#ffffff",
+                                      "&:hover": { bgcolor: "#333333" },
                                     }}
                                   >
                                     Delete
@@ -841,27 +890,26 @@ const Holiday = () => {
           PaperProps={{
             sx: {
               borderRadius: 4,
-              bgcolor: primaryColor,
-              color: textPrimaryColor,
+              bgcolor: settings?.accentColor || '#FEF9E1',
             },
           }}
         >
           <DialogTitle
             sx={{
-              background: `linear-gradient(135deg, ${accentColor} 0%, ${accentDark} 100%)`,
-              color: primaryColor,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
+              background: `linear-gradient(135deg, ${settings?.primaryColor || '#894444'} 0%, ${settings?.secondaryColor || '#6d2323'} 100%)`,
+              color: settings?.accentColor || '#FEF9E1',
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
               p: 3,
               fontWeight: 700,
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
               <EditIcon sx={{ fontSize: 30 }} />
               Edit Holiday
             </Box>
-            <IconButton onClick={() => setOpenEditModal(false)} sx={{ color: textPrimaryColor }}>
+            <IconButton onClick={() => setOpenEditModal(false)} sx={{ color: settings?.accentColor || '#FEF9E1' }}>
               <CloseIcon />
             </IconButton>
           </DialogTitle>
@@ -877,9 +925,9 @@ const Holiday = () => {
                   fullWidth
                   label="Description"
                   name="description"
-                  sx={{ mt: 5}}
                   value={editForm.description || ""}
                   onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                  sx={{ marginTop: 5}}
                 />
               </Grid>
               <Grid item xs={12} md={6}>
@@ -898,8 +946,8 @@ const Holiday = () => {
                   <InputLabel
                     sx={{
                       fontWeight: 500,
-                      color: textPrimaryColor,
-                      '&.Mui-focused': { color: accentColor },
+                      color: settings?.textPrimaryColor || '#6D2323',
+                      "&.Mui-focused": { color: settings?.primaryColor || '#894444' },
                     }}
                   >
                     Status
@@ -911,22 +959,22 @@ const Holiday = () => {
                     label="Status"
                     sx={{
                       borderRadius: 3,
-                      backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                      '&:hover': {
-                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                      backgroundColor: "rgba(255, 255, 255, 0.8)",
+                      "&:hover": {
+                        backgroundColor: "rgba(255, 255, 255, 0.95)",
                       },
-                      '&.Mui-focused': {
-                        boxShadow: '0 4px 20px rgba(109, 35, 35, 0.25)',
-                        backgroundColor: 'rgba(255, 255, 255, 1)',
+                      "&.Mui-focused": {
+                        boxShadow: `0 4px 20px ${settings?.primaryColor || '#894444'}40`,
+                        backgroundColor: "rgba(255, 255, 255, 1)",
                       },
-                      '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor: alpha(accentColor, 0.3),
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        borderColor: alpha(settings?.primaryColor || '#894444', 0.3),
                       },
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: alpha(accentColor, 0.5),
+                      "&:hover .MuiOutlinedInput-notchedOutline": {
+                        borderColor: alpha(settings?.primaryColor || '#894444', 0.5),
                       },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: accentColor,
+                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                        borderColor: settings?.primaryColor || '#894444',
                       },
                     }}
                   >
@@ -940,16 +988,16 @@ const Holiday = () => {
               </Grid>
             </Grid>
           </DialogContent>
-          <DialogActions sx={{ p: 3, bgcolor: alpha(primaryColor, 0.5) }}>
+          <DialogActions sx={{ p: 3, bgcolor: alpha(settings?.accentColor || '#FEF9E1', 0.5) }}>
             <ProfessionalButton
               onClick={handleSaveEdit}
               variant="contained"
               startIcon={<SaveIcon />}
               disabled={loading}
               sx={{
-                      bgcolor: accentColor,
-                      color: textSecondaryColor,
-                '&:hover': { bgcolor: accentDark },
+                bgcolor: settings?.primaryColor || '#894444',
+                color: settings?.accentColor || '#FEF9E1',
+                "&:hover": { bgcolor: settings?.secondaryColor || '#6d2323' },
               }}
             >
               {loading ? 'Saving...' : 'Save'}
@@ -959,11 +1007,11 @@ const Holiday = () => {
               variant="outlined"
               startIcon={<CancelIcon />}
               sx={{
-                borderColor: accentColor,
-                color: textPrimaryColor,
-                '&:hover': {
-                  borderColor: accentDark,
-                  bgcolor: alpha(accentColor, 0.05),
+                borderColor: settings?.primaryColor || '#894444',
+                color: settings?.primaryColor || '#894444',
+                "&:hover": {
+                  borderColor: settings?.secondaryColor || '#6d2323',
+                  bgcolor: alpha(settings?.primaryColor || '#894444', 0.05),
                 },
               }}
             >
@@ -981,17 +1029,16 @@ const Holiday = () => {
           PaperProps={{
             sx: {
               borderRadius: 4,
-              bgcolor: primaryColor,
-              color: textPrimaryColor,
+              bgcolor: settings?.accentColor || '#FEF9E1',
             },
           }}
         >
           <DialogTitle
             sx={{
-              background: `linear-gradient(135deg, ${accentColor} 0%, ${accentDark} 100%)`,
-              color: primaryColor,
-              display: 'flex',
-              alignItems: 'center',
+              background: `linear-gradient(135deg, ${settings?.primaryColor || '#894444'} 0%, ${settings?.secondaryColor || '#6d2323'} 100%)`,
+              color: settings?.accentColor || '#FEF9E1',
+              display: "flex",
+              alignItems: "center",
               gap: 2,
               p: 3,
               fontWeight: 700,
@@ -1001,37 +1048,37 @@ const Holiday = () => {
             Confirm Delete
           </DialogTitle>
           <DialogContent sx={{ p: 4 }}>
-            <Typography sx={{ color: textPrimaryColor, fontSize: '1.1rem', mt: 3 }}>
+            <Typography sx={{ color: settings?.textPrimaryColor || '#6D2323', fontSize: "1.1rem", mt: 3 }}>
               Are you sure you want to delete this holiday?
             </Typography>
             {deleteItemDescription && (
               <Box sx={{ 
                 mt: 2, 
                 p: 2, 
-                bgcolor: alpha(accentColor, 0.1), 
+                bgcolor: alpha(settings?.primaryColor || '#894444', 0.1), 
                 borderRadius: 2,
-                border: `1px solid ${alpha(accentColor, 0.2)}`
+                border: `1px solid ${alpha(settings?.primaryColor || '#894444', 0.2)}`
               }}>
-                <Typography variant="body2" sx={{ fontWeight: 600, color: textPrimaryColor }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: settings?.textPrimaryColor || '#6D2323' }}>
                   {deleteItemDescription}
                 </Typography>
               </Box>
             )}
-            <Typography sx={{ color: accentDark, mt: 2, fontSize: '0.9rem' }}>
+            <Typography sx={{ color: settings?.textPrimaryColor || '#6D2323', mt: 2, fontSize: "0.9rem" }}>
               This action cannot be undone.
             </Typography>
           </DialogContent>
-          <DialogActions sx={{ p: 3, bgcolor: alpha(primaryColor, 0.5) }}>
+          <DialogActions sx={{ p: 3, bgcolor: alpha(settings?.accentColor || '#FEF9E1', 0.5) }}>
             <ProfessionalButton
               onClick={cancelDelete}
               variant="outlined"
               startIcon={<CancelIcon />}
               sx={{
-                borderColor: accentColor,
-                color: textPrimaryColor,
-                '&:hover': {
-                  borderColor: accentDark,
-                  bgcolor: alpha(accentColor, 0.05),
+                borderColor: settings?.primaryColor || '#894444',
+                color: settings?.primaryColor || '#894444',
+                "&:hover": {
+                  borderColor: settings?.secondaryColor || '#6d2323',
+                  bgcolor: alpha(settings?.primaryColor || '#894444', 0.05),
                 },
               }}
             >
@@ -1043,9 +1090,9 @@ const Holiday = () => {
               startIcon={<DeleteIcon />}
               disabled={loading}
               sx={{
-                bgcolor: '#000000',
-                color: '#ffffff',
-                '&:hover': { bgcolor: '#333333' },
+                bgcolor: "#000000",
+                color: "#ffffff",
+                "&:hover": { bgcolor: "#333333" },
               }}
             >
               {loading ? 'Deleting...' : 'Delete'}

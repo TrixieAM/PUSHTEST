@@ -705,7 +705,7 @@ const Reports = () => {
       sx={{
         padding: '20px',
         minHeight: '100vh',
-        paddingTop: '100px',
+        paddingTop: '5px',
       }}
     >
       <Box

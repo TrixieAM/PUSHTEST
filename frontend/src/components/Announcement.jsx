@@ -1,5 +1,5 @@
 import API_BASE_URL from "../apiConfig";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import {
   Button, TextField, Table, TableBody, TableCell,
@@ -19,79 +19,64 @@ import {
   Error, Info, Warning
 } from "@mui/icons-material";
 
-// Professional styled components matching PagesList.jsx
-const GlassCard = styled(Card)(({ theme }) => ({
-  borderRadius: 20,
-  background: 'rgba(254, 249, 225, 0.95)',
-  backdropFilter: 'blur(10px)',
-  boxShadow: '0 8px 40px rgba(109, 35, 35, 0.08)',
-  border: '1px solid rgba(109, 35, 35, 0.1)',
-  overflow: 'hidden',
-  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-  '&:hover': {
-    boxShadow: '0 12px 48px rgba(109, 35, 35, 0.15)',
-    transform: 'translateY(-4px)',
-  },
-}));
-
-const ProfessionalButton = styled(Button)(({ theme, variant }) => ({
-  borderRadius: 12,
-  fontWeight: 600,
-  padding: '12px 24px',
-  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-  textTransform: 'none',
-  fontSize: '0.95rem',
-  letterSpacing: '0.025em',
-  boxShadow:
-    variant === 'contained' ? '0 4px 14px rgba(109, 35, 35, 0.25)' : 'none',
-  '&:hover': {
-    transform: 'translateY(-2px)',
-    boxShadow:
-      variant === 'contained' ? '0 6px 20px rgba(109, 35, 35, 0.35)' : 'none',
-  },
-  '&:active': {
-    transform: 'translateY(0)',
-  },
-}));
-
-const ModernTextField = styled(TextField)(({ theme }) => ({
-  '& .MuiOutlinedInput-root': {
-    borderRadius: 12,
-    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    '&:hover': {
-      transform: 'translateY(-1px)',
-      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+// Get auth headers function
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('token');
+  return {
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
     },
-    '&.Mui-focused': {
-      transform: 'translateY(-1px)',
-      boxShadow: '0 4px 20px rgba(109, 35, 35, 0.25)',
-      backgroundColor: 'rgba(255, 255, 255, 1)',
-    },
-  },
-  '& .MuiInputLabel-root': {
-    fontWeight: 500,
-  },
-}));
+  };
+};
 
-const PremiumTableContainer = styled(Paper)(({ theme }) => ({
-  borderRadius: 16,
-  overflow: 'hidden',
-  boxShadow: '0 4px 24px rgba(109, 35, 35, 0.06)',
-  border: '1px solid rgba(109, 35, 35, 0.08)',
-  background: 'rgba(255, 255, 255, 0.9)',
-  width: '100%',
-}));
+// System Settings Hook (from AdminHome)
+const useSystemSettings = () => {
+  const [settings, setSettings] = useState({
+    primaryColor: '#894444',
+    secondaryColor: '#6d2323',
+    accentColor: '#FEF9E1',
+    textColor: '#FFFFFF',
+    textPrimaryColor: '#6D2323', 
+    textSecondaryColor: '#FEF9E1', 
+    hoverColor: '#6D2323',
+    backgroundColor: '#FFFFFF',
+  });
 
-const PremiumTableCell = styled(TableCell)(({ theme, isHeader = false }) => ({
-  fontWeight: isHeader ? 600 : 500,
-  padding: '18px 20px',
-  borderBottom: isHeader
-    ? '2px solid rgba(109, 35, 35, 0.3)'
-    : '1px solid rgba(109, 35, 35, 0.06)',
-  fontSize: '0.95rem',
-  letterSpacing: '0.025em',
-}));
+  useEffect(() => {
+    const storedSettings = localStorage.getItem('systemSettings');
+    if (storedSettings) {
+      try {
+        const parsedSettings = JSON.parse(storedSettings);
+        if (parsedSettings && typeof parsedSettings === 'object') {
+          setSettings(parsedSettings);
+        }
+      } catch (error) {
+        console.error('Error parsing stored settings:', error);
+      }
+    }
+
+    const fetchSettings = async () => {
+      try {
+        const url = API_BASE_URL.includes('/api') 
+          ? `${API_BASE_URL}/system-settings`
+          : `${API_BASE_URL}/api/system-settings`;
+        
+        const response = await axios.get(url, getAuthHeaders());
+        if (response.data && typeof response.data === 'object') {
+          setSettings(response.data);
+          localStorage.setItem('systemSettings', JSON.stringify(response.data));
+        }
+      } catch (error) {
+        console.error('Error fetching system settings:', error);
+      }
+    };
+
+    fetchSettings();
+  }, []);
+
+  return settings;
+};
 
 const AnnouncementForm = () => {
   const [announcements, setAnnouncements] = useState([]);
@@ -111,11 +96,80 @@ const AnnouncementForm = () => {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Color scheme matching PagesList.jsx
-  const primaryColor = '#FEF9E1';
-  const secondaryColor = '#FFF8E7';
-  const accentColor = '#6d2323';
-  const accentDark = '#8B3333';
+  // Use system settings
+  const settings = useSystemSettings();
+  
+  // Memoize styled components to prevent recreation on every render
+  const GlassCard = useMemo(() => styled(Card)(({ theme }) => ({
+    borderRadius: 20,
+    background: `${settings?.accentColor || '#FEF9E1'}F2`,
+    backdropFilter: "blur(10px)",
+    boxShadow: `0 8px 40px ${settings?.primaryColor || '#894444'}14`,
+    border: `1px solid ${settings?.primaryColor || '#894444'}1A`,
+    overflow: "hidden",
+    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+    "&:hover": {
+      boxShadow: `0 12px 48px ${settings?.primaryColor || '#894444'}26`,
+      transform: "translateY(-4px)",
+    },
+  })), [settings]);
+
+  const ProfessionalButton = useMemo(() => styled(Button)(({ theme, variant }) => ({
+    borderRadius: 12,
+    fontWeight: 600,
+    padding: "12px 24px",
+    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+    textTransform: "none",
+    fontSize: "0.95rem",
+    letterSpacing: "0.025em",
+    boxShadow: variant === "contained" ? `0 4px 14px ${settings?.primaryColor || '#894444'}40` : "none",
+    "&:hover": {
+      transform: "translateY(-2px)",
+      boxShadow: variant === "contained" ? `0 6px 20px ${settings?.primaryColor || '#894444'}59` : "none",
+    },
+    "&:active": {
+      transform: "translateY(0)",
+    },
+  })), [settings]);
+
+  const ModernTextField = useMemo(() => styled(TextField)(({ theme }) => ({
+    "& .MuiOutlinedInput-root": {
+      borderRadius: 12,
+      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+      backgroundColor: "rgba(255, 255, 255, 0.8)",
+      "&:hover": {
+        transform: "translateY(-1px)",
+        backgroundColor: "rgba(255, 255, 255, 0.95)",
+      },
+      "&.Mui-focused": {
+        transform: "translateY(-1px)",
+        boxShadow: `0 4px 20px ${settings?.primaryColor || '#894444'}40`,
+        backgroundColor: "rgba(255, 255, 255, 1)",
+      },
+    },
+    "& .MuiInputLabel-root": {
+      fontWeight: 500,
+    },
+  })), [settings]);
+
+  const PremiumTableContainer = useMemo(() => styled(Paper)(({ theme }) => ({
+    borderRadius: 16,
+    overflow: "hidden",
+    boxShadow: `0 4px 24px ${settings?.primaryColor || '#894444'}0F`,
+    border: `1px solid ${settings?.primaryColor || '#894444'}14`,
+    background: "rgba(255, 255, 255, 0.9)",
+    width: "100%",
+  })), [settings]);
+
+  const PremiumTableCell = useMemo(() => styled(TableCell)(({ theme, isHeader = false }) => ({
+    fontWeight: isHeader ? 600 : 500,
+    padding: "18px 20px",
+    borderBottom: isHeader
+      ? `2px solid ${settings?.primaryColor || '#894444'}4D`
+      : `1px solid ${settings?.primaryColor || '#894444'}0F`,
+    fontSize: "0.95rem",
+    letterSpacing: "0.025em",
+  })), [settings]);
 
   useEffect(() => {
     fetchAnnouncements();
@@ -125,7 +179,7 @@ const AnnouncementForm = () => {
     try {
       setLoading(true);
       setRefreshing(true);
-      const response = await axios.get(`${API_BASE_URL}/api/announcements`);
+      const response = await axios.get(`${API_BASE_URL}/api/announcements`, getAuthHeaders());
       setAnnouncements(response.data);
       
       setTimeout(() => {
@@ -173,7 +227,7 @@ const AnnouncementForm = () => {
       if (newAnnouncement.image) formData.append("image", newAnnouncement.image);
 
       await axios.post(`${API_BASE_URL}/api/announcements`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: { "Content-Type": "multipart/form-data", ...getAuthHeaders().headers },
       });
 
       fetchAnnouncements();
@@ -224,7 +278,7 @@ const AnnouncementForm = () => {
       await axios.put(
         `${API_BASE_URL}/api/announcements/${editingId}`,
         payload,
-        { headers: { "Content-Type": "multipart/form-data" } }
+        { headers: { "Content-Type": "multipart/form-data", ...getAuthHeaders().headers } }
       );
 
       setOpenEditModal(false);
@@ -245,7 +299,7 @@ const AnnouncementForm = () => {
     if (window.confirm("Are you sure you want to delete this announcement?")) {
       try {
         setLoading(true);
-        await axios.delete(`${API_BASE_URL}/api/announcements/${id}`);
+        await axios.delete(`${API_BASE_URL}/api/announcements/${id}`, getAuthHeaders());
         fetchAnnouncements();
         setSuccessMessage("Announcement deleted successfully");
         setTimeout(() => setSuccessMessage(''), 3000);
@@ -281,53 +335,19 @@ const AnnouncementForm = () => {
   return (
     <Box
       sx={{
-        background: `linear-gradient(135deg, ${accentColor} 0%, ${accentDark} 50%, ${accentColor} 100%)`,
         py: 4,
-        borderRadius: '14px',
-        width: '100vw',
-        mx: 'auto',
-        maxWidth: '100%',
-        overflow: 'hidden',
-        position: 'relative',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        minHeight: '92vh',
+        borderRadius: "14px",
+        width: "100vw",
+        mx: "auto",
+        maxWidth: "100%",
+        overflow: "hidden",
+        position: "relative",
+        left: "50%",
+        transform: "translateX(-50%)",
+        minHeight: "92vh",
       }}
     >
-      <Box sx={{ px: 6, mx: 'auto', maxWidth: '1600px' }}>
-        {/* Breadcrumbs */}
-        <Fade in timeout={300}>
-          <Box sx={{ mb: 3 }}>
-            <Breadcrumbs aria-label="breadcrumb" sx={{ fontSize: '0.9rem' }}>
-              <Link
-                underline="hover"
-                color="inherit"
-                href="/dashboard"
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  color: primaryColor,
-                }}
-              >
-                <Home sx={{ mr: 0.5, fontSize: 20 }} />
-                Dashboard
-              </Link>
-              <Typography
-                color="text.primary"
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  fontWeight: 600,
-                  color: primaryColor,
-                }}
-              >
-                <AnnouncementIcon sx={{ mr: 0.5, fontSize: 20 }} />
-                Announcement Management
-              </Typography>
-            </Breadcrumbs>
-          </Box>
-        </Fade>
-
+      <Box sx={{ px: 6, mx: "auto", maxWidth: "1600px" }}>
         {/* Header */}
         <Fade in timeout={500}>
           <Box sx={{ mb: 4 }}>
@@ -335,32 +355,30 @@ const AnnouncementForm = () => {
               <Box
                 sx={{
                   p: 5,
-                  background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
-                  color: accentColor,
-                  position: 'relative',
-                  overflow: 'hidden',
+                  background: `linear-gradient(135deg, ${settings?.accentColor || '#FEF9E1'} 0%, ${alpha(settings?.accentColor || '#FEF9E1', 0.9)} 100%)`,
+                  color: settings?.primaryColor || '#894444',
+                  position: "relative",
+                  overflow: "hidden",
                 }}
               >
                 <Box
                   sx={{
-                    position: 'absolute',
+                    position: "absolute",
                     top: -50,
                     right: -50,
                     width: 200,
                     height: 200,
-                    background:
-                      'radial-gradient(circle, rgba(109,35,35,0.1) 0%, rgba(109,35,35,0) 70%)',
+                    background: `radial-gradient(circle, ${alpha(settings?.primaryColor || '#894444', 0.1)} 0%, ${alpha(settings?.primaryColor || '#894444', 0)} 70%)`,
                   }}
                 />
                 <Box
                   sx={{
-                    position: 'absolute',
+                    position: "absolute",
                     bottom: -30,
-                    left: '30%',
+                    left: "30%",
                     width: 150,
                     height: 150,
-                    background:
-                      'radial-gradient(circle, rgba(109,35,35,0.08) 0%, rgba(109,35,35,0) 70%)',
+                    background: `radial-gradient(circle, ${alpha(settings?.primaryColor || '#894444', 0.08)} 0%, ${alpha(settings?.primaryColor || '#894444', 0)} 70%)`,
                   }}
                 />
 
@@ -374,14 +392,14 @@ const AnnouncementForm = () => {
                   <Box display="flex" alignItems="center">
                     <Avatar
                       sx={{
-                        bgcolor: 'rgba(109,35,35,0.15)',
+                        bgcolor: alpha(settings?.primaryColor || '#894444', 0.15),
                         mr: 4,
                         width: 64,
                         height: 64,
-                        boxShadow: '0 8px 24px rgba(109,35,35,0.15)',
+                        boxShadow: `0 8px 24px ${alpha(settings?.primaryColor || '#894444', 0.15)}`,
                       }}
                     >
-                      <AnnouncementIcon sx={{ fontSize: 32, color: accentColor }} />
+                      <AnnouncementIcon sx={{ fontSize: 32, color: settings?.primaryColor || '#894444' }} />
                     </Avatar>
                     <Box>
                       <Typography
@@ -391,7 +409,7 @@ const AnnouncementForm = () => {
                           fontWeight: 700,
                           mb: 1,
                           lineHeight: 1.2,
-                          color: accentColor,
+                          color: settings?.primaryColor || '#894444',
                         }}
                       >
                         Announcement Management
@@ -401,7 +419,7 @@ const AnnouncementForm = () => {
                         sx={{
                           opacity: 0.8,
                           fontWeight: 400,
-                          color: accentDark,
+                          color: settings?.textPrimaryColor || '#6D2323',
                         }}
                       >
                         Post and manage employee announcements
@@ -414,10 +432,10 @@ const AnnouncementForm = () => {
                       label={`${announcements.length} Announcements`}
                       size="small"
                       sx={{
-                        bgcolor: 'rgba(109,35,35,0.15)',
-                        color: accentColor,
+                        bgcolor: alpha(settings?.primaryColor || '#894444', 0.15),
+                        color: settings?.primaryColor || '#894444',
                         fontWeight: 500,
-                        '& .MuiChip-label': { px: 1 },
+                        "& .MuiChip-label": { px: 1 },
                       }}
                     />
                     <Tooltip title="Refresh Announcements">
@@ -425,21 +443,21 @@ const AnnouncementForm = () => {
                         onClick={fetchAnnouncements}
                         disabled={loading}
                         sx={{
-                          bgcolor: 'rgba(109,35,35,0.1)',
-                          '&:hover': { bgcolor: 'rgba(109,35,35,0.2)' },
-                          color: accentColor,
+                          bgcolor: alpha(settings?.primaryColor || '#894444', 0.1),
+                          "&:hover": { bgcolor: alpha(settings?.primaryColor || '#894444', 0.2) },
+                          color: settings?.primaryColor || '#894444',
                           width: 48,
                           height: 48,
-                          '&:disabled': {
-                            bgcolor: 'rgba(109,35,35,0.05)',
-                            color: 'rgba(109,35,35,0.3)',
+                          "&:disabled": {
+                            bgcolor: alpha(settings?.primaryColor || '#894444', 0.05),
+                            color: alpha(settings?.primaryColor || '#894444', 0.3),
                           },
                         }}
                       >
                         {loading ? (
                           <CircularProgress
                             size={24}
-                            sx={{ color: accentColor }}
+                            sx={{ color: settings?.primaryColor || '#894444' }}
                           />
                         ) : (
                           <Refresh />
@@ -453,39 +471,84 @@ const AnnouncementForm = () => {
           </Box>
         </Fade>
 
-        {/* Success/Error Messages */}
+        {/* Success Message - Center Modal Overlay */}
         {successMessage && (
-          <Fade in timeout={300}>
-            <Alert
-              severity="success"
-              sx={{
-                mb: 3,
-                borderRadius: 3,
-                '& .MuiAlert-message': { fontWeight: 500 },
-              }}
-              icon={<CheckCircle />}
-              onClose={() => setSuccessMessage('')}
-            >
-              {successMessage}
-            </Alert>
-          </Fade>
+          <Backdrop
+            open={true}
+            sx={{
+              zIndex: 9999,
+              backdropFilter: "blur(8px)",
+              backgroundColor: "rgba(0, 0, 0, 0.5)",
+            }}
+            onClick={() => setSuccessMessage("")}
+          >
+            <Fade in timeout={300}>
+              <Box
+                onClick={(e) => e.stopPropagation()}
+                sx={{
+                  position: "relative",
+                  minWidth: "400px",
+                  maxWidth: "600px",
+                }}
+              >
+                <Alert
+                  severity="success"
+                  sx={{
+                    borderRadius: 4,
+                    boxShadow: "0 12px 48px rgba(0, 0, 0, 0.4)",
+                    fontSize: "1.1rem",
+                    p: 3,
+                    "& .MuiAlert-message": { fontWeight: 500 },
+                    "& .MuiAlert-icon": { fontSize: "2rem" },
+                  }}
+                  icon={<CheckCircle />}
+                  onClose={() => setSuccessMessage("")}
+                >
+                  {successMessage}
+                </Alert>
+              </Box>
+            </Fade>
+          </Backdrop>
         )}
 
+        {/* Error Alert - Center Modal Overlay */}
         {error && (
-          <Fade in timeout={300}>
-            <Alert
-              severity="error"
-              sx={{
-                mb: 3,
-                borderRadius: 3,
-                '& .MuiAlert-message': { fontWeight: 500 },
-              }}
-              icon={<Error />}
-              onClose={() => setError('')}
-            >
-              {error}
-            </Alert>
-          </Fade>
+          <Backdrop
+            open={true}
+            sx={{
+              zIndex: 9999,
+              backdropFilter: "blur(8px)",
+              backgroundColor: "rgba(0, 0, 0, 0.5)",
+            }}
+            onClick={() => setError("")}
+          >
+            <Fade in timeout={300}>
+              <Box
+                onClick={(e) => e.stopPropagation()}
+                sx={{
+                  position: "relative",
+                  minWidth: "400px",
+                  maxWidth: "600px",
+                }}
+              >
+                <Alert
+                  severity="error"
+                  sx={{
+                    borderRadius: 4,
+                    boxShadow: "0 12px 48px rgba(0, 0, 0, 0.4)",
+                    fontSize: "1.1rem",
+                    p: 3,
+                    "& .MuiAlert-message": { fontWeight: 500 },
+                    "& .MuiAlert-icon": { fontSize: "2rem" },
+                  }}
+                  icon={<Error />}
+                  onClose={() => setError("")}
+                >
+                  {error}
+                </Alert>
+              </Box>
+            </Fade>
+          </Backdrop>
         )}
 
         {/* Add Form */}
@@ -493,11 +556,11 @@ const AnnouncementForm = () => {
           <GlassCard sx={{ mb: 4 }}>
             <CardHeader
               title={
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                   <Avatar
                     sx={{
-                      bgcolor: alpha(primaryColor, 0.8),
-                      color: accentColor,
+                      bgcolor: alpha(settings?.accentColor || '#FEF9E1', 0.8),
+                      color: settings?.textPrimaryColor || '#6D2323',
                     }}
                   >
                     <AddIcon />
@@ -506,14 +569,14 @@ const AnnouncementForm = () => {
                     <Typography
                       variant="h5"
                       component="div"
-                      sx={{ fontWeight: 600, color: accentColor }}
+                      sx={{ fontWeight: 600, color: settings?.textPrimaryColor || '#6D2323' }}
                     >
                       Create New Announcement
                     </Typography>
                     <Typography
                       variant="body2"
                       color="text.secondary"
-                      sx={{ color: accentDark }}
+                      sx={{ color: settings?.textPrimaryColor || '#6D2323' }}
                     >
                       Add a new announcement for employees
                     </Typography>
@@ -521,9 +584,9 @@ const AnnouncementForm = () => {
                 </Box>
               }
               sx={{
-                bgcolor: alpha(primaryColor, 0.5),
+                bgcolor: alpha(settings?.accentColor || '#FEF9E1', 0.5),
                 pb: 2,
-                borderBottom: '1px solid rgba(109,35,35,0.1)',
+                borderBottom: `1px solid ${alpha(settings?.primaryColor || '#894444', 0.1)}`,
               }}
             />
             <CardContent sx={{ p: 4 }}>
@@ -563,17 +626,17 @@ const AnnouncementForm = () => {
                   />
                 </Grid>
                 <Grid item xs={12}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                     <ProfessionalButton
                       variant="outlined"
                       component="label"
                       startIcon={<ImageIcon />}
                       sx={{
-                        borderColor: accentColor,
-                        color: accentColor,
-                        '&:hover': {
-                          borderColor: accentDark,
-                          bgcolor: alpha(accentColor, 0.05),
+                        borderColor: settings?.primaryColor || '#894444',
+                        color: settings?.primaryColor || '#894444',
+                        "&:hover": {
+                          borderColor: settings?.secondaryColor || '#6d2323',
+                          bgcolor: alpha(settings?.primaryColor || '#894444', 0.05),
                         },
                       }}
                     >
@@ -586,7 +649,7 @@ const AnnouncementForm = () => {
                       />
                     </ProfessionalButton>
                     {newAnnouncement.image && (
-                      <Typography variant="body2" sx={{ color: accentColor }}>
+                      <Typography variant="body2" sx={{ color: settings?.textPrimaryColor || '#6D2323' }}>
                         {newAnnouncement.image.name}
                       </Typography>
                     )}
@@ -600,9 +663,9 @@ const AnnouncementForm = () => {
                     disabled={loading}
                     fullWidth
                     sx={{
-                      bgcolor: accentColor,
-                      color: primaryColor,
-                      '&:hover': { bgcolor: accentDark },
+                      bgcolor: settings?.primaryColor || '#894444',
+                      color: settings?.accentColor || '#FEF9E1',
+                      "&:hover": { bgcolor: settings?.secondaryColor || '#6d2323' },
                     }}
                   >
                     {loading ? 'Adding...' : 'Add Announcement'}
@@ -616,14 +679,14 @@ const AnnouncementForm = () => {
         {/* Loading Backdrop */}
         <Backdrop
           sx={{
-            color: primaryColor,
+            color: settings?.accentColor || '#FEF9E1',
             zIndex: (theme) => theme.zIndex.drawer + 1,
           }}
           open={loading && !refreshing}
         >
-          <Box sx={{ textAlign: 'center' }}>
+          <Box sx={{ textAlign: "center" }}>
             <CircularProgress color="inherit" size={60} thickness={4} />
-            <Typography variant="h6" sx={{ mt: 2, color: primaryColor }}>
+            <Typography variant="h6" sx={{ mt: 2, color: settings?.accentColor || '#FEF9E1' }}>
               Processing announcement...
             </Typography>
           </Box>
@@ -636,42 +699,42 @@ const AnnouncementForm = () => {
               <Box
                 sx={{
                   p: 3,
-                  background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
-                  color: accentColor,
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  borderBottom: '1px solid rgba(109,35,35,0.1)',
+                  background: `linear-gradient(135deg, ${settings?.accentColor || '#FEF9E1'} 0%, ${alpha(settings?.accentColor || '#FEF9E1', 0.9)} 100%)`,
+                  color: settings?.primaryColor || '#894444',
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  borderBottom: `1px solid ${alpha(settings?.primaryColor || '#894444', 0.1)}`,
                 }}
               >
                 <Box>
                   <Typography
                     variant="h5"
-                    sx={{ fontWeight: 600, color: accentColor }}
+                    sx={{ fontWeight: 600, color: settings?.primaryColor || '#894444' }}
                   >
                     Announcement Records
                   </Typography>
                   <Typography
                     variant="body2"
-                    sx={{ opacity: 0.8, color: accentDark }}
+                    sx={{ opacity: 0.8, color: settings?.accentColor || '#FEF9E1' }}
                   >
                     {searchQuery
                       ? `Showing ${filteredAnnouncements.length} of ${announcements.length} announcements matching "${searchQuery}"`
                       : `Total: ${announcements.length} announcements`}
                   </Typography>
                 </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                   <ModernTextField
                     size="small"
                     variant="outlined"
                     placeholder="Search by Title or About"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    sx={{ width: '300px' }}
+                    sx={{ width: "300px" }}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <SearchIcon sx={{ color: accentColor }} />
+                          <SearchIcon sx={{ color: settings?.primaryColor || '#894444' }} />
                         </InputAdornment>
                       ),
                     }}
@@ -679,24 +742,24 @@ const AnnouncementForm = () => {
                 </Box>
               </Box>
 
-              <Box sx={{ width: '100%' }}>
+              <Box sx={{ width: "100%" }}>
                 <PremiumTableContainer elevation={0}>
-                  <Table sx={{ minWidth: 800, width: '100%' }}>
-                    <TableHead sx={{ bgcolor: alpha(primaryColor, 0.7) }}>
+                  <Table sx={{ minWidth: 800, width: "100%" }}>
+                    <TableHead sx={{ bgcolor: alpha(settings?.accentColor || '#FEF9E1', 0.7) }}>
                       <TableRow>
-                        <PremiumTableCell isHeader sx={{ color: accentColor, width: '10%' }}>
+                        <PremiumTableCell isHeader sx={{ color: settings?.textPrimaryColor || '#6D2323', width: "10%" }}>
                           No.
                         </PremiumTableCell>
-                        <PremiumTableCell isHeader sx={{ color: accentColor, width: '25%' }}>
+                        <PremiumTableCell isHeader sx={{ color: settings?.textPrimaryColor || '#6D2323', width: "25%" }}>
                           Title
                         </PremiumTableCell>
-                        <PremiumTableCell isHeader sx={{ color: accentColor, width: '35%' }}>
+                        <PremiumTableCell isHeader sx={{ color: settings?.textPrimaryColor || '#6D2323', width: "35%" }}>
                           About
                         </PremiumTableCell>
-                        <PremiumTableCell isHeader sx={{ color: accentColor, width: '15%' }}>
+                        <PremiumTableCell isHeader sx={{ color: settings?.textPrimaryColor || '#6D2323', width: "15%" }}>
                           Date
                         </PremiumTableCell>
-                        <PremiumTableCell isHeader sx={{ color: accentColor, width: '15%', textAlign: 'center' }}>
+                        <PremiumTableCell isHeader sx={{ color: settings?.textPrimaryColor || '#6D2323', width: "15%", textAlign: "center" }}>
                           Actions
                         </PremiumTableCell>
                       </TableRow>
@@ -706,19 +769,19 @@ const AnnouncementForm = () => {
                         <TableRow>
                           <TableCell
                             colSpan={5}
-                            sx={{ textAlign: 'center', py: 8 }}
+                            sx={{ textAlign: "center", py: 8 }}
                           >
-                            <Box sx={{ textAlign: 'center' }}>
+                            <Box sx={{ textAlign: "center" }}>
                               <Info
                                 sx={{
                                   fontSize: 80,
-                                  color: alpha(accentColor, 0.3),
+                                  color: alpha(settings?.primaryColor || '#894444', 0.3),
                                   mb: 3,
                                 }}
                               />
                               <Typography
                                 variant="h5"
-                                color={alpha(accentColor, 0.6)}
+                                color={alpha(settings?.primaryColor || '#894444', 0.6)}
                                 gutterBottom
                                 sx={{ fontWeight: 600 }}
                               >
@@ -726,11 +789,11 @@ const AnnouncementForm = () => {
                               </Typography>
                               <Typography
                                 variant="body1"
-                                color={alpha(accentColor, 0.4)}
+                                color={alpha(settings?.primaryColor || '#894444', 0.4)}
                               >
                                 {searchQuery
-                                  ? 'Try adjusting your search criteria'
-                                  : 'No announcements available'}
+                                  ? "Try adjusting your search criteria"
+                                  : "No announcements available"}
                               </Typography>
                             </Box>
                           </TableCell>
@@ -740,36 +803,36 @@ const AnnouncementForm = () => {
                           <TableRow
                             key={item.id}
                             sx={{
-                              '&:nth-of-type(even)': {
-                                bgcolor: alpha(primaryColor, 0.3),
+                              "&:nth-of-type(even)": {
+                                bgcolor: alpha(settings?.accentColor || '#FEF9E1', 0.3),
                               },
-                              '&:hover': { bgcolor: alpha(accentColor, 0.05) },
-                              transition: 'all 0.2s ease',
+                              "&:hover": { bgcolor: alpha(settings?.primaryColor || '#894444', 0.05) },
+                              transition: "all 0.2s ease",
                             }}
                           >
-                            <PremiumTableCell sx={{ fontWeight: 600, color: accentColor, width: '10%' }}>
+                            <PremiumTableCell sx={{ fontWeight: 600, color: settings?.textPrimaryColor || '#6D2323', width: "10%" }}>
                               {index + 1}
                             </PremiumTableCell>
-                            <PremiumTableCell sx={{ color: accentDark, width: '25%' }}>
+                            <PremiumTableCell sx={{ color: settings?.textPrimaryColor || '#6D2323', width: "25%" }}>
                               {item.title}
                             </PremiumTableCell>
-                            <PremiumTableCell sx={{ color: accentDark, width: '35%' }}>
+                            <PremiumTableCell sx={{ color: settings?.textPrimaryColor || '#6D2323', width: "35%" }}>
                               {item.about}
                             </PremiumTableCell>
-                            <PremiumTableCell sx={{ color: accentDark, width: '15%' }}>
+                            <PremiumTableCell sx={{ color: settings?.textPrimaryColor || '#6D2323', width: "15%" }}>
                               {formatDateForDisplay(item.date)}
                             </PremiumTableCell>
-                            <PremiumTableCell sx={{ textAlign: 'center', width: '15%' }}>
-                              <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
+                            <PremiumTableCell sx={{ textAlign: "center", width: "15%" }}>
+                              <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
                                 <Tooltip title="Edit Announcement">
                                   <ProfessionalButton
                                     onClick={() => handleEdit(item)}
                                     variant="contained"
                                     startIcon={<EditIcon />}
                                     sx={{
-                                      bgcolor: accentColor,
-                                      color: primaryColor,
-                                      '&:hover': { bgcolor: accentDark },
+                                      bgcolor: settings?.primaryColor || '#894444',
+                                      color: settings?.accentColor || '#FEF9E1',
+                                      "&:hover": { bgcolor: settings?.secondaryColor || '#6d2323' },
                                     }}
                                   >
                                     Edit
@@ -781,9 +844,9 @@ const AnnouncementForm = () => {
                                     variant="contained"
                                     startIcon={<DeleteIcon />}
                                     sx={{
-                                      bgcolor: '#000000',
-                                      color: '#ffffff',
-                                      '&:hover': { bgcolor: '#333333' },
+                                      bgcolor: "#000000",
+                                      color: "#ffffff",
+                                      "&:hover": { bgcolor: "#333333" },
                                     }}
                                   >
                                     Delete
@@ -811,26 +874,26 @@ const AnnouncementForm = () => {
           PaperProps={{
             sx: {
               borderRadius: 4,
-              bgcolor: primaryColor,
+              bgcolor: settings?.accentColor || '#FEF9E1',
             },
           }}
         >
           <DialogTitle
             sx={{
-              background: `linear-gradient(135deg, ${accentColor} 0%, ${accentDark} 100%)`,
-              color: primaryColor,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
+              background: `linear-gradient(135deg, ${settings?.primaryColor || '#894444'} 0%, ${settings?.secondaryColor || '#6d2323'} 100%)`,
+              color: settings?.accentColor || '#FEF9E1',
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
               p: 3,
               fontWeight: 700,
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
               <EditIcon sx={{ fontSize: 30 }} />
               Edit Announcement
             </Box>
-            <IconButton onClick={() => setOpenEditModal(false)} sx={{ color: primaryColor }}>
+            <IconButton onClick={() => setOpenEditModal(false)} sx={{ color: settings?.accentColor || '#FEF9E1' }}>
               <CloseIcon />
             </IconButton>
           </DialogTitle>
@@ -848,6 +911,7 @@ const AnnouncementForm = () => {
                   name="title"
                   value={editForm.title || ""}
                   onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                  sx={{ marginTop: 5}}
                 />
               </Grid>
               <Grid item xs={12}>
@@ -875,7 +939,7 @@ const AnnouncementForm = () => {
               <Grid item xs={12}>
                 {editForm.image && typeof editForm.image === "string" && (
                   <Box sx={{ mt: 1, mb: 2 }}>
-                    <Typography variant="body2" sx={{ mb: 1, color: accentColor }}>
+                    <Typography variant="body2" sx={{ mb: 1, color: settings?.textPrimaryColor || '#6D2323' }}>
                       Current Image:
                     </Typography>
                     <img
@@ -885,17 +949,17 @@ const AnnouncementForm = () => {
                     />
                   </Box>
                 )}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                   <ProfessionalButton
                     variant="outlined"
                     component="label"
                     startIcon={<ImageIcon />}
                     sx={{
-                      borderColor: accentColor,
-                      color: accentColor,
-                      '&:hover': {
-                        borderColor: accentDark,
-                        bgcolor: alpha(accentColor, 0.05),
+                      borderColor: settings?.primaryColor || '#894444',
+                      color: settings?.primaryColor || '#894444',
+                      "&:hover": {
+                        borderColor: settings?.secondaryColor || '#6d2323',
+                        bgcolor: alpha(settings?.primaryColor || '#894444', 0.05),
                       },
                     }}
                   >
@@ -909,7 +973,7 @@ const AnnouncementForm = () => {
                     />
                   </ProfessionalButton>
                   {editForm.image && editForm.image instanceof File && (
-                    <Typography variant="body2" sx={{ color: accentColor }}>
+                    <Typography variant="body2" sx={{ color: settings?.textPrimaryColor || '#6D2323' }}>
                       {editForm.image.name}
                     </Typography>
                   )}
@@ -917,16 +981,16 @@ const AnnouncementForm = () => {
               </Grid>
             </Grid>
           </DialogContent>
-          <DialogActions sx={{ p: 3, bgcolor: alpha(primaryColor, 0.5) }}>
+          <DialogActions sx={{ p: 3, bgcolor: alpha(settings?.accentColor || '#FEF9E1', 0.5) }}>
             <ProfessionalButton
               onClick={handleSaveEdit}
               variant="contained"
               startIcon={<SaveIcon />}
               disabled={loading}
               sx={{
-                bgcolor: accentColor,
-                color: primaryColor,
-                '&:hover': { bgcolor: accentDark },
+                bgcolor: settings?.primaryColor || '#894444',
+                color: settings?.accentColor || '#FEF9E1',
+                "&:hover": { bgcolor: settings?.secondaryColor || '#6d2323' },
               }}
             >
               {loading ? 'Saving...' : 'Save'}
@@ -936,11 +1000,11 @@ const AnnouncementForm = () => {
               variant="outlined"
               startIcon={<CancelIcon />}
               sx={{
-                borderColor: accentColor,
-                color: accentColor,
-                '&:hover': {
-                  borderColor: accentDark,
-                  bgcolor: alpha(accentColor, 0.05),
+                borderColor: settings?.primaryColor || '#894444',
+                color: settings?.primaryColor || '#894444',
+                "&:hover": {
+                  borderColor: settings?.secondaryColor || '#6d2323',
+                  bgcolor: alpha(settings?.primaryColor || '#894444', 0.05),
                 },
               }}
             >
