@@ -1,7 +1,7 @@
-import API_BASE_URL from '../apiConfig';
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import API_BASE_URL from "../apiConfig";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 import {
   Container,
   Box,
@@ -36,7 +36,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-} from '@mui/material';
+} from "@mui/material";
 import {
   Notifications as NotificationsIcon,
   ArrowDropDown as ArrowDropDownIcon,
@@ -79,28 +79,28 @@ import {
   PersonAdd,
   Save,
   Flag,
-} from '@mui/icons-material';
-import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
-import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
-import PeopleIcon from '@mui/icons-material/People';
-import EventAvailableIcon from '@mui/icons-material/EventAvailable';
-import BeachAccessIcon from '@mui/icons-material/BeachAccess';
-import PaymentIcon from '@mui/icons-material/Payment';
-import PendingActionsIcon from '@mui/icons-material/PendingActions';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import DescriptionIcon from '@mui/icons-material/Description';
-import CampaignIcon from '@mui/icons-material/Campaign';
-import PaymentsIcon from '@mui/icons-material/Payments';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
-import CloseIcon from '@mui/icons-material/Close';
-import AutorenewIcon from '@mui/icons-material/Autorenew';
+} from "@mui/icons-material";
+import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
+import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
+import PeopleIcon from "@mui/icons-material/People";
+import EventAvailableIcon from "@mui/icons-material/EventAvailable";
+import BeachAccessIcon from "@mui/icons-material/BeachAccess";
+import PaymentIcon from "@mui/icons-material/Payment";
+import PendingActionsIcon from "@mui/icons-material/PendingActions";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import DescriptionIcon from "@mui/icons-material/Description";
+import CampaignIcon from "@mui/icons-material/Campaign";
+import PaymentsIcon from "@mui/icons-material/Payments";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
+import CloseIcon from "@mui/icons-material/Close";
+import AutorenewIcon from "@mui/icons-material/Autorenew";
 import {
   WorkHistory as WorkHistoryIcon,
   ReceiptLong as ReceiptLongIcon,
   HourglassBottom as HourglassBottomIcon,
   History,
-} from '@mui/icons-material';
+} from "@mui/icons-material";
 import {
   BarChart,
   Bar,
@@ -119,44 +119,70 @@ import {
   AreaChart,
   RadialBarChart,
   RadialBar,
-} from 'recharts';
-import logo from '../assets/logo.PNG';
-import SuccessfulOverlay from './SuccessfulOverlay';
+} from "recharts";
+import logo from "../assets/logo.PNG";
+import SuccessfulOverlay from "./SuccessfulOverlay";
+
+// Get user role from token
+const getUserRole = () => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) return null;
+
+    // Parse JWT token to get user role
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map(function (c) {
+          return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+        })
+        .join("")
+    );
+
+    const payload = JSON.parse(jsonPayload);
+    return payload.role || payload.userRole || null;
+  } catch (error) {
+    console.error("Error parsing token:", error);
+    return null;
+  }
+};
 
 const useSystemSettings = () => {
   const [settings, setSettings] = useState({
-    primaryColor: '#894444',
-    secondaryColor: '#6d2323',
-    accentColor: '#FEF9E1',
-    textColor: '#FFFFFF',
-    textPrimaryColor: '#6D2323',
-    textSecondaryColor: '#FEF9E1',
-    hoverColor: '#6D2323',
-    backgroundColor: '#FFFFFF',
+    primaryColor: "#894444",
+    secondaryColor: "#6d2323",
+    accentColor: "#FEF9E1",
+    textColor: "#FFFFFF",
+    textPrimaryColor: "#6D2323",
+    textSecondaryColor: "#FEF9E1",
+    hoverColor: "#6D2323",
+    backgroundColor: "#FFFFFF",
   });
 
   useEffect(() => {
-    const storedSettings = localStorage.getItem('systemSettings');
+    const storedSettings = localStorage.getItem("systemSettings");
     if (storedSettings) {
       try {
         const parsedSettings = JSON.parse(storedSettings);
         setSettings(parsedSettings);
       } catch (error) {
-        console.error('Error parsing stored settings:', error);
+        console.error("Error parsing stored settings:", error);
       }
     }
 
     const fetchSettings = async () => {
       try {
-        const url = API_BASE_URL.includes('/api')
+        const url = API_BASE_URL.includes("/api")
           ? `${API_BASE_URL}/system-settings`
           : `${API_BASE_URL}/api/system-settings`;
 
         const response = await axios.get(url);
         setSettings(response.data);
-        localStorage.setItem('systemSettings', JSON.stringify(response.data));
+        localStorage.setItem("systemSettings", JSON.stringify(response.data));
       } catch (error) {
-        console.error('Error fetching system settings:', error);
+        console.error("Error fetching system settings:", error);
       }
     };
 
@@ -168,112 +194,113 @@ const useSystemSettings = () => {
 
 const STAT_CARDS = (settings) => [
   {
-    label: 'Total Employees',
-    valueKey: 'employees',
+    label: "Total Employees",
+    valueKey: "employees",
     defaultValue: 0,
-    textValue: 'Total Employees',
+    textValue: "Total Employees",
     icon: <PeopleIcon />,
     gradient: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
     shadow: `0 15px 40px ${settings.primaryColor}33`,
   },
   {
-    label: 'Present Today',
-    valueKey: 'todayAttendance',
+    label: "Present Today",
+    valueKey: "todayAttendance",
     defaultValue: 0,
     textValue: "Today's Attendance",
     icon: <EventAvailableIcon />,
     gradient: `linear-gradient(135deg, ${settings.secondaryColor}, ${settings.primaryColor})`,
     shadow: `0 15px 40px ${settings.primaryColor}33`,
-    trend: '+12%',
+    trend: "+12%",
     trendUp: true,
   },
   {
-    label: 'Pending Payroll',
-    valueKey: 'pendingPayroll',
+    label: "Pending Payroll",
+    valueKey: "pendingPayroll",
     defaultValue: 0,
-    textValue: 'Payroll Processing',
+    textValue: "Payroll Processing",
     icon: <PendingActionsIcon />,
     gradient: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
     shadow: `0 15px 40px ${settings.primaryColor}33`,
-    trend: '-8%',
+    trend: "-8%",
     trendUp: false,
   },
   {
-    label: 'Processed Payroll',
-    valueKey: 'processedPayroll',
+    label: "Processed Payroll",
+    valueKey: "processedPayroll",
     defaultValue: 0,
-    textValue: 'Payroll Processed',
+    textValue: "Payroll Processed",
     icon: <WorkHistoryIcon />,
     gradient: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
     shadow: `0 15px 40px ${settings.primaryColor}33`,
-    trend: '+6%',
+    trend: "+6%",
     trendUp: true,
   },
   {
-    label: 'Released Payslips',
-    valueKey: 'payslipCount',
+    label: "Released Payslips",
+    valueKey: "payslipCount",
     defaultValue: 0,
-    textValue: 'Payslip Released',
+    textValue: "Payslip Released",
     icon: <ReceiptLongIcon />,
     gradient: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
     shadow: `0 15px 40px ${settings.primaryColor}33`,
-    trend: '+2%',
+    trend: "+2%",
     trendUp: true,
   },
 ];
 
 const QUICK_ACTIONS = (settings) => [
   {
-    label: 'Users',
-    link: '/users-list',
+    label: "Users",
+    link: "/users-list",
     icon: <Group />,
     gradient: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
   },
   {
-    label: 'Payroll',
-    link: '/payroll-table',
+    label: "Payroll",
+    link: "/payroll-table",
     icon: <PaymentsIcon />,
     gradient: `linear-gradient(135deg, ${settings.secondaryColor}, ${settings.primaryColor})`,
   },
   {
-    label: 'Leaves',
-    link: '/leave-request',
+    label: "Leaves",
+    link: "/leave-request",
     icon: <TransferWithinAStation />,
     gradient: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
   },
   {
-    label: 'DTRs',
-    link: '/daily_time_record_faculty',
+    label: "DTRs",
+    link: "/daily_time_record_faculty",
     icon: <AccessTimeIcon />,
     gradient: `linear-gradient(135deg, ${settings.secondaryColor}, ${settings.primaryColor})`,
   },
   {
-    label: 'Announcements',
-    link: '/announcement',
+    label: "Announcements",
+    link: "/announcement",
     icon: <CampaignIcon />,
     gradient: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
   },
   {
-    label: 'Holidays',
-    link: '/holiday',
+    label: "Holidays",
+    link: "/holiday",
     icon: <AcUnit />,
     gradient: `linear-gradient(135deg, ${settings.secondaryColor}, ${settings.primaryColor})`,
   },
   {
-    label: 'Audit Logs',
-    link: '/audit-logs',
+    label: "Audit Logs",
+    link: "/audit-logs",
     icon: <History />,
     gradient: `linear-gradient(135deg, ${settings.secondaryColor}, ${settings.primaryColor})`,
+    restricted: true, // Mark as restricted
   },
   {
-    label: 'Registration',
-    link: '/registration',
+    label: "Registration",
+    link: "/registration",
     icon: <PersonAdd />,
     gradient: `linear-gradient(135deg, ${settings.secondaryColor}, ${settings.primaryColor})`,
   },
   {
-    label: 'Payslip',
-    link: '/distribution-payslip',
+    label: "Payslip",
+    link: "/distribution-payslip",
     icon: <PersonAdd />,
     gradient: `linear-gradient(135deg, ${settings.secondaryColor}, ${settings.primaryColor})`,
   },
@@ -288,16 +315,16 @@ const COLORS = (settings) => [
 ];
 
 const useAuth = () => {
-  const [username, setUsername] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [employeeNumber, setEmployeeNumber] = useState('');
+  const [username, setUsername] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [employeeNumber, setEmployeeNumber] = useState("");
   const [profilePicture, setProfilePicture] = useState(null);
 
   const getUserInfo = useCallback(() => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (!token) return {};
     try {
-      const decoded = JSON.parse(atob(token.split('.')[1]));
+      const decoded = JSON.parse(atob(token.split(".")[1]));
       return {
         role: decoded.role,
         employeeNumber: decoded.employeeNumber,
@@ -326,13 +353,13 @@ const useAuth = () => {
         );
         if (match) {
           if (match.profile_picture) setProfilePicture(match.profile_picture);
-          const fullNameFromPerson = `${match.firstName || ''} ${
-            match.middleName || ''
-          } ${match.lastName || ''} ${match.nameExtension || ''}`.trim();
+          const fullNameFromPerson = `${match.firstName || ""} ${
+            match.middleName || ""
+          } ${match.lastName || ""} ${match.nameExtension || ""}`.trim();
           if (fullNameFromPerson) setFullName(fullNameFromPerson);
         }
       } catch (err) {
-        console.error('Error loading profile picture:', err);
+        console.error("Error loading profile picture:", err);
       }
     };
     if (employeeNumber) fetchProfilePicture();
@@ -356,33 +383,33 @@ const useDashboardData = (settings) => {
   const [weeklyAttendanceData, setWeeklyAttendanceData] = useState([]);
   const [departmentAttendanceData, setDepartmentAttendanceData] = useState([]);
   const [payrollStatusData, setPayrollStatusData] = useState([
-    { status: 'Processed', value: 0, fill: '#800020' },
-    { status: 'Pending', value: 0, fill: '#A52A2A' },
-    { status: 'Failed', value: 0, fill: '#f44336' },
+    { status: "Processed", value: 0, fill: "#800020" },
+    { status: "Pending", value: 0, fill: "#A52A2A" },
+    { status: "Failed", value: 0, fill: "#f44336" },
   ]);
 
   const [monthlyAttendanceTrend, setMonthlyAttendanceTrend] = useState([
-    { month: 'Jan', attendance: 94.2, leaves: 8.5, overtime: 12.3 },
-    { month: 'Feb', attendance: 93.8, leaves: 9.2, overtime: 11.8 },
-    { month: 'Mar', attendance: 95.1, leaves: 7.8, overtime: 13.5 },
-    { month: 'Apr', attendance: 94.7, leaves: 8.9, overtime: 12.1 },
-    { month: 'May', attendance: 93.5, leaves: 10.2, overtime: 10.8 },
-    { month: 'Jun', attendance: 94.0, leaves: 9.1, overtime: 11.5 },
+    { month: "Jan", attendance: 94.2, leaves: 8.5, overtime: 12.3 },
+    { month: "Feb", attendance: 93.8, leaves: 9.2, overtime: 11.8 },
+    { month: "Mar", attendance: 95.1, leaves: 7.8, overtime: 13.5 },
+    { month: "Apr", attendance: 94.7, leaves: 8.9, overtime: 12.1 },
+    { month: "May", attendance: 93.5, leaves: 10.2, overtime: 10.8 },
+    { month: "Jun", attendance: 94.0, leaves: 9.1, overtime: 11.5 },
   ]);
 
   const [payrollTrendData, setPayrollTrendData] = useState([
-    { month: 'Jan', grossPay: 2450000, netPay: 1980000, deductions: 470000 },
-    { month: 'Feb', grossPay: 2480000, netPay: 2005000, deductions: 475000 },
-    { month: 'Mar', grossPay: 2520000, netPay: 2030000, deductions: 490000 },
-    { month: 'Apr', grossPay: 2490000, netPay: 2010000, deductions: 480000 },
-    { month: 'May', grossPay: 2550000, netPay: 2050000, deductions: 500000 },
-    { month: 'Jun', grossPay: 2580000, netPay: 2075000, deductions: 505000 },
+    { month: "Jan", grossPay: 2450000, netPay: 1980000, deductions: 470000 },
+    { month: "Feb", grossPay: 2480000, netPay: 2005000, deductions: 475000 },
+    { month: "Mar", grossPay: 2520000, netPay: 2030000, deductions: 490000 },
+    { month: "Apr", grossPay: 2490000, netPay: 2010000, deductions: 480000 },
+    { month: "May", grossPay: 2550000, netPay: 2050000, deductions: 500000 },
+    { month: "Jun", grossPay: 2580000, netPay: 2075000, deductions: 505000 },
   ]);
 
   const [attendanceChartData, setAttendanceChartData] = useState([
-    { name: 'Present', value: 0, fill: '#800020' },
-    { name: 'Absent', value: 0, fill: '#A52A2A' },
-    { name: 'Late', value: 0, fill: '#8B0000' },
+    { name: "Present", value: 0, fill: "#800020" },
+    { name: "Absent", value: 0, fill: "#A52A2A" },
+    { name: "Late", value: 0, fill: "#8B0000" },
   ]);
 
   const [announcements, setAnnouncements] = useState([]);
@@ -422,21 +449,21 @@ const useDashboardData = (settings) => {
   useEffect(() => {
     const fetchAllData = async () => {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
       try {
-        console.log(' Starting data fetch...');
+        console.log(" Starting data fetch...");
 
         try {
-          console.log(' Fetching dashboard stats...');
+          console.log(" Fetching dashboard stats...");
           const dashboardStatsRes = await axios.get(
             `${API_BASE_URL}/api/dashboard/stats`,
             { headers }
           );
           const dashStats = dashboardStatsRes.data;
 
-          console.log(' Dashboard stats received:', dashStats);
+          console.log(" Dashboard stats received:", dashStats);
 
           setStats((prev) => ({
             ...prev,
@@ -450,35 +477,35 @@ const useDashboardData = (settings) => {
 
           setAttendanceChartData([
             {
-              name: 'Present',
+              name: "Present",
               value: presentToday,
               fill: settings.primaryColor,
             },
             {
-              name: 'Absent',
+              name: "Absent",
               value: absentToday,
               fill: settings.secondaryColor,
             },
-            { name: 'Late', value: 0, fill: settings.hoverColor },
+            { name: "Late", value: 0, fill: settings.hoverColor },
           ]);
 
-          console.log(' Attendance chart data updated:', {
+          console.log(" Attendance chart data updated:", {
             present: presentToday,
             absent: absentToday,
           });
         } catch (err) {
-          console.error(' Failed to fetch dashboard stats:', err?.message);
+          console.error(" Failed to fetch dashboard stats:", err?.message);
         }
 
         try {
-          console.log(' Fetching weekly attendance...');
+          console.log(" Fetching weekly attendance...");
           const weeklyAttendanceRes = await axios.get(
             `${API_BASE_URL}/api/dashboard/attendance-overview?days=5`,
             { headers }
           );
           const weeklyData = weeklyAttendanceRes.data;
 
-          console.log(' Weekly attendance received:', weeklyData);
+          console.log(" Weekly attendance received:", weeklyData);
 
           const transformedWeekly = Array.isArray(weeklyData)
             ? weeklyData.map((item) => ({
@@ -491,25 +518,25 @@ const useDashboardData = (settings) => {
 
           setWeeklyAttendanceData(transformedWeekly);
           console.log(
-            'Weekly chart updated with',
+            "Weekly chart updated with",
             transformedWeekly.length,
-            'days'
+            "days"
           );
         } catch (err) {
-          console.error(' Failed to fetch weekly attendance:', err?.message);
+          console.error(" Failed to fetch weekly attendance:", err?.message);
 
           setWeeklyAttendanceData([]);
         }
 
         try {
-          console.log('Fetching department distribution...');
+          console.log("Fetching department distribution...");
           const deptDistRes = await axios.get(
             `${API_BASE_URL}/api/dashboard/department-distribution`,
             { headers }
           );
           const deptData = deptDistRes.data;
 
-          console.log(' Department data received:', deptData);
+          console.log(" Department data received:", deptData);
 
           const transformedDept = Array.isArray(deptData)
             ? deptData.map((item) => ({
@@ -522,27 +549,27 @@ const useDashboardData = (settings) => {
 
           setDepartmentAttendanceData(transformedDept);
           console.log(
-            'Department chart updated with',
+            "Department chart updated with",
             transformedDept.length,
-            'departments'
+            "departments"
           );
         } catch (err) {
           console.error(
-            'Failed to fetch department distribution:',
+            "Failed to fetch department distribution:",
             err?.message
           );
           setDepartmentAttendanceData([]);
         }
 
         try {
-          console.log('Fetching payroll summary...');
+          console.log("Fetching payroll summary...");
           const payrollSummaryRes = await axios.get(
             `${API_BASE_URL}/api/dashboard/payroll-summary`,
             { headers }
           );
           const payrollSummary = payrollSummaryRes.data;
 
-          console.log('Payroll summary received:', payrollSummary);
+          console.log("Payroll summary received:", payrollSummary);
 
           setStats((prev) => ({
             ...prev,
@@ -552,32 +579,32 @@ const useDashboardData = (settings) => {
 
           const newPayrollStatus = [
             {
-              status: 'Processed',
+              status: "Processed",
               value: payrollSummary.processed || 0,
               fill: settings.primaryColor,
             },
             {
-              status: 'Pending',
+              status: "Pending",
               value: payrollSummary.pending || 0,
               fill: settings.secondaryColor,
             },
-            { status: 'Failed', value: 0, fill: settings.hoverColor },
+            { status: "Failed", value: 0, fill: settings.hoverColor },
           ];
           setPayrollStatusData(newPayrollStatus);
 
-          console.log(' Payroll charts updated');
+          console.log(" Payroll charts updated");
         } catch (err) {
-          console.error(' Failed to fetch payroll summary:', err?.message);
+          console.error(" Failed to fetch payroll summary:", err?.message);
 
           setPayrollStatusData([
-            { status: 'Processed', value: 0, fill: settings.primaryColor },
-            { status: 'Pending', value: 0, fill: settings.secondaryColor },
-            { status: 'Failed', value: 0, fill: settings.hoverColor },
+            { status: "Processed", value: 0, fill: settings.primaryColor },
+            { status: "Pending", value: 0, fill: settings.secondaryColor },
+            { status: "Failed", value: 0, fill: settings.hoverColor },
           ]);
         }
 
         try {
-          console.log('Fetching monthly attendance trend...');
+          console.log("Fetching monthly attendance trend...");
           const monthlyAttendanceRes = await axios.get(
             `${API_BASE_URL}/api/dashboard/monthly-attendance`,
             { headers }
@@ -585,9 +612,9 @@ const useDashboardData = (settings) => {
           const monthlyData = monthlyAttendanceRes.data;
 
           console.log(
-            ' Monthly attendance received:',
+            " Monthly attendance received:",
             monthlyData.length,
-            'days'
+            "days"
           );
 
           const weeklyAverages = [];
@@ -614,17 +641,17 @@ const useDashboardData = (settings) => {
           if (weeklyAverages.length > 0) {
             setMonthlyAttendanceTrend(weeklyAverages);
             console.log(
-              'Monthly trend updated with',
+              "Monthly trend updated with",
               weeklyAverages.length,
-              'weeks'
+              "weeks"
             );
           }
         } catch (err) {
-          console.error('Failed to fetch monthly attendance:', err?.message);
+          console.error("Failed to fetch monthly attendance:", err?.message);
         }
 
         try {
-          console.log(' Fetching payslip count...');
+          console.log(" Fetching payslip count...");
           const finalizedPayrollRes = await axios.get(
             `${API_BASE_URL}/PayrollRoute/finalized-payroll`,
             { headers }
@@ -634,15 +661,15 @@ const useDashboardData = (settings) => {
             : 0;
 
           setStats((prev) => ({ ...prev, payslipCount }));
-          console.log(' Payslip count:', payslipCount);
+          console.log(" Payslip count:", payslipCount);
         } catch (err) {
-          console.error(' Failed to fetch payslip count:', err?.message);
+          console.error(" Failed to fetch payslip count:", err?.message);
 
           setStats((prev) => ({ ...prev, payslipCount: 0 }));
         }
 
         try {
-          console.log(' Fetching announcements...');
+          console.log(" Fetching announcements...");
           const annRes = await axios.get(`${API_BASE_URL}/api/announcements`, {
             headers,
           });
@@ -650,14 +677,14 @@ const useDashboardData = (settings) => {
             ? annRes.data
             : [];
           setAnnouncements(announcementData);
-          console.log('Announcements loaded:', announcementData.length);
+          console.log("Announcements loaded:", announcementData.length);
         } catch (err) {
-          console.error(' Failed to fetch announcements:', err?.message);
+          console.error(" Failed to fetch announcements:", err?.message);
           setAnnouncements([]);
         }
 
         try {
-          console.log(' Fetching holidays...');
+          console.log(" Fetching holidays...");
           const res = await axios.get(`${API_BASE_URL}/holiday`, { headers });
           if (Array.isArray(res.data)) {
             const transformedHolidays = res.data.map((item) => {
@@ -665,8 +692,8 @@ const useDashboardData = (settings) => {
               const normalizedDate = !isNaN(d)
                 ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
                     2,
-                    '0'
-                  )}-${String(d.getDate()).padStart(2, '0')}`
+                    "0"
+                  )}-${String(d.getDate()).padStart(2, "0")}`
                 : item.date;
               return {
                 date: normalizedDate,
@@ -675,15 +702,15 @@ const useDashboardData = (settings) => {
               };
             });
             setHolidays(transformedHolidays);
-            console.log(' Holidays loaded:', transformedHolidays.length);
+            console.log(" Holidays loaded:", transformedHolidays.length);
           }
         } catch (err) {
-          console.error(' Error fetching holidays:', err);
+          console.error(" Error fetching holidays:", err);
         }
 
-        console.log(' All data fetch completed!');
+        console.log(" All data fetch completed!");
       } catch (err) {
-        console.error(' Critical error fetching admin data:', err);
+        console.error(" Critical error fetching admin data:", err);
       } finally {
         setLoading(false);
       }
@@ -691,10 +718,10 @@ const useDashboardData = (settings) => {
 
     fetchAllData();
 
-    console.log(' Setting up auto-refresh (5 minutes)');
+    console.log(" Setting up auto-refresh (5 minutes)");
     const interval = setInterval(fetchAllData, 5 * 60 * 1000);
     return () => {
-      console.log(' Clearing auto-refresh interval');
+      console.log(" Clearing auto-refresh interval");
       clearInterval(interval);
     };
   }, [settings]);
@@ -786,53 +813,53 @@ const StatCard = ({
       sx={{
         background:
           hoveredCard === index ? card.gradient : settings.accentColor,
-        backdropFilter: 'blur(15px)',
+        backdropFilter: "blur(15px)",
         border:
           hoveredCard === index
-            ? 'none'
+            ? "none"
             : `1px solid ${settings.primaryColor}26`,
         borderRadius: 4,
-        transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+        transition: "all 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
         transform:
           hoveredCard === index
-            ? 'translateY(-12px) scale(1.02)'
-            : 'translateY(0)',
+            ? "translateY(-12px) scale(1.02)"
+            : "translateY(0)",
         boxShadow:
-          hoveredCard === index ? card.shadow : '0 4px 12px rgba(0,0,0,0.1)',
-        position: 'relative',
-        overflow: 'hidden',
-        '&::before': {
+          hoveredCard === index ? card.shadow : "0 4px 12px rgba(0,0,0,0.1)",
+        position: "relative",
+        overflow: "hidden",
+        "&::before": {
           content: '""',
-          position: 'absolute',
+          position: "absolute",
           top: 0,
           left: 0,
           right: 0,
           bottom: 0,
-          background: hoveredCard === index ? 'none' : card.gradient,
+          background: hoveredCard === index ? "none" : card.gradient,
           opacity: 0.1,
-          transition: 'opacity 0.5s',
+          transition: "opacity 0.5s",
         },
-        '&::after': {
+        "&::after": {
           content: '""',
-          position: 'absolute',
+          position: "absolute",
           top: -50,
           right: -50,
           width: 150,
           height: 150,
           background:
-            'radial-gradient(circle, rgba(254,249,225,0.2) 0%, transparent 70%)',
-          borderRadius: '50%',
-          transform: hoveredCard === index ? 'scale(2)' : 'scale(0)',
-          transition: 'transform 0.6s ease-out',
+            "radial-gradient(circle, rgba(254,249,225,0.2) 0%, transparent 70%)",
+          borderRadius: "50%",
+          transform: hoveredCard === index ? "scale(2)" : "scale(0)",
+          transition: "transform 0.6s ease-out",
         },
       }}
     >
-      <CardContent sx={{ p: 3, position: 'relative', zIndex: 1 }}>
+      <CardContent>
         <Box
           sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
             mb: 2,
           }}
         >
@@ -841,23 +868,23 @@ const StatCard = ({
               width: 64,
               height: 64,
               borderRadius: 3,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
               background:
                 hoveredCard === index
-                  ? 'rgba(254, 249, 225, 0.2)'
+                  ? "rgba(254, 249, 225, 0.2)"
                   : `${settings.primaryColor}1A`,
-              backdropFilter: 'blur(10px)',
+              backdropFilter: "blur(10px)",
               color:
-                hoveredCard === index ? '#ffffff' : settings.textPrimaryColor,
-              transition: 'all 0.5s',
+                hoveredCard === index ? "#ffffff" : settings.textPrimaryColor,
+              transition: "all 0.5s",
               transform:
                 hoveredCard === index
-                  ? 'rotate(360deg) scale(1.1)'
-                  : 'rotate(0) scale(1)',
+                  ? "rotate(360deg) scale(1.1)"
+                  : "rotate(0) scale(1)",
               boxShadow:
-                hoveredCard === index ? '0 8px 24px rgba(0,0,0,0.2)' : 'none',
+                hoveredCard === index ? "0 8px 24px rgba(0,0,0,0.2)" : "none",
             }}
           >
             {React.cloneElement(card.icon, { sx: { fontSize: 36 } })}
@@ -869,19 +896,19 @@ const StatCard = ({
             sx={{
               bgcolor:
                 hoveredCard === index
-                  ? 'rgba(254,249,225,0.15)'
+                  ? "rgba(254,249,225,0.15)"
                   : `${settings.primaryColor}1A`,
-              backdropFilter: 'blur(10px)',
+              backdropFilter: "blur(10px)",
               color:
-                hoveredCard === index ? '#ffffff' : settings.textPrimaryColor,
+                hoveredCard === index ? "#ffffff" : settings.textPrimaryColor,
               fontWeight: 700,
               border:
                 hoveredCard === index
-                  ? '1px solid rgba(254,249,225,0.2)'
+                  ? "1px solid rgba(254,249,225,0.2)"
                   : `1px solid ${settings.primaryColor}26`,
-              '& .MuiChip-icon': {
+              "& .MuiChip-icon": {
                 color:
-                  hoveredCard === index ? '#ffffff' : settings.textPrimaryColor,
+                  hoveredCard === index ? "#ffffff" : settings.textPrimaryColor,
               },
             }}
           />
@@ -892,16 +919,16 @@ const StatCard = ({
             fontWeight: 800,
             mb: 0.5,
             color:
-              hoveredCard === index ? '#ffffff' : settings.textPrimaryColor,
+              hoveredCard === index ? "#ffffff" : settings.textPrimaryColor,
             textShadow:
-              hoveredCard === index ? '0 2px 10px rgba(0,0,0,0.3)' : 'none',
+              hoveredCard === index ? "0 2px 10px rgba(0,0,0,0.3)" : "none",
           }}
         >
           {loading ? (
             <Skeleton
               variant="text"
               width={80}
-              sx={{ bgcolor: 'rgba(128, 0, 32, 0.1)' }}
+              sx={{ bgcolor: "rgba(128, 0, 32, 0.1)" }}
             />
           ) : stats[card.valueKey] !== undefined ? (
             stats[card.valueKey]
@@ -916,10 +943,10 @@ const StatCard = ({
             mb: 0.5,
             color:
               hoveredCard === index
-                ? 'rgba(254,249,225,0.9)'
+                ? "rgba(254,249,225,0.9)"
                 : settings.textPrimaryColor,
             textShadow:
-              hoveredCard === index ? '0 1px 5px rgba(0,0,0,0.3)' : 'none',
+              hoveredCard === index ? "0 1px 5px rgba(0,0,0,0.3)" : "none",
           }}
         >
           {card.textValue}
@@ -928,9 +955,9 @@ const StatCard = ({
           sx={{
             color:
               hoveredCard === index
-                ? 'rgba(254,249,225,0.9)'
+                ? "rgba(254,249,225,0.9)"
                 : settings.textSecondaryColor,
-            fontSize: '1rem',
+            fontSize: "1rem",
             fontWeight: 600,
             mb: 0.5,
           }}
@@ -941,9 +968,9 @@ const StatCard = ({
           sx={{
             color:
               hoveredCard === index
-                ? 'rgba(254,249,225,0.6)'
+                ? "rgba(254,249,225,0.6)"
                 : settings.textSecondaryColor,
-            fontSize: '0.85rem',
+            fontSize: "0.85rem",
           }}
         >
           {card.subtitle}
@@ -954,10 +981,10 @@ const StatCard = ({
               mt: 2,
               borderRadius: 1,
               height: 4,
-              bgcolor: 'rgba(128, 0, 32, 0.1)',
-              '& .MuiLinearProgress-bar': {
+              bgcolor: "rgba(128, 0, 32, 0.1)",
+              "& .MuiLinearProgress-bar": {
                 bgcolor:
-                  hoveredCard === index ? '#ffffff' : settings.primaryColor,
+                  hoveredCard === index ? "#ffffff" : settings.primaryColor,
                 borderRadius: 1,
               },
             }}
@@ -988,32 +1015,32 @@ const CompactStatCard = ({
           hoveredCard === index ? settings.primaryColor : settings.primaryColor
         }26`,
         borderRadius: 4,
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
         transform:
           hoveredCard === index
-            ? 'translateY(-4px) scale(1.02)'
-            : 'translateY(0)',
+            ? "translateY(-4px) scale(1.02)"
+            : "translateY(0)",
         boxShadow:
-          hoveredCard === index ? card.shadow : '0 2px 8px rgba(0,0,0,0.08)',
-        cursor: 'pointer',
-        position: 'relative',
-        overflow: 'hidden',
+          hoveredCard === index ? card.shadow : "0 2px 8px rgba(0,0,0,0.08)",
+        cursor: "pointer",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
       <CardContent
         sx={{
           p: 2,
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
         }}
       >
         <Box
           sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
           }}
         >
           <Box
@@ -1021,16 +1048,16 @@ const CompactStatCard = ({
               width: 40,
               height: 30,
               borderRadius: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
               background: `${settings.primaryColor}1A`,
               color: settings.textPrimaryColor,
-              transition: 'all 0.3s',
+              transition: "all 0.3s",
               transform:
                 hoveredCard === index
-                  ? 'rotate(360deg) scale(1.1)'
-                  : 'rotate(0) scale(1)',
+                  ? "rotate(360deg) scale(1.1)"
+                  : "rotate(0) scale(1)",
             }}
           >
             {React.cloneElement(card.icon, { sx: { fontSize: 24 } })}
@@ -1056,7 +1083,7 @@ const CompactStatCard = ({
           <Typography
             sx={{
               color: settings.textPrimaryColor,
-              fontSize: '0.75rem',
+              fontSize: "0.75rem",
               fontWeight: 500,
             }}
           >
@@ -1065,7 +1092,7 @@ const CompactStatCard = ({
           <Typography
             sx={{
               color: settings.textSecondaryColor,
-              fontSize: '0.7rem',
+              fontSize: "0.7rem",
               fontWeight: 500,
             }}
           >
@@ -1092,16 +1119,16 @@ const AnnouncementCarousel = ({
     <Card
       sx={{
         background: settings.accentColor,
-        backdropFilter: 'blur(15px)',
+        backdropFilter: "blur(15px)",
         border: `1px solid ${settings.primaryColor}26`,
         borderRadius: 4,
         mb: 3,
-        overflow: 'hidden',
+        overflow: "hidden",
         boxShadow: `0 15px 40px ${settings.primaryColor}33`,
-        position: 'relative',
+        position: "relative",
       }}
     >
-      <Box sx={{ position: 'relative', height: 550 }}>
+      <Box sx={{ position: "relative", height: 550 }}>
         {Array.isArray(announcements) && announcements.length > 0 ? (
           <>
             <Box
@@ -1109,23 +1136,23 @@ const AnnouncementCarousel = ({
               src={
                 announcements[currentSlide]?.image
                   ? `${API_BASE_URL}${announcements[currentSlide].image}`
-                  : '/api/placeholder/800/400'
+                  : "/api/placeholder/800/400"
               }
-              alt={announcements[currentSlide]?.title || 'Announcement'}
+              alt={announcements[currentSlide]?.title || "Announcement"}
               sx={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                transition: 'transform 0.7s ease',
-                transform: 'scale(1)',
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                transition: "transform 0.7s ease",
+                transform: "scale(1)",
               }}
             />
             <Box
               sx={{
-                position: 'absolute',
+                position: "absolute",
                 inset: 0,
                 background:
-                  'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0) 70%)',
+                  "linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0) 70%)",
               }}
             />
             <IconButton
@@ -1134,20 +1161,20 @@ const AnnouncementCarousel = ({
                 handlePrevSlide();
               }}
               sx={{
-                position: 'absolute',
+                position: "absolute",
                 left: 24,
-                top: '50%',
-                transform: 'translateY(-50%)',
+                top: "50%",
+                transform: "translateY(-50%)",
                 bgcolor: `${settings.primaryColor}4D`,
-                backdropFilter: 'blur(10px)',
+                backdropFilter: "blur(10px)",
                 border: `1px solid ${settings.primaryColor}26`,
-                '&:hover': {
+                "&:hover": {
                   bgcolor: `${settings.primaryColor}80`,
-                  transform: 'translateY(-50%) scale(1.1)',
+                  transform: "translateY(-50%) scale(1.1)",
                 },
-                color: '#ffffff',
-                boxShadow: '0 4px 24px rgba(0,0,0,0.2)',
-                transition: 'all 0.3s',
+                color: "#ffffff",
+                boxShadow: "0 4px 24px rgba(0,0,0,0.2)",
+                transition: "all 0.3s",
               }}
             >
               <ArrowBackIosNewIcon />
@@ -1158,20 +1185,20 @@ const AnnouncementCarousel = ({
                 handleNextSlide();
               }}
               sx={{
-                position: 'absolute',
+                position: "absolute",
                 right: 24,
-                top: '50%',
-                transform: 'translateY(-50%)',
+                top: "50%",
+                transform: "translateY(-50%)",
                 bgcolor: `${settings.primaryColor}4D`,
-                backdropFilter: 'blur(10px)',
+                backdropFilter: "blur(10px)",
                 border: `1px solid ${settings.primaryColor}26`,
-                '&:hover': {
+                "&:hover": {
                   bgcolor: `${settings.primaryColor}80`,
-                  transform: 'translateY(-50%) scale(1.1)',
+                  transform: "translateY(-50%) scale(1.1)",
                 },
-                color: '#ffffff',
-                boxShadow: '0 4px 24px rgba(0,0,0,0.2)',
-                transition: 'all 0.3s',
+                color: "#ffffff",
+                boxShadow: "0 4px 24px rgba(0,0,0,0.2)",
+                transition: "all 0.3s",
               }}
             >
               <ArrowForwardIosIcon />
@@ -1182,19 +1209,19 @@ const AnnouncementCarousel = ({
                 togglePlayPause();
               }}
               sx={{
-                position: 'absolute',
+                position: "absolute",
                 top: 24,
                 right: 24,
                 bgcolor: `${settings.primaryColor}4D`,
-                backdropFilter: 'blur(10px)',
+                backdropFilter: "blur(10px)",
                 border: `1px solid ${settings.primaryColor}26`,
-                '&:hover': {
+                "&:hover": {
                   bgcolor: `${settings.primaryColor}80`,
-                  transform: 'scale(1.1)',
+                  transform: "scale(1.1)",
                 },
-                color: '#ffffff',
-                boxShadow: '0 4px 24px rgba(0,0,0,0.2)',
-                transition: 'all 0.3s',
+                color: "#ffffff",
+                boxShadow: "0 4px 24px rgba(0,0,0,0.2)",
+                transition: "all 0.3s",
               }}
             >
               {isPlaying ? <Pause /> : <PlayArrow />}
@@ -1202,15 +1229,15 @@ const AnnouncementCarousel = ({
             <Box
               onClick={() => handleOpenModal(announcements[currentSlide])}
               sx={{
-                position: 'absolute',
+                position: "absolute",
                 bottom: 0,
                 left: 0,
                 right: 0,
                 p: 4,
-                color: '#ffffff',
-                cursor: 'pointer',
-                transition: 'transform 0.3s',
-                '&:hover': { transform: 'translateY(-4px)' },
+                color: "#ffffff",
+                cursor: "pointer",
+                transition: "transform 0.3s",
+                "&:hover": { transform: "translateY(-4px)" },
               }}
             >
               <Chip
@@ -1219,11 +1246,11 @@ const AnnouncementCarousel = ({
                 sx={{
                   mb: 2,
                   bgcolor: `${settings.primaryColor}80`,
-                  backdropFilter: 'blur(10px)',
-                  color: '#ffffff',
+                  backdropFilter: "blur(10px)",
+                  color: "#ffffff",
                   fontWeight: 700,
-                  fontSize: '0.7rem',
-                  border: '1px solid rgba(254, 249, 225, 0.3)',
+                  fontSize: "0.7rem",
+                  border: "1px solid rgba(254, 249, 225, 0.3)",
                 }}
               />
               <Typography
@@ -1231,7 +1258,7 @@ const AnnouncementCarousel = ({
                 sx={{
                   fontWeight: 800,
                   mb: 1,
-                  textShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                  textShadow: "0 4px 12px rgba(0,0,0,0.5)",
                   lineHeight: 1.2,
                 }}
               >
@@ -1240,10 +1267,10 @@ const AnnouncementCarousel = ({
               <Typography
                 sx={{
                   opacity: 0.95,
-                  fontSize: '1rem',
-                  textShadow: '0 2px 8px rgba(0,0,0,0.5)',
-                  display: 'flex',
-                  alignItems: 'center',
+                  fontSize: "1rem",
+                  textShadow: "0 2px 8px rgba(0,0,0,0.5)",
+                  display: "flex",
+                  alignItems: "center",
                   gap: 1,
                 }}
               >
@@ -1253,12 +1280,12 @@ const AnnouncementCarousel = ({
             </Box>
             <Box
               sx={{
-                position: 'absolute',
+                position: "absolute",
                 bottom: 24,
                 right: 24,
-                display: 'flex',
+                display: "flex",
                 gap: 1.5,
-                alignItems: 'center',
+                alignItems: "center",
               }}
             >
               {announcements.map((_, idx) => (
@@ -1270,14 +1297,14 @@ const AnnouncementCarousel = ({
                     borderRadius: 5,
                     bgcolor:
                       currentSlide === idx
-                        ? '#ffffff'
-                        : 'rgba(254,249,225,0.4)',
-                    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                    cursor: 'pointer',
-                    border: '1px solid rgba(254,249,225,0.3)',
-                    '&:hover': {
-                      bgcolor: 'rgba(254,249,225,0.7)',
-                      transform: 'scale(1.2)',
+                        ? "#ffffff"
+                        : "rgba(254,249,225,0.4)",
+                    transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+                    cursor: "pointer",
+                    border: "1px solid rgba(254,249,225,0.3)",
+                    "&:hover": {
+                      bgcolor: "rgba(254,249,225,0.7)",
+                      transform: "scale(1.2)",
                     },
                   }}
                   onClick={(e) => {
@@ -1291,11 +1318,11 @@ const AnnouncementCarousel = ({
         ) : (
           <Box
             sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: '100%',
-              flexDirection: 'column',
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              height: "100%",
+              flexDirection: "column",
               gap: 2,
             }}
           >
@@ -1316,14 +1343,14 @@ const CompactChart = ({ title, children, height = 200, settings }) => (
   <Card
     sx={{
       background: settings.accentColor,
-      backdropFilter: 'blur(15px)',
+      backdropFilter: "blur(15px)",
       border: `1px solid ${settings.primaryColor}26`,
       borderRadius: 4,
       height: height + 80,
       boxShadow: `0 15px 40px ${settings.primaryColor}33`,
-      transition: 'all 0.3s',
-      '&:hover': {
-        transform: 'translateY(-2px)',
+      transition: "all 0.3s",
+      "&:hover": {
+        transform: "translateY(-2px)",
         boxShadow: `0 20px 50px ${settings.primaryColor}4D`,
       },
     }}
@@ -1335,7 +1362,7 @@ const CompactChart = ({ title, children, height = 200, settings }) => (
           fontWeight: 600,
           mb: 1,
           color: settings.textPrimaryColor,
-          fontSize: '0.95rem',
+          fontSize: "0.95rem",
         }}
       >
         {title}
@@ -1345,11 +1372,14 @@ const CompactChart = ({ title, children, height = 200, settings }) => (
   </Card>
 );
 
+// Updated CompactCalendar component to include announcements
 const CompactCalendar = ({
   calendarDate,
   setCalendarDate,
   holidays,
+  announcements,
   settings,
+  setSelectedDate,
 }) => {
   const month = calendarDate.getMonth();
   const year = calendarDate.getFullYear();
@@ -1370,11 +1400,31 @@ const CompactCalendar = ({
     [month, year]
   );
 
+  // Function to normalize date to YYYY-MM-DD
+  const normalizeDate = (date) => {
+    if (!date) return null;
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return null;
+    const offset = d.getTimezoneOffset();
+    d.setMinutes(d.getMinutes() - offset);
+    return d.toISOString().split("T")[0];
+  };
+
+  // Get announcements for a specific date
+  const getAnnouncementsForDate = (dateStr) => {
+    if (!Array.isArray(announcements)) return [];
+
+    return announcements.filter((announcement) => {
+      const announcementDate = normalizeDate(announcement.date);
+      return announcementDate === dateStr;
+    });
+  };
+
   return (
     <Card
       sx={{
         background: settings.accentColor,
-        backdropFilter: 'blur(15px)',
+        backdropFilter: "blur(15px)",
         border: `1px solid ${settings.primaryColor}26`,
         borderRadius: 4,
         boxShadow: `0 15px 40px ${settings.primaryColor}33`,
@@ -1384,16 +1434,16 @@ const CompactCalendar = ({
       <CardContent
         sx={{
           p: 1.5,
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
         }}
       >
         <Box
           sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
             mb: 1,
           }}
         >
@@ -1407,13 +1457,13 @@ const CompactCalendar = ({
           <Typography
             sx={{
               fontWeight: 600,
-              fontSize: '0.8rem',
+              fontSize: "0.8rem",
               color: settings.textPrimaryColor,
             }}
           >
-            {new Date(year, month).toLocaleDateString('en-US', {
-              month: 'short',
-              year: 'numeric',
+            {new Date(year, month).toLocaleDateString("en-US", {
+              month: "short",
+              year: "numeric",
             })}
           </Typography>
           <IconButton
@@ -1425,13 +1475,13 @@ const CompactCalendar = ({
           </IconButton>
         </Box>
         <Grid container spacing={0.3} sx={{ mb: 0.3 }}>
-          {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map((day) => (
+          {["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"].map((day) => (
             <Grid item xs={12 / 7} key={day}>
               <Typography
                 sx={{
-                  textAlign: 'center',
+                  textAlign: "center",
                   fontWeight: 600,
-                  fontSize: '0.55rem',
+                  fontSize: "0.55rem",
                   color: settings.textPrimaryColor,
                 }}
               >
@@ -1444,51 +1494,279 @@ const CompactCalendar = ({
           {calendarDays.map((day, index) => {
             const currentDate = `${year}-${String(month + 1).padStart(
               2,
-              '0'
-            )}-${String(day).padStart(2, '0')}`;
+              "0"
+            )}-${String(day).padStart(2, "0")}`;
             const holidayData = Array.isArray(holidays)
               ? holidays.find(
-                  (h) => h.date === currentDate && h.status === 'Active'
+                  (h) => h.date === currentDate && h.status === "Active"
                 )
               : null;
+            const dayAnnouncements = getAnnouncementsForDate(currentDate);
+            const hasAnnouncements = dayAnnouncements.length > 0;
             const isToday =
               new Date().toDateString() ===
               new Date(year, month, day).toDateString();
             return (
               <Grid item xs={12 / 7} key={index}>
-                <Box
-                  sx={{
-                    textAlign: 'center',
-                    py: 0.3,
-                    fontSize: '0.65rem',
-                    borderRadius: 0.5,
-                    color: holidayData
-                      ? '#ffffff'
-                      : day
-                      ? settings.textPrimaryColor
-                      : 'transparent',
-                    background: holidayData
-                      ? `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`
-                      : isToday
-                      ? '#c4c4c4ff'
-                      : 'transparent',
-                    fontWeight: holidayData || isToday ? 600 : 400,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    '&:hover': {
-                      background: holidayData
-                        ? `linear-gradient(135deg, ${settings.secondaryColor}, ${settings.primaryColor})`
-                        : '#e0e0e0',
-                      transform: 'scale(1.1)',
-                    },
-                  }}
+                <Tooltip
+                  title={
+                    // Check if it's today
+                    isToday
+                      ? `Today` +
+                        (holidayData
+                          ? `Holiday: ${holidayData.name}` // If it's a holiday, show "Holiday: [Holiday Name]"
+                          : hasAnnouncements && dayAnnouncements.length > 0
+                          ? `Announcement: ${dayAnnouncements[0].title}` // If there are announcements, show "Announcement: [Title]"
+                          : "") // If neither, just show "Today:"
+                      : holidayData
+                      ? `Holiday: ${holidayData.name}` // If it's not today but there's a holiday
+                      : hasAnnouncements && dayAnnouncements.length > 0
+                      ? `Announcement: ${dayAnnouncements[0].title}` // If it's not today but there are announcements
+                      : "" // If neither holiday nor announcement, show nothing
+                  }
+                  arrow
                 >
-                  {day || ''}
-                </Box>
+                  <Box
+                    onClick={() => {
+                      if (day) {
+                        setSelectedDate(currentDate);
+                      }
+                    }}
+                    sx={{
+                      textAlign: "center",
+                      py: 0.3,
+                      fontSize: "0.65rem",
+                      borderRadius: 0.5,
+                      color: holidayData
+                        ? "#ffffff"
+                        : day
+                        ? settings.textPrimaryColor
+                        : "transparent",
+                      background: holidayData
+                        ? `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`
+                        : isToday
+                        ? "#c4c4c4ff" // Highlight today's date
+                        : hasAnnouncements
+                        ? `${settings.primaryColor}15`
+                        : "transparent",
+                      fontWeight:
+                        holidayData || isToday || hasAnnouncements ? 600 : 400,
+                      border: isToday
+                        ? `2px solid ${settings.accentColor}`
+                        : hasAnnouncements
+                        ? `1px solid ${settings.primaryColor}40`
+                        : "none",
+                      cursor: day ? "pointer" : "default",
+                      position: "relative",
+                      transition: "all 0.2s",
+                      "&:hover": day
+                        ? {
+                            background: holidayData
+                              ? `linear-gradient(135deg, ${settings.secondaryColor}, ${settings.primaryColor})`
+                              : isToday
+                              ? "#e0e0e0" // Hover effect for today
+                              : hasAnnouncements
+                              ? `${settings.primaryColor}25`
+                              : "#e0e0e0",
+                            transform: "scale(1.1)",
+                          }
+                        : {},
+                    }}
+                  >
+                    {day || ""}
+                    {hasAnnouncements && day && (
+                      <Box
+                        sx={{
+                          position: "absolute",
+                          bottom: 2,
+                          left: 0,
+                          right: 0,
+                          display: "flex",
+                          justifyContent: "center",
+                        }}
+                      ></Box>
+                    )}
+                  </Box>
+                </Tooltip>
               </Grid>
             );
           })}
         </Grid>
+        <Box
+          sx={{
+            mt: 1,
+            display: "flex",
+            gap: 2,
+            justifyContent: "center",
+            fontSize: "0.65rem",
+          }}
+        ></Box>
+      </CardContent>
+    </Card>
+  );
+};
+
+// New component to display announcements for a selected date
+const DateAnnouncements = ({ selectedDate, announcements, settings }) => {
+  // Function to normalize date to YYYY-MM-DD
+  const normalizeDate = (date) => {
+    if (!date) return null;
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return null;
+    const offset = d.getTimezoneOffset();
+    d.setMinutes(d.getMinutes() - offset);
+    return d.toISOString().split("T")[0];
+  };
+
+  // Get announcements for selected date
+  const dateAnnouncements = Array.isArray(announcements)
+    ? announcements.filter((announcement) => {
+        const announcementDate = normalizeDate(announcement.date);
+        return announcementDate === selectedDate;
+      })
+    : [];
+
+  return (
+    <Card
+      sx={{
+        background: settings.accentColor,
+        backdropFilter: "blur(15px)",
+        border: `1px solid ${settings.primaryColor}26`,
+        borderRadius: 4,
+        boxShadow: `0 15px 40px ${settings.primaryColor}33`,
+        height: 270,
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <CardContent
+        sx={{
+          p: 2,
+          display: "flex",
+          flexDirection: "column",
+          height: "100%",
+        }}
+      >
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: 600,
+            mb: 1,
+            color: settings.textPrimaryColor,
+            fontSize: "0.95rem",
+            display: "flex",
+            alignItems: "center",
+          }}
+        >
+          <CampaignIcon sx={{ mr: 1, fontSize: 20 }} />
+          Announcements
+        </Typography>
+        <Typography
+          variant="body2"
+          sx={{
+            mb: 1,
+            color: settings.textSecondaryColor,
+            fontSize: "0.8rem",
+          }}
+        >
+          {selectedDate &&
+            new Date(selectedDate).toLocaleDateString("en-US", {
+              weekday: "long",
+              month: "long",
+              day: "numeric",
+              year: "numeric",
+            })}
+        </Typography>
+        <Box
+          sx={{
+            flex: 1,
+            overflowY: "auto",
+            overflowX: "hidden",
+            pr: 1,
+            "&::-webkit-scrollbar": {
+              width: "6px",
+            },
+            "&::-webkit-scrollbar-track": {
+              background: `${settings.primaryColor}1A`,
+              borderRadius: "3px",
+            },
+            "&::-webkit-scrollbar-thumb": {
+              background: `${settings.primaryColor}4D`,
+              borderRadius: "3px",
+              "&:hover": {
+                background: `${settings.primaryColor}80`,
+              },
+            },
+          }}
+        >
+          {dateAnnouncements.length > 0 ? (
+            dateAnnouncements.map((announcement, index) => (
+              <Grow
+                in
+                timeout={300 + index * 50}
+                key={announcement.id || index}
+              >
+                <Box
+                  sx={{
+                    mb: 2,
+                    p: 1.5,
+                    borderRadius: 2,
+                    background: `${settings.primaryColor}1A`,
+                    border: `1px solid ${settings.primaryColor}26`,
+                    cursor: "pointer",
+                    transition: "all 0.3s",
+                    "&:hover": {
+                      background: `${settings.primaryColor}25`,
+                      transform: "translateX(4px)",
+                    },
+                  }}
+                  onClick={() => {
+                    // This would open to announcement detail modal
+                    // Implementation depends on how you want to handle this
+                  }}
+                >
+                  <Typography
+                    sx={{
+                      fontSize: "0.85rem",
+                      fontWeight: 600,
+                      color: settings.textPrimaryColor,
+                      mb: 0.5,
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {announcement.title}
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontSize: "0.75rem",
+                      color: settings.textSecondaryColor,
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {announcement.about}
+                  </Typography>
+                </Box>
+              </Grow>
+            ))
+          ) : (
+            <Typography
+              sx={{
+                fontSize: "0.85rem",
+                color: settings.textSecondaryColor,
+                textAlign: "center",
+                py: 2,
+              }}
+            >
+              No announcements for this date
+            </Typography>
+          )}
+        </Box>
       </CardContent>
     </Card>
   );
@@ -1498,41 +1776,41 @@ const RecentActivity = ({ settings }) => {
   const activities = [
     {
       id: 1,
-      user: 'John Doe',
-      action: 'Processed payroll for June 2024',
-      time: '2 minutes ago',
+      user: "John Doe",
+      action: "Processed payroll for June 2024",
+      time: "2 minutes ago",
       icon: <PaymentsIcon />,
       color: settings.textPrimaryColor,
     },
     {
       id: 2,
-      user: 'Jane Smith',
-      action: 'Updated employee records',
-      time: '15 minutes ago',
+      user: "Jane Smith",
+      action: "Updated employee records",
+      time: "15 minutes ago",
       icon: <Person />,
       color: settings.textPrimaryColor,
     },
     {
       id: 3,
-      user: 'Robert Johnson',
-      action: 'Generated monthly attendance report',
-      time: '1 hour ago',
+      user: "Robert Johnson",
+      action: "Generated monthly attendance report",
+      time: "1 hour ago",
       icon: <Assessment />,
       color: settings.textPrimaryColor,
     },
     {
       id: 4,
-      user: 'Emily Davis',
-      action: 'New announcement posted: Company Holiday Schedule',
-      time: '2 hours ago',
+      user: "Emily Davis",
+      action: "New announcement posted: Company Holiday Schedule",
+      time: "2 hours ago",
       icon: <CampaignIcon />,
       color: settings.textPrimaryColor,
     },
     {
       id: 5,
-      user: 'System',
-      action: 'Database backup completed successfully',
-      time: '3 hours ago',
+      user: "System",
+      action: "Database backup completed successfully",
+      time: "3 hours ago",
       icon: <CheckCircleIcon />,
       color: settings.textPrimaryColor,
     },
@@ -1542,7 +1820,7 @@ const RecentActivity = ({ settings }) => {
     <Card
       sx={{
         background: settings.accentColor,
-        backdropFilter: 'blur(15px)',
+        backdropFilter: "blur(15px)",
         border: `1px solid ${settings.primaryColor}26`,
         borderRadius: 4,
         boxShadow: `0 15px 40px ${settings.primaryColor}33`,
@@ -1552,9 +1830,9 @@ const RecentActivity = ({ settings }) => {
       <CardContent
         sx={{
           p: 1.5,
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
         }}
       >
         <Typography
@@ -1563,26 +1841,26 @@ const RecentActivity = ({ settings }) => {
             fontWeight: 600,
             mb: 1.5,
             color: settings.textPrimaryColor,
-            fontSize: '0.85rem',
+            fontSize: "0.85rem",
           }}
         >
           Recent Activity
         </Typography>
-        <Box sx={{ flex: 1, overflowY: 'auto' }}>
+        <Box sx={{ flex: 1, overflowY: "auto" }}>
           {activities.map((activity, index) => (
             <Grow in timeout={300 + index * 50} key={activity.id}>
               <Box
                 sx={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
+                  display: "flex",
+                  alignItems: "flex-start",
                   gap: 1,
                   mb: 1.5,
                   p: 0.5,
                   borderRadius: 1,
-                  transition: 'all 0.2s',
-                  '&:hover': {
+                  transition: "all 0.2s",
+                  "&:hover": {
                     background: `${settings.primaryColor}0A`,
-                    transform: 'translateX(2px)',
+                    transform: "translateX(2px)",
                   },
                 }}
               >
@@ -1591,9 +1869,9 @@ const RecentActivity = ({ settings }) => {
                     width: 28,
                     height: 28,
                     borderRadius: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                     background: `${activity.color}1A`,
                     color: activity.color,
                     flexShrink: 0,
@@ -1604,22 +1882,22 @@ const RecentActivity = ({ settings }) => {
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography
                     sx={{
-                      fontSize: '0.7rem',
+                      fontSize: "0.7rem",
                       fontWeight: 600,
                       color: settings.textPrimaryColor,
                       lineHeight: 1.3,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      display: '-webkit-box',
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      display: "-webkit-box",
                       WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
+                      WebkitBoxOrient: "vertical",
                     }}
                   >
                     {activity.action}
                   </Typography>
                   <Typography
                     sx={{
-                      fontSize: '0.6rem',
+                      fontSize: "0.6rem",
                       color: settings.textSecondaryColor,
                       mt: 0.25,
                     }}
@@ -1639,7 +1917,7 @@ const RecentActivity = ({ settings }) => {
 const TaskList = ({ settings }) => {
   const [tasks, setTasks] = useState([]);
   const [addTaskOpen, setAddTaskOpen] = useState(false);
-  const [newTask, setNewTask] = useState({ title: '', priority: 'medium' });
+  const [newTask, setNewTask] = useState({ title: "", priority: "medium" });
   const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
@@ -1651,7 +1929,7 @@ const TaskList = ({ settings }) => {
         }
       })
       .catch((err) => {
-        console.error('Error fetching tasks:', err);
+        console.error("Error fetching tasks:", err);
         setTasks([]);
       });
   }, []);
@@ -1665,7 +1943,7 @@ const TaskList = ({ settings }) => {
         )
       );
     } catch (err) {
-      console.error('Error toggling task:', err);
+      console.error("Error toggling task:", err);
     }
   };
 
@@ -1674,12 +1952,12 @@ const TaskList = ({ settings }) => {
     try {
       const res = await axios.post(`${API_BASE_URL}/tasks`, newTask);
       setTasks([res.data, ...tasks]);
-      setNewTask({ title: '', priority: 'medium' });
+      setNewTask({ title: "", priority: "medium" });
       setAddTaskOpen(false);
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 2000);
     } catch (err) {
-      console.error('Error adding task:', err);
+      console.error("Error adding task:", err);
     }
   };
 
@@ -1688,18 +1966,18 @@ const TaskList = ({ settings }) => {
       await axios.delete(`${API_BASE_URL}/tasks/${id}`);
       setTasks(tasks.filter((task) => task.id !== id));
     } catch (err) {
-      console.error('Error deleting task:', err);
+      console.error("Error deleting task:", err);
     }
   };
 
   const getPriorityLabel = (priority) => {
     switch (priority) {
-      case 'high':
-        return 'Urgent';
-      case 'medium':
-        return 'Soon';
-      case 'low':
-        return 'Later';
+      case "high":
+        return "Urgent";
+      case "medium":
+        return "Soon";
+      case "low":
+        return "Later";
       default:
         return priority;
     }
@@ -1710,14 +1988,14 @@ const TaskList = ({ settings }) => {
       <Card
         sx={{
           background: settings.accentColor,
-          backdropFilter: 'blur(15px)',
+          backdropFilter: "blur(15px)",
           border: `1px solid ${settings.primaryColor}26`,
           borderRadius: 4,
           mb: 2,
           boxShadow: `0 15px 40px ${settings.primaryColor}33`,
           height: 270,
-          display: 'flex',
-          flexDirection: 'column',
+          display: "flex",
+          flexDirection: "column",
         }}
       >
         {showSuccess && (
@@ -1726,17 +2004,17 @@ const TaskList = ({ settings }) => {
         <CardContent
           sx={{
             p: 2,
-            display: 'flex',
-            flexDirection: 'column',
-            height: '100%',
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
           }}
         >
           {}
           <Box
             sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
               mb: 2,
             }}
           >
@@ -1745,7 +2023,7 @@ const TaskList = ({ settings }) => {
               sx={{
                 fontWeight: 600,
                 color: settings.textPrimaryColor,
-                fontSize: '0.95rem',
+                fontSize: "0.95rem",
               }}
             >
               Tasks
@@ -1755,8 +2033,8 @@ const TaskList = ({ settings }) => {
               onClick={() => setAddTaskOpen(true)}
               sx={{
                 bgcolor: settings.textPrimaryColor,
-                color: '#ffffff',
-                '&:hover': { bgcolor: settings.hoverColor },
+                color: "#ffffff",
+                "&:hover": { bgcolor: settings.hoverColor },
                 width: 28,
                 height: 28,
               }}
@@ -1769,20 +2047,20 @@ const TaskList = ({ settings }) => {
           <Box
             sx={{
               flex: 1,
-              overflowY: 'auto',
-              overflowX: 'hidden',
+              overflowY: "auto",
+              overflowX: "hidden",
               pr: 1,
-              '&::-webkit-scrollbar': {
-                width: '6px',
+              "&::-webkit-scrollbar": {
+                width: "6px",
               },
-              '&::-webkit-scrollbar-track': {
+              "&::-webkit-scrollbar-track": {
                 background: `${settings.primaryColor}1A`,
-                borderRadius: '3px',
+                borderRadius: "3px",
               },
-              '&::-webkit-scrollbar-thumb': {
+              "&::-webkit-scrollbar-thumb": {
                 background: `${settings.primaryColor}4D`,
-                borderRadius: '3px',
-                '&:hover': {
+                borderRadius: "3px",
+                "&:hover": {
                   background: `${settings.primaryColor}80`,
                 },
               },
@@ -1793,7 +2071,7 @@ const TaskList = ({ settings }) => {
                 tasks.map((task) => (
                   <ListItem
                     key={task.id}
-                    sx={{ p: 0, mb: 1, display: 'flex', alignItems: 'center' }}
+                    sx={{ p: 0, mb: 1, display: "flex", alignItems: "center" }}
                   >
                     <Checkbox
                       checked={task.completed}
@@ -1801,20 +2079,20 @@ const TaskList = ({ settings }) => {
                       size="small"
                       sx={{
                         color: settings.textPrimaryColor,
-                        '&.Mui-checked': { color: settings.textPrimaryColor },
+                        "&.Mui-checked": { color: settings.textPrimaryColor },
                       }}
                     />
                     <ListItemText
                       primary={task.title}
                       primaryTypographyProps={{
                         sx: {
-                          fontSize: '0.85rem',
+                          fontSize: "0.85rem",
                           color: task.completed
-                            ? settings.textSecondaryColor
+                            ? settings.textPrimaryColor
                             : settings.textPrimaryColor,
                           textDecoration: task.completed
-                            ? 'line-through'
-                            : 'none',
+                            ? "line-through"
+                            : "none",
                         },
                       }}
                     />
@@ -1822,20 +2100,20 @@ const TaskList = ({ settings }) => {
                       label={getPriorityLabel(task.priority)}
                       size="small"
                       sx={{
-                        fontSize: '0.65rem',
+                        fontSize: "0.65rem",
                         height: 20,
                         bgcolor:
-                          task.priority === 'high'
-                            ? '#f4433610'
-                            : task.priority === 'medium'
-                            ? '#ff980010'
-                            : '#4caf5010',
+                          task.priority === "high"
+                            ? "#f4433610"
+                            : task.priority === "medium"
+                            ? "#ff980010"
+                            : "#4caf5010",
                         color:
-                          task.priority === 'high'
-                            ? '#f44336'
-                            : task.priority === 'medium'
-                            ? '#ff9800'
-                            : '#4caf50',
+                          task.priority === "high"
+                            ? "#f44336"
+                            : task.priority === "medium"
+                            ? "#ff9800"
+                            : "#4caf50",
                         mr: 1,
                       }}
                     />
@@ -1865,7 +2143,7 @@ const TaskList = ({ settings }) => {
             borderRadius: 3,
             p: 2,
             bgcolor: settings.accentColor,
-            backdropFilter: 'blur(12px)',
+            backdropFilter: "blur(12px)",
             border: `1px solid ${settings.primaryColor}26`,
             boxShadow: `0 15px 40px ${settings.primaryColor}33`,
           },
@@ -1874,7 +2152,7 @@ const TaskList = ({ settings }) => {
         <DialogTitle
           sx={{
             pb: 1,
-            fontSize: '1rem',
+            fontSize: "1rem",
             fontWeight: 600,
             color: settings.textPrimaryColor,
           }}
@@ -1892,7 +2170,7 @@ const TaskList = ({ settings }) => {
             onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
             sx={{
               mb: 2,
-              '& .MuiOutlinedInput-root': {
+              "& .MuiOutlinedInput-root": {
                 borderRadius: 2,
               },
             }}
@@ -1903,39 +2181,39 @@ const TaskList = ({ settings }) => {
           >
             Priority
           </Typography>
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            {['low', 'medium', 'high'].map((priority) => (
+          <Box sx={{ display: "flex", gap: 1 }}>
+            {["low", "medium", "high"].map((priority) => (
               <Button
                 key={priority}
                 variant={
-                  newTask.priority === priority ? 'contained' : 'outlined'
+                  newTask.priority === priority ? "contained" : "outlined"
                 }
                 size="small"
                 onClick={() => setNewTask({ ...newTask, priority })}
                 sx={{
-                  textTransform: 'capitalize',
+                  textTransform: "capitalize",
                   borderRadius: 2,
                   borderColor:
-                    priority === 'high'
-                      ? '#f44336'
-                      : priority === 'medium'
-                      ? '#ff9800'
-                      : '#4caf50',
+                    priority === "high"
+                      ? "#f44336"
+                      : priority === "medium"
+                      ? "#ff9800"
+                      : "#4caf50",
                   color:
-                    priority === 'high'
-                      ? '#f44336'
-                      : priority === 'medium'
-                      ? '#ff9800'
-                      : '#4caf50',
+                    priority === "high"
+                      ? "#f44336"
+                      : priority === "medium"
+                      ? "#ff9800"
+                      : "#4caf50",
                   ...(newTask.priority === priority && {
                     bgcolor:
-                      priority === 'high'
-                        ? '#f44336'
-                        : priority === 'medium'
-                        ? '#ff9800'
-                        : '#4caf50',
-                    color: '#ffffff',
-                    '&:hover': {
+                      priority === "high"
+                        ? "#f44336"
+                        : priority === "medium"
+                        ? "#ff9800"
+                        : "#4caf50",
+                    color: "#ffffff",
+                    "&:hover": {
                       opacity: 0.9,
                     },
                   }),
@@ -1952,9 +2230,9 @@ const TaskList = ({ settings }) => {
             variant="contained"
             sx={{
               borderRadius: 2,
-              textTransform: 'none',
+              textTransform: "none",
               fontWeight: 500,
-              color: '#FFFFFF',
+              color: "#FFFFFF",
               bgcolor: settings.primaryColor,
             }}
           >
@@ -1967,8 +2245,8 @@ const TaskList = ({ settings }) => {
               borderRadius: 2,
               fontWeight: 600,
               bgcolor: settings.primaryColor,
-              textTransform: 'none',
-              '&:hover': { bgcolor: settings.hoverColor },
+              textTransform: "none",
+              "&:hover": { bgcolor: settings.hoverColor },
             }}
           >
             Add Task
@@ -1983,9 +2261,9 @@ const EventsList = ({ settings, employeeNumber }) => {
   const [events, setEvents] = useState([]);
   const [addEventOpen, setAddEventOpen] = useState(false);
   const [newEvent, setNewEvent] = useState({
-    date: new Date().toISOString().split('T')[0],
-    title: '',
-    description: '',
+    date: new Date().toISOString().split("T")[0],
+    title: "",
+    description: "",
   });
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -1999,7 +2277,7 @@ const EventsList = ({ settings, employeeNumber }) => {
         );
         setEvents(Array.isArray(res.data) ? res.data : []);
       } catch (err) {
-        console.error('Error fetching events:', err);
+        console.error("Error fetching events:", err);
         setEvents([]);
       }
     };
@@ -2014,21 +2292,21 @@ const EventsList = ({ settings, employeeNumber }) => {
         employee_number: employeeNumber,
         date: newEvent.date,
         title: newEvent.title,
-        description: newEvent.description || '',
+        description: newEvent.description || "",
       };
 
       const res = await axios.post(`${API_BASE_URL}/api/events`, eventData);
       setEvents([res.data, ...events]);
       setNewEvent({
-        date: new Date().toISOString().split('T')[0],
-        title: '',
-        description: '',
+        date: new Date().toISOString().split("T")[0],
+        title: "",
+        description: "",
       });
       setAddEventOpen(false);
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 2000);
     } catch (err) {
-      console.error('Error adding event:', err);
+      console.error("Error adding event:", err);
     }
   };
 
@@ -2037,17 +2315,17 @@ const EventsList = ({ settings, employeeNumber }) => {
       await axios.delete(`${API_BASE_URL}/api/events/${id}`);
       setEvents(events.filter((event) => event.id !== id));
     } catch (err) {
-      console.error('Error deleting event:', err);
+      console.error("Error deleting event:", err);
     }
   };
 
   const formatDate = (dateStr) => {
-    if (!dateStr) return '';
+    if (!dateStr) return "";
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
     });
   };
 
@@ -2061,25 +2339,25 @@ const EventsList = ({ settings, employeeNumber }) => {
   };
 
   const getEventStatus = (dateStr) => {
-    if (!dateStr) return 'past';
+    if (!dateStr) return "past";
     const eventDate = new Date(dateStr);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     eventDate.setHours(0, 0, 0, 0);
 
-    if (eventDate.getTime() === today.getTime()) return 'today';
-    if (eventDate > today) return 'upcoming';
-    return 'past';
+    if (eventDate.getTime() === today.getTime()) return "today";
+    if (eventDate > today) return "upcoming";
+    return "past";
   };
 
   const getStatusLabel = (status) => {
     switch (status) {
-      case 'upcoming':
-        return 'Upcoming';
-      case 'today':
-        return 'Today';
-      case 'past':
-        return 'Past';
+      case "upcoming":
+        return "Upcoming";
+      case "today":
+        return "Today";
+      case "past":
+        return "Past";
       default:
         return status;
     }
@@ -2090,14 +2368,14 @@ const EventsList = ({ settings, employeeNumber }) => {
       <Card
         sx={{
           background: settings.accentColor,
-          backdropFilter: 'blur(15px)',
+          backdropFilter: "blur(15px)",
           border: `1px solid ${settings.primaryColor}26`,
           borderRadius: 4,
           mb: 2,
           boxShadow: `0 15px 40px ${settings.primaryColor}33`,
           height: 270,
-          display: 'flex',
-          flexDirection: 'column',
+          display: "flex",
+          flexDirection: "column",
         }}
       >
         {showSuccess && (
@@ -2106,16 +2384,16 @@ const EventsList = ({ settings, employeeNumber }) => {
         <CardContent
           sx={{
             p: 2,
-            display: 'flex',
-            flexDirection: 'column',
-            height: '100%',
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
           }}
         >
           <Box
             sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
               mb: 2,
             }}
           >
@@ -2124,7 +2402,7 @@ const EventsList = ({ settings, employeeNumber }) => {
               sx={{
                 fontWeight: 600,
                 color: settings.textPrimaryColor,
-                fontSize: '0.95rem',
+                fontSize: "0.95rem",
               }}
             >
               Events
@@ -2134,8 +2412,8 @@ const EventsList = ({ settings, employeeNumber }) => {
               onClick={() => setAddEventOpen(true)}
               sx={{
                 bgcolor: settings.textPrimaryColor,
-                color: '#ffffff',
-                '&:hover': { bgcolor: settings.hoverColor },
+                color: "#ffffff",
+                "&:hover": { bgcolor: settings.hoverColor },
                 width: 28,
                 height: 28,
               }}
@@ -2147,20 +2425,20 @@ const EventsList = ({ settings, employeeNumber }) => {
           <Box
             sx={{
               flex: 1,
-              overflowY: 'auto',
-              overflowX: 'hidden',
+              overflowY: "auto",
+              overflowX: "hidden",
               pr: 1,
-              '&::-webkit-scrollbar': {
-                width: '6px',
+              "&::-webkit-scrollbar": {
+                width: "6px",
               },
-              '&::-webkit-scrollbar-track': {
+              "&::-webkit-scrollbar-track": {
                 background: `${settings.primaryColor}1A`,
-                borderRadius: '3px',
+                borderRadius: "3px",
               },
-              '&::-webkit-scrollbar-thumb': {
+              "&::-webkit-scrollbar-thumb": {
                 background: `${settings.primaryColor}4D`,
-                borderRadius: '3px',
-                '&:hover': {
+                borderRadius: "3px",
+                "&:hover": {
                   background: `${settings.primaryColor}80`,
                 },
               },
@@ -2176,19 +2454,19 @@ const EventsList = ({ settings, employeeNumber }) => {
                       sx={{
                         p: 0,
                         mb: 1,
-                        display: 'flex',
-                        alignItems: 'center',
+                        display: "flex",
+                        alignItems: "center",
                       }}
                     >
                       <Event
                         sx={{
                           fontSize: 18,
                           color:
-                            status === 'upcoming'
-                              ? '#4caf50'
-                              : status === 'today'
-                              ? '#ff9800'
-                              : settings.textSecondaryColor,
+                            status === "upcoming"
+                              ? "#4caf50"
+                              : status === "today"
+                              ? "#ff9800"
+                              : settings.textPrimaryColor,
                           mr: 1,
                           flexShrink: 0,
                         }}
@@ -2198,14 +2476,14 @@ const EventsList = ({ settings, employeeNumber }) => {
                         secondary={formatDate(event.date)}
                         primaryTypographyProps={{
                           sx: {
-                            fontSize: '0.85rem',
+                            fontSize: "0.85rem",
                             color: settings.textPrimaryColor,
                           },
                         }}
                         secondaryTypographyProps={{
                           sx: {
-                            fontSize: '0.7rem',
-                            color: settings.textSecondaryColor,
+                            fontSize: "0.7rem",
+                            color: settings.textPrimaryColor,
                           },
                         }}
                       />
@@ -2213,20 +2491,20 @@ const EventsList = ({ settings, employeeNumber }) => {
                         label={getStatusLabel(status)}
                         size="small"
                         sx={{
-                          fontSize: '0.65rem',
+                          fontSize: "0.65rem",
                           height: 20,
                           bgcolor:
-                            status === 'upcoming'
-                              ? '#4caf5010'
-                              : status === 'today'
-                              ? '#ff980010'
-                              : '#f4433610',
+                            status === "upcoming"
+                              ? "#4caf5010"
+                              : status === "today"
+                              ? "#ff980010"
+                              : "#f4433610",
                           color:
-                            status === 'upcoming'
-                              ? '#4caf50'
-                              : status === 'today'
-                              ? '#ff9800'
-                              : '#f44336',
+                            status === "upcoming"
+                              ? "#4caf50"
+                              : status === "today"
+                              ? "#ff9800"
+                              : "#f44336",
                           mr: 1,
                         }}
                       />
@@ -2243,9 +2521,9 @@ const EventsList = ({ settings, employeeNumber }) => {
               ) : (
                 <Typography
                   sx={{
-                    fontSize: '0.85rem',
+                    fontSize: "0.85rem",
                     color: settings.textSecondaryColor,
-                    textAlign: 'center',
+                    textAlign: "center",
                     py: 2,
                   }}
                 >
@@ -2267,7 +2545,7 @@ const EventsList = ({ settings, employeeNumber }) => {
             borderRadius: 3,
             p: 2,
             bgcolor: settings.accentColor,
-            backdropFilter: 'blur(12px)',
+            backdropFilter: "blur(12px)",
             border: `1px solid ${settings.primaryColor}26`,
             boxShadow: `0 15px 40px ${settings.primaryColor}33`,
           },
@@ -2276,7 +2554,7 @@ const EventsList = ({ settings, employeeNumber }) => {
         <DialogTitle
           sx={{
             pb: 1,
-            fontSize: '1rem',
+            fontSize: "1rem",
             fontWeight: 600,
             color: settings.textPrimaryColor,
           }}
@@ -2296,7 +2574,7 @@ const EventsList = ({ settings, employeeNumber }) => {
             }
             sx={{
               mb: 2,
-              '& .MuiOutlinedInput-root': {
+              "& .MuiOutlinedInput-root": {
                 borderRadius: 2,
               },
             }}
@@ -2314,7 +2592,7 @@ const EventsList = ({ settings, employeeNumber }) => {
             }}
             sx={{
               mb: 2,
-              '& .MuiOutlinedInput-root': {
+              "& .MuiOutlinedInput-root": {
                 borderRadius: 2,
               },
             }}
@@ -2332,7 +2610,7 @@ const EventsList = ({ settings, employeeNumber }) => {
             }
             sx={{
               mb: 2,
-              '& .MuiOutlinedInput-root': {
+              "& .MuiOutlinedInput-root": {
                 borderRadius: 2,
               },
             }}
@@ -2344,9 +2622,9 @@ const EventsList = ({ settings, employeeNumber }) => {
             variant="contained"
             sx={{
               borderRadius: 2,
-              textTransform: 'none',
+              textTransform: "none",
               fontWeight: 500,
-              color: '#FFFFFF',
+              color: "#FFFFFF",
               bgcolor: settings.primaryColor,
             }}
           >
@@ -2361,11 +2639,11 @@ const EventsList = ({ settings, employeeNumber }) => {
               borderRadius: 2,
               fontWeight: 600,
               bgcolor: settings.primaryColor,
-              textTransform: 'none',
-              '&:hover': { bgcolor: settings.hoverColor },
-              '&:disabled': {
+              textTransform: "none",
+              "&:hover": { bgcolor: settings.hoverColor },
+              "&:disabled": {
                 bgcolor: `${settings.primaryColor}66`,
-                color: '#ffffff',
+                color: "#ffffff",
               },
             }}
           >
@@ -2377,78 +2655,92 @@ const EventsList = ({ settings, employeeNumber }) => {
   );
 };
 
-const QuickActions = ({ settings }) => (
-  <Card
-    sx={{
-      background: settings.accentColor,
-      backdropFilter: 'blur(15px)',
-      border: `1px solid ${settings.primaryColor}26`,
-      borderRadius: 4,
-      boxShadow: `0 15px 40px ${settings.primaryColor}33`,
-      height: 260,
-    }}
-  >
-    <CardContent
-      sx={{ p: 1.5, height: '100%', display: 'flex', flexDirection: 'column' }}
+// Modified QuickActions component to filter out Audit Logs for non-superadmins
+const QuickActions = ({ settings, userRole }) => {
+  const isSuperAdmin = userRole === "superadmin";
+
+  // Filter out Audit Logs if user is not a superadmin
+  const filteredActions = QUICK_ACTIONS(settings).filter(
+    (action) => !action.restricted || isSuperAdmin
+  );
+
+  return (
+    <Card
+      sx={{
+        background: settings.accentColor,
+        backdropFilter: "blur(15px)",
+        border: `1px solid ${settings.primaryColor}26`,
+        borderRadius: 4,
+        boxShadow: `0 15px 40px ${settings.primaryColor}33`,
+        height: 260,
+      }}
     >
-      <Typography
-        variant="h6"
+      <CardContent
         sx={{
-          fontWeight: 600,
-          mb: 1.5,
-          color: settings.textPrimaryColor,
-          fontSize: '0.85rem',
+          p: 1.5,
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
         }}
       >
-        Admin Panel
-      </Typography>
-      <Grid container spacing={1}>
-        {QUICK_ACTIONS(settings).map((item, i) => (
-          <Grid item xs={4} key={i}>
-            <Grow in timeout={400 + i * 50}>
-              <Link to={item.link} style={{ textDecoration: 'none' }}>
-                <Box
-                  sx={{
-                    p: 1,
-                    borderRadius: 1.5,
-                    background: `${settings.primaryColor}0A`,
-                    border: `1px solid ${settings.primaryColor}26`,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: 0.5,
-                    transition: 'all 0.3s',
-                    cursor: 'pointer',
-                    height: 43,
-                    '&:hover': {
-                      background: `${settings.primaryColor}1A`,
-                      transform: 'translateY(-2px)',
-                      boxShadow: `0 4px 12px ${settings.primaryColor}33`,
-                    },
-                  }}
-                >
-                  <Box sx={{ color: settings.textPrimaryColor }}>
-                    {React.cloneElement(item.icon, { sx: { fontSize: 20 } })}
-                  </Box>
-                  <Typography
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: 600,
+            mb: 1.5,
+            color: settings.textPrimaryColor,
+            fontSize: "0.85rem",
+          }}
+        >
+          Admin Panel
+        </Typography>
+        <Grid container spacing={1}>
+          {filteredActions.map((item, i) => (
+            <Grid item xs={4} key={i}>
+              <Grow in timeout={400 + i * 50}>
+                <Link to={item.link} style={{ textDecoration: "none" }}>
+                  <Box
                     sx={{
-                      fontSize: '0.6rem',
-                      fontWeight: 600,
-                      color: settings.textPrimaryColor,
-                      textAlign: 'center',
+                      p: 1,
+                      borderRadius: 1.5,
+                      background: `${settings.primaryColor}0A`,
+                      border: `1px solid ${settings.primaryColor}26`,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: 0.5,
+                      transition: "all 0.3s",
+                      cursor: "pointer",
+                      "&:hover": {
+                        background: `${settings.primaryColor}1A`,
+                        transform: "translateY(-2px)",
+                        boxShadow: `0 4px 12px ${settings.primaryColor}33`,
+                      },
                     }}
                   >
-                    {item.label}
-                  </Typography>
-                </Box>
-              </Link>
-            </Grow>
-          </Grid>
-        ))}
-      </Grid>
-    </CardContent>
-  </Card>
-);
+                    <Box sx={{ color: settings.textPrimaryColor }}>
+                      {React.cloneElement(item.icon, { sx: { fontSize: 20 } })}
+                    </Box>
+                    <Typography
+                      sx={{
+                        fontSize: "0.6rem",
+                        fontWeight: 600,
+                        color: settings.textPrimaryColor,
+                        textAlign: "center",
+                      }}
+                    >
+                      {item.label}
+                    </Typography>
+                  </Box>
+                </Link>
+              </Grow>
+            </Grid>
+          ))}
+        </Grid>
+      </CardContent>
+    </Card>
+  );
+};
 
 const UpgradeCard = ({ settings }) => (
   <Card
@@ -2457,24 +2749,24 @@ const UpgradeCard = ({ settings }) => (
       borderRadius: 4,
       p: 2,
       mt: 2,
-      color: '#ffffff',
-      position: 'relative',
-      overflow: 'hidden',
+      color: "#ffffff",
+      position: "relative",
+      overflow: "hidden",
     }}
   >
-    <Box sx={{ position: 'absolute', top: -20, right: -20, opacity: 0.1 }}>
+    <Box sx={{ position: "absolute", top: -20, right: -20, opacity: 0.1 }}>
       <Lock sx={{ fontSize: 120 }} />
     </Box>
-    <Box sx={{ position: 'relative', zIndex: 1 }}>
+    <Box sx={{ position: "relative", zIndex: 1 }}>
       <Typography
         variant="h6"
-        sx={{ fontWeight: 700, mb: 1, fontSize: '0.95rem' }}
+        sx={{ fontWeight: 700, mb: 1, fontSize: "0.95rem" }}
       >
         HR Analytics Pro
       </Typography>
       <Typography
         variant="body2"
-        sx={{ mb: 2, fontSize: '0.75rem', opacity: 0.9 }}
+        sx={{ mb: 2, fontSize: "0.75rem", opacity: 0.9 }}
       >
         Unlock advanced payroll analytics and reporting
       </Typography>
@@ -2483,15 +2775,15 @@ const UpgradeCard = ({ settings }) => (
         size="small"
         endIcon={<Upgrade />}
         sx={{
-          background: '#ffffff',
+          background: "#ffffff",
           color: settings.textPrimaryColor,
           fontWeight: 600,
-          fontSize: '0.75rem',
+          fontSize: "0.75rem",
           px: 2,
           py: 0.5,
-          '&:hover': {
-            background: '#f5f5f5',
-            transform: 'translateY(-1px)',
+          "&:hover": {
+            background: "#f5f5f5",
+            transform: "translateY(-1px)",
           },
         }}
       >
@@ -2506,25 +2798,25 @@ const LogoutDialog = ({ open, settings }) => (
     open={open}
     fullScreen
     PaperProps={{
-      sx: { backgroundColor: 'transparent', boxShadow: 'none' },
+      sx: { backgroundColor: "transparent", boxShadow: "none" },
     }}
     BackdropProps={{
       sx: {
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-        backdropFilter: 'blur(4px)',
+        backgroundColor: "rgba(0, 0, 0, 0.6)",
+        backdropFilter: "blur(4px)",
       },
     }}
   >
     <Box
       sx={{
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexDirection: 'column',
-        overflow: 'hidden',
-        position: 'relative',
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexDirection: "column",
+        overflow: "hidden",
+        position: "relative",
       }}
     >
       {[0, 1, 2, 3].map((i) => (
@@ -2533,35 +2825,35 @@ const LogoutDialog = ({ open, settings }) => (
           sx={{
             width: 20,
             height: 20,
-            borderRadius: '50%',
+            borderRadius: "50%",
             background:
               i % 2 === 0 ? settings.primaryColor : settings.accentColor,
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transformOrigin: '-60px 0px',
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transformOrigin: "-60px 0px",
             animation: `orbit${i} ${3 + i}s linear infinite`,
             boxShadow: `0 0 15px ${settings.primaryColor}, 0 0 8px ${settings.accentColor}`,
           }}
         />
       ))}
 
-      <Box sx={{ position: 'relative', width: 120, height: 120 }}>
+      <Box sx={{ position: "relative", width: 120, height: 120 }}>
         <Box
           sx={{
             width: 120,
             height: 120,
-            borderRadius: '50%',
+            borderRadius: "50%",
             background: `radial-gradient(circle at 30% 30%, ${settings.secondaryColor}, ${settings.primaryColor})`,
             boxShadow: `0 0 40px ${settings.primaryColor}, 0 0 80px ${settings.primaryColor}`,
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            animation: 'floatSphere 2s ease-in-out infinite alternate',
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            animation: "floatSphere 2s ease-in-out infinite alternate",
           }}
         >
           <Box
@@ -2571,9 +2863,9 @@ const LogoutDialog = ({ open, settings }) => (
             sx={{
               width: 60,
               height: 60,
-              borderRadius: '50%',
+              borderRadius: "50%",
               boxShadow: `0 0 20px ${settings.primaryColor}, 0 0 10px ${settings.accentColor}`,
-              animation: 'heartbeat 1s infinite',
+              animation: "heartbeat 1s infinite",
             }}
           />
         </Box>
@@ -2583,10 +2875,10 @@ const LogoutDialog = ({ open, settings }) => (
         variant="h6"
         sx={{
           mt: 3,
-          fontWeight: 'bold',
+          fontWeight: "bold",
           color: settings.accentColor,
           textShadow: `0 0 10px ${settings.primaryColor}`,
-          animation: 'pulse 1.5s infinite',
+          animation: "pulse 1.5s infinite",
         }}
       >
         Signing out...
@@ -2645,6 +2937,12 @@ const AdminHome = () => {
   } = useCarousel(announcements);
   const currentTime = useTime();
 
+  // Add user role state
+  const [userRole, setUserRole] = useState(null);
+
+  // Check if user is superadmin
+  const isSuperAdmin = userRole === "superadmin";
+
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [openModal, setOpenModal] = useState(false);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
@@ -2656,8 +2954,19 @@ const AdminHome = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [announcementDetails, setAnnouncementDetails] = useState({}); // Store announcement details by notification id
 
+  // Add state for selected date in calendar
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
+
   const openMenu = Boolean(anchorEl);
   const navigate = useNavigate();
+
+  // Get user role on component mount
+  useEffect(() => {
+    const role = getUserRole();
+    setUserRole(role);
+  }, []);
 
   const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
@@ -2675,8 +2984,8 @@ const AdminHome = () => {
   const handleLogout = () => {
     setLogoutOpen(true);
     setTimeout(() => {
-      localStorage.removeItem('token');
-      window.location.href = '/';
+      localStorage.removeItem("token");
+      window.location.href = "/";
     }, 500);
   };
 
@@ -2691,7 +3000,7 @@ const AdminHome = () => {
   useEffect(() => {
     const fetchNotifications = async () => {
       if (!employeeNumber) {
-        console.log('No employeeNumber, skipping notification fetch');
+        console.log("No employeeNumber, skipping notification fetch");
         return;
       }
 
@@ -2700,7 +3009,7 @@ const AdminHome = () => {
       if (!empNum) return;
 
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem("token");
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
         console.log(`Fetching notifications for employeeNumber: ${empNum}`);
@@ -2712,7 +3021,7 @@ const AdminHome = () => {
           ),
         ]);
 
-        // Filter notifications to ensure they belong to the logged-in employee
+        // Filter notifications to ensure they belong to logged-in employee
         const filteredNotifications = Array.isArray(notifRes.data)
           ? notifRes.data.filter(
               (notif) => String(notif.employeeNumber).trim() === empNum
@@ -2725,7 +3034,7 @@ const AdminHome = () => {
         setNotifications(filteredNotifications);
         setUnreadCount(unreadRes.data?.count || 0);
       } catch (err) {
-        console.error('Error fetching notifications:', err);
+        console.error("Error fetching notifications:", err);
         setNotifications([]);
         setUnreadCount(0);
       }
@@ -2741,7 +3050,7 @@ const AdminHome = () => {
     // Mark as read
     if (notification.read_status === 0) {
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem("token");
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
         await axios.put(
           `${API_BASE_URL}/api/notifications/${notification.id}/read`,
@@ -2756,31 +3065,32 @@ const AdminHome = () => {
         );
         setUnreadCount((prev) => Math.max(0, prev - 1));
       } catch (err) {
-        console.error('Error marking notification as read:', err);
+        console.error("Error marking notification as read:", err);
       }
     }
 
     // Handle based on notification type
     if (
-      notification.notification_type === 'payslip' ||
-      (notification.action_link && notification.action_link.includes('payslip'))
+      notification.notification_type === "payslip" ||
+      (notification.action_link && notification.action_link.includes("payslip"))
     ) {
       setNotifModalOpen(false);
-      navigate('/payslip');
+      navigate("/payslip");
     } else if (
-      notification.notification_type === 'contact' ||
-      (notification.action_link && notification.action_link.includes('settings'))
-    ) {
-      setNotifModalOpen(false);
-      navigate('/settings');
-    } else if (
-      notification.notification_type === 'announcement' ||
+      notification.notification_type === "contact" ||
       (notification.action_link &&
-        notification.action_link.includes('announcement'))
+        notification.action_link.includes("settings"))
     ) {
-      // Fetch the announcement details
+      setNotifModalOpen(false);
+      navigate("/settings");
+    } else if (
+      notification.notification_type === "announcement" ||
+      (notification.action_link &&
+        notification.action_link.includes("announcement"))
+    ) {
+      // Fetch announcement details
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem("token");
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
         const annRes = await axios.get(`${API_BASE_URL}/api/announcements`, {
           headers,
@@ -2819,7 +3129,7 @@ const AdminHome = () => {
           setNotifModalOpen(false);
         }
       } catch (err) {
-        console.error('Error fetching announcement:', err);
+        console.error("Error fetching announcement:", err);
         setNotifModalOpen(false);
       }
     } else if (notification.action_link) {
@@ -2831,29 +3141,29 @@ const AdminHome = () => {
   return (
     <Box
       sx={{
-        minHeight: '90%',
+        minHeight: "90%",
         py: 2,
-        borderRadius: '14px',
+        borderRadius: "14px",
         mt: -2,
-        width: '100vw',
-        mx: 'auto',
-        maxWidth: '100%',
-        overflow: 'hidden',
-        position: 'relative',
-        left: '50%',
-        transform: 'translateX(-50%)',
+        width: "100vw",
+        mx: "auto",
+        maxWidth: "100%",
+        overflow: "hidden",
+        position: "relative",
+        left: "50%",
+        transform: "translateX(-50%)",
       }}
     >
-      <Box sx={{ pt: 4, px: 6, mx: 'auto', maxWidth: '1600px' }}>
+      <Box sx={{ pt: 4, px: 6, mx: "auto", maxWidth: "1600px" }}>
         <Grow in timeout={300}>
           <Box
             sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
               mb: 3,
               background: settings.accentColor,
-              backdropFilter: 'blur(15px)',
+              backdropFilter: "blur(15px)",
               borderRadius: 4,
               p: 2,
               border: `1px solid ${settings.secondaryColor}`,
@@ -2876,34 +3186,34 @@ const AdminHome = () => {
                 sx={{
                   color: settings.textPrimaryColor,
                   mt: 0.25,
-                  display: 'flex',
-                  alignItems: 'center',
+                  display: "flex",
+                  alignItems: "center",
                   gap: 0.5,
                 }}
               >
                 <AccessTimeIcon sx={{ fontSize: 14 }} />
-                {currentTime.toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  month: 'long',
-                  day: 'numeric',
-                  year: 'numeric',
+                {currentTime.toLocaleDateString("en-US", {
+                  weekday: "long",
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
                 })}
-                <span style={{ marginLeft: '8px' }}>
-                  {currentTime.toLocaleTimeString('en-US', {
-                    hour: '2-digit',
-                    minute: '2-digit',
+                <span style={{ marginLeft: "8px" }}>
+                  {currentTime.toLocaleTimeString("en-US", {
+                    hour: "2-digit",
+                    minute: "2-digit",
                   })}
                 </span>
               </Typography>
             </Box>
 
-            <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+            <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
               <Tooltip title="Refresh">
                 <IconButton
                   size="small"
                   sx={{
                     bgcolor: `${settings.primaryColor}1A`,
-                    '&:hover': { bgcolor: `${settings.primaryColor}33` },
+                    "&:hover": { bgcolor: `${settings.primaryColor}33` },
                     color: settings.textPrimaryColor,
                   }}
                   onClick={() => window.location.reload()}
@@ -2917,7 +3227,7 @@ const AdminHome = () => {
                   size="small"
                   sx={{
                     bgcolor: `${settings.primaryColor}1A`,
-                    '&:hover': { bgcolor: `${settings.primaryColor}33` },
+                    "&:hover": { bgcolor: `${settings.primaryColor}33` },
                     color: settings.textPrimaryColor,
                   }}
                   onClick={async () => {
@@ -2925,7 +3235,7 @@ const AdminHome = () => {
                     if (employeeNumber) {
                       try {
                         const empNum = String(employeeNumber).trim();
-                        const token = localStorage.getItem('token');
+                        const token = localStorage.getItem("token");
                         const headers = token
                           ? { Authorization: `Bearer ${token}` }
                           : {};
@@ -2940,7 +3250,7 @@ const AdminHome = () => {
                           ),
                         ]);
 
-                        // Filter notifications to ensure they belong to the logged-in employee
+                        // Filter notifications to ensure they belong to logged-in employee
                         const filteredNotifications = Array.isArray(
                           notifRes.data
                         )
@@ -2953,7 +3263,7 @@ const AdminHome = () => {
                         setNotifications(filteredNotifications);
                         setUnreadCount(unreadRes.data?.count || 0);
                       } catch (err) {
-                        console.error('Error fetching notifications:', err);
+                        console.error("Error fetching notifications:", err);
                       }
                     }
                     setNotifModalOpen(true);
@@ -2967,18 +3277,18 @@ const AdminHome = () => {
 
               <Box
                 sx={{
-                  position: 'relative',
-                  '&::before': {
+                  position: "relative",
+                  "&::before": {
                     content: '""',
-                    position: 'absolute',
+                    position: "absolute",
                     inset: -2,
-                    borderRadius: '50%',
-                    padding: '2px',
+                    borderRadius: "50%",
+                    padding: "2px",
                     background: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
                     WebkitMask:
-                      'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                    WebkitMaskComposite: 'xor',
-                    maskComposite: 'exclude',
+                      "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+                    WebkitMaskComposite: "xor",
+                    maskComposite: "exclude",
                   },
                 }}
               >
@@ -2999,8 +3309,8 @@ const AdminHome = () => {
                 anchorEl={anchorEl}
                 open={openMenu}
                 onClose={handleMenuClose}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                transformOrigin={{ vertical: "top", horizontal: "right" }}
                 PaperProps={{
                   sx: {
                     borderRadius: 2,
@@ -3008,10 +3318,10 @@ const AdminHome = () => {
                     backgroundColor: settings.accentColor,
                     border: `1px solid ${settings.primaryColor}26`,
                     boxShadow: `0 15px 40px ${settings.primaryColor}33`,
-                    '& .MuiMenuItem-root': {
-                      fontSize: '0.875rem',
+                    "& .MuiMenuItem-root": {
+                      fontSize: "0.875rem",
                       color: settings.textPrimaryColor,
-                      '&:hover': {
+                      "&:hover": {
                         background: `${settings.primaryColor}0A`,
                       },
                     },
@@ -3021,7 +3331,7 @@ const AdminHome = () => {
                 <MenuItem
                   onClick={() => {
                     handleMenuClose();
-                    navigate('/profile');
+                    navigate("/profile");
                   }}
                 >
                   <AccountCircle
@@ -3030,13 +3340,13 @@ const AdminHome = () => {
                       fontSize: 20,
                       color: settings.textPrimaryColor,
                     }}
-                  />{' '}
+                  />{" "}
                   Profile
                 </MenuItem>
                 <MenuItem
                   onClick={() => {
                     handleMenuClose();
-                    navigate('/settings');
+                    navigate("/settings");
                   }}
                 >
                   <Settings
@@ -3045,13 +3355,13 @@ const AdminHome = () => {
                       fontSize: 20,
                       color: settings.textPrimaryColor,
                     }}
-                  />{' '}
+                  />{" "}
                   Settings
                 </MenuItem>
                 <MenuItem
                   onClick={() => {
                     handleMenuClose();
-                    navigate('/faqs');
+                    navigate("/faqs");
                   }}
                 >
                   <HelpOutline
@@ -3060,13 +3370,13 @@ const AdminHome = () => {
                       fontSize: 20,
                       color: settings.textPrimaryColor,
                     }}
-                  />{' '}
+                  />{" "}
                   FAQs
                 </MenuItem>
                 <MenuItem
                   onClick={() => {
                     handleMenuClose();
-                    navigate('/privacy-policy');
+                    navigate("/privacy-policy");
                   }}
                 >
                   <PrivacyTip
@@ -3075,7 +3385,7 @@ const AdminHome = () => {
                       fontSize: 20,
                       color: settings.textPrimaryColor,
                     }}
-                  />{' '}
+                  />{" "}
                   Privacy Policy
                 </MenuItem>
                 <Divider sx={{ borderColor: `${settings.primaryColor}26` }} />
@@ -3091,7 +3401,7 @@ const AdminHome = () => {
                       fontSize: 20,
                       color: settings.textPrimaryColor,
                     }}
-                  />{' '}
+                  />{" "}
                   Sign Out
                 </MenuItem>
               </Menu>
@@ -3102,9 +3412,9 @@ const AdminHome = () => {
         {}
         <Box
           sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            flexWrap: 'nowrap',
+            display: "flex",
+            justifyContent: "space-between",
+            flexWrap: "nowrap",
             gap: 1,
             pb: 3,
           }}
@@ -3113,9 +3423,9 @@ const AdminHome = () => {
             <Box
               key={card.label}
               sx={{
-                flex: '1 1 0',
-                maxWidth: '19%',
-                minWidth: '140px',
+                flex: "1 1 0",
+                maxWidth: "19%",
+                minWidth: "140px",
               }}
             >
               <CompactStatCard
@@ -3152,11 +3462,13 @@ const AdminHome = () => {
                   calendarDate={calendarDate}
                   setCalendarDate={setCalendarDate}
                   holidays={holidays}
+                  announcements={announcements} // Pass announcements to the calendar
                   settings={settings}
+                  setSelectedDate={setSelectedDate} // Pass setSelectedDate to the calendar
                 />
               </Grid>
               <Grid item xs={6}>
-                <QuickActions settings={settings} />
+                <QuickActions settings={settings} userRole={userRole} />
               </Grid>
             </Grid>
             <Grid container spacing={2}>
@@ -3178,63 +3490,63 @@ const AdminHome = () => {
         <Fade in={openModal}>
           <Box
             sx={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: '90%',
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: "90%",
               maxWidth: 800,
               bgcolor: settings.accentColor,
-              backdropFilter: 'blur(40px)',
+              backdropFilter: "blur(40px)",
               border: `1px solid ${settings.primaryColor}26`,
               boxShadow: `0 24px 64px ${settings.primaryColor}4D`,
               borderRadius: 4,
-              overflow: 'hidden',
-              maxHeight: '90vh',
-              display: 'flex',
-              flexDirection: 'column',
+              overflow: "hidden",
+              maxHeight: "90vh",
+              display: "flex",
+              flexDirection: "column",
             }}
           >
             {selectedAnnouncement && (
               <>
-                <Box sx={{ position: 'relative' }}>
+                <Box sx={{ position: "relative" }}>
                   {selectedAnnouncement.image && (
                     <Box
                       component="img"
                       src={`${API_BASE_URL}${selectedAnnouncement.image}`}
                       alt={selectedAnnouncement.title}
-                      sx={{ width: '100%', height: 350, objectFit: 'cover' }}
+                      sx={{ width: "100%", height: 350, objectFit: "cover" }}
                     />
                   )}
                   <Box
                     sx={{
-                      position: 'absolute',
+                      position: "absolute",
                       inset: 0,
                       background:
-                        'linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0, 0, 0, 0.7) 100%)',
+                        "linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0, 0, 0, 0.7) 100%)",
                     }}
                   />
                   <IconButton
                     onClick={handleCloseModal}
                     sx={{
-                      position: 'absolute',
+                      position: "absolute",
                       top: 20,
                       right: 20,
                       bgcolor: `${settings.primaryColor}4D`,
-                      backdropFilter: 'blur(10px)',
+                      backdropFilter: "blur(10px)",
                       border: `1px solid ${settings.primaryColor}26`,
-                      color: '#ffffff',
-                      '&:hover': {
+                      color: "#ffffff",
+                      "&:hover": {
                         bgcolor: `${settings.primaryColor}80`,
-                        transform: 'rotate(90deg)',
+                        transform: "rotate(90deg)",
                       },
-                      transition: 'all 0.3s',
+                      transition: "all 0.3s",
                     }}
                   >
                     <CloseIcon />
                   </IconButton>
                 </Box>
-                <Box sx={{ p: 4, overflowY: 'auto' }}>
+                <Box sx={{ p: 4, overflowY: "auto" }}>
                   <Typography
                     variant="h3"
                     sx={{
@@ -3256,8 +3568,7 @@ const AdminHome = () => {
                     ).toLocaleDateString()}
                     sx={{
                       mb: 3,
-                      bgcolor: `${settings.primaryColor}4D`,
-                      backdropFilter: 'blur(10px)',
+                      bgcolor: `${settings.primaryColor}1A`,
                       color: settings.textPrimaryColor,
                       border: `1px solid ${settings.primaryColor}26`,
                     }}
@@ -3267,7 +3578,7 @@ const AdminHome = () => {
                     sx={{
                       color: settings.textPrimaryColor,
                       lineHeight: 1.8,
-                      fontSize: '1.05rem',
+                      fontSize: "1.05rem",
                     }}
                   >
                     {selectedAnnouncement.about}
@@ -3283,27 +3594,27 @@ const AdminHome = () => {
         <Fade in={notifModalOpen}>
           <Box
             sx={{
-              position: 'absolute',
+              position: "absolute",
               top: 100,
               right: 24,
               width: 420,
-              maxWidth: '90vw',
+              maxWidth: "90vw",
               bgcolor: settings.accentColor,
-              backdropFilter: 'blur(40px)',
+              backdropFilter: "blur(40px)",
               border: `1px solid ${settings.primaryColor}26`,
               boxShadow: `0 24px 64px ${settings.primaryColor}4D`,
               borderRadius: 4,
-              overflow: 'hidden',
-              maxHeight: 'calc(100vh - 140px)',
+              overflow: "hidden",
+              maxHeight: "calc(100vh - 140px)",
             }}
           >
             <Box
               sx={{
                 p: 3,
                 borderBottom: `1px solid ${settings.primaryColor}26`,
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
                 background: `linear-gradient(135deg, ${settings.primaryColor}1A 0%, ${settings.secondaryColor}0D 100%)`,
               }}
             >
@@ -3318,30 +3629,30 @@ const AdminHome = () => {
                 onClick={() => setNotifModalOpen(false)}
                 sx={{
                   color: settings.textPrimaryColor,
-                  '&:hover': {
+                  "&:hover": {
                     bgcolor: `${settings.primaryColor}1A`,
-                    transform: 'rotate(90deg)',
+                    transform: "rotate(90deg)",
                   },
-                  transition: 'all 0.3s',
+                  transition: "all 0.3s",
                 }}
               >
                 <CloseIcon />
               </IconButton>
             </Box>
             <Box
-              sx={{ maxHeight: 'calc(100vh - 250px)', overflowY: 'auto', p: 2 }}
+              sx={{ maxHeight: "calc(100vh - 250px)", overflowY: "auto", p: 2 }}
             >
               {/* System Notifications (Payslip, Announcements, etc.) */}
               {Array.isArray(notifications) &&
                 notifications.slice(0, 10).map((notif, idx) => {
                   const announcement =
-                    notif.notification_type === 'announcement'
+                    notif.notification_type === "announcement"
                       ? announcementDetails[notif.id]
                       : null;
 
                   // For announcement notifications, show full image with overlaid title
                   if (
-                    notif.notification_type === 'announcement' &&
+                    notif.notification_type === "announcement" &&
                     announcement
                   ) {
                     return (
@@ -3354,15 +3665,15 @@ const AdminHome = () => {
                           sx={{
                             mb: 2,
                             borderRadius: 3,
-                            overflow: 'hidden',
-                            cursor: 'pointer',
-                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            overflow: "hidden",
+                            cursor: "pointer",
+                            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                             boxShadow: `0 2px 8px ${settings.primaryColor}33`,
                             opacity: notif.read_status === 1 ? 0.7 : 1,
-                            position: 'relative',
+                            position: "relative",
                             height: 200,
-                            '&:hover': {
-                              transform: 'translateY(-4px)',
+                            "&:hover": {
+                              transform: "translateY(-4px)",
                               boxShadow: `0 8px 24px ${settings.primaryColor}4D`,
                               opacity: 1,
                             },
@@ -3374,46 +3685,46 @@ const AdminHome = () => {
                             src={
                               announcement.image
                                 ? `${API_BASE_URL}${announcement.image}`
-                                : '/api/placeholder/400/200'
+                                : "/api/placeholder/400/200"
                             }
                             alt={announcement.title}
                             sx={{
-                              width: '100%',
-                              height: '100%',
-                              objectFit: 'cover',
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
                             }}
                           />
                           <Box
                             sx={{
-                              position: 'absolute',
+                              position: "absolute",
                               bottom: 0,
                               left: 0,
                               right: 0,
                               background:
-                                'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 50%, transparent 100%)',
+                                "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 50%, transparent 100%)",
                               p: 2,
                             }}
                           >
                             <Box
                               sx={{
-                                display: 'flex',
-                                alignItems: 'center',
+                                display: "flex",
+                                alignItems: "center",
                                 gap: 1,
                                 mb: 0.5,
                               }}
                             >
                               <Flag
                                 sx={{
-                                  color: '#ff69b4',
+                                  color: "#ff69b4",
                                   fontSize: 18,
                                 }}
                               />
                               <Typography
                                 fontSize="0.75rem"
                                 sx={{
-                                  color: '#fff',
+                                  color: "#fff",
                                   fontWeight: 600,
-                                  textTransform: 'uppercase',
+                                  textTransform: "uppercase",
                                   letterSpacing: 0.5,
                                 }}
                               >
@@ -3424,10 +3735,10 @@ const AdminHome = () => {
                               fontWeight={700}
                               fontSize="1.1rem"
                               sx={{
-                                color: '#fff',
+                                color: "#fff",
                                 mb: 0.5,
                                 lineHeight: 1.3,
-                                textShadow: '0 2px 8px rgba(0,0,0,0.5)',
+                                textShadow: "0 2px 8px rgba(0,0,0,0.5)",
                               }}
                             >
                               {announcement.title}
@@ -3435,23 +3746,23 @@ const AdminHome = () => {
                             <Typography
                               fontSize="0.75rem"
                               sx={{
-                                color: 'rgba(255,255,255,0.9)',
-                                display: 'flex',
-                                alignItems: 'center',
+                                color: "rgba(255,255,255,0.9)",
+                                display: "flex",
+                                alignItems: "center",
                                 gap: 0.5,
                               }}
                             >
                               <AccessTimeIcon sx={{ fontSize: 12 }} />
                               {notif.created_at
                                 ? new Date(notif.created_at).toLocaleDateString(
-                                    'en-GB',
+                                    "en-GB",
                                     {
-                                      day: '2-digit',
-                                      month: '2-digit',
-                                      year: 'numeric',
+                                      day: "2-digit",
+                                      month: "2-digit",
+                                      year: "numeric",
                                     }
                                   )
-                                : ''}
+                                : ""}
                             </Typography>
                           </Box>
                         </Box>
@@ -3469,28 +3780,28 @@ const AdminHome = () => {
                           borderRadius: 3,
                           background:
                             notif.read_status === 0
-                              ? notif.notification_type === 'payslip'
-                                ? 'rgba(76, 175, 80, 0.1)'
-                                : notif.notification_type === 'contact'
-                                ? 'rgba(255, 152, 0, 0.1)'
+                              ? notif.notification_type === "payslip"
+                                ? "rgba(76, 175, 80, 0.1)"
+                                : notif.notification_type === "contact"
+                                ? "rgba(255, 152, 0, 0.1)"
                                 : `${settings.primaryColor}1A`
                               : `${settings.primaryColor}0A`,
                           border: `1px solid ${settings.primaryColor}26`,
                           borderLeft:
                             notif.read_status === 0
-                              ? notif.notification_type === 'payslip'
-                                ? '4px solid #4caf50'
-                                : notif.notification_type === 'contact'
-                                ? '4px solid #ff9800'
+                              ? notif.notification_type === "payslip"
+                                ? "4px solid #4caf50"
+                                : notif.notification_type === "contact"
+                                ? "4px solid #ff9800"
                                 : `4px solid ${settings.primaryColor}`
                               : `1px solid ${settings.primaryColor}26`,
-                          cursor: 'pointer',
-                          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                          position: 'relative',
-                          overflow: 'hidden',
-                          '&:hover': {
+                          cursor: "pointer",
+                          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                          position: "relative",
+                          overflow: "hidden",
+                          "&:hover": {
                             background: `${settings.primaryColor}1A`,
-                            transform: 'translateX(8px)',
+                            transform: "translateX(8px)",
                             boxShadow: `0 8px 24px ${settings.primaryColor}33`,
                           },
                         }}
@@ -3498,8 +3809,8 @@ const AdminHome = () => {
                       >
                         <Box
                           sx={{
-                            display: 'flex',
-                            alignItems: 'flex-start',
+                            display: "flex",
+                            alignItems: "flex-start",
                             gap: 1.5,
                           }}
                         >
@@ -3507,11 +3818,11 @@ const AdminHome = () => {
                             sx={{
                               width: 12,
                               height: 12,
-                              borderRadius: '50%',
+                              borderRadius: "50%",
                               background:
-                                notif.notification_type === 'payslip'
+                                notif.notification_type === "payslip"
                                   ? `linear-gradient(135deg, #4caf50, #2e7d32)`
-                                  : notif.notification_type === 'contact'
+                                  : notif.notification_type === "contact"
                                   ? `linear-gradient(135deg, #ff9800, #f57c00)`
                                   : `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
                               mt: 0.5,
@@ -3524,21 +3835,21 @@ const AdminHome = () => {
                             <Typography
                               sx={{
                                 fontWeight: 700,
-                                fontSize: '1rem',
+                                fontSize: "1rem",
                                 color: settings.textPrimaryColor,
                                 mb: 0.5,
                                 lineHeight: 1.4,
                               }}
                             >
-                              {notif.notification_type === 'payslip'
-                                ? 'Payslip Available'
-                                : notif.notification_type === 'contact'
-                                ? 'New Contact Ticket'
-                                : 'Notification'}
+                              {notif.notification_type === "payslip"
+                                ? "Payslip Available"
+                                : notif.notification_type === "contact"
+                                ? "New Ticket"
+                                : "Notification"}
                             </Typography>
                             <Typography
                               sx={{
-                                fontSize: '0.85rem',
+                                fontSize: "0.85rem",
                                 color: settings.textPrimaryColor,
                                 mb: 0.5,
                               }}
@@ -3547,31 +3858,31 @@ const AdminHome = () => {
                             </Typography>
                             <Typography
                               sx={{
-                                fontSize: '0.8rem',
+                                fontSize: "0.8rem",
                                 color: settings.textPrimaryColor,
-                                display: 'flex',
-                                alignItems: 'center',
+                                display: "flex",
+                                alignItems: "center",
                                 gap: 0.5,
                               }}
                             >
                               <AccessTimeIcon sx={{ fontSize: 14 }} />
                               {notif.created_at
                                 ? new Date(notif.created_at).toLocaleDateString(
-                                    'en-GB',
+                                    "en-GB",
                                     {
-                                      day: '2-digit',
-                                      month: '2-digit',
-                                      year: 'numeric',
+                                      day: "2-digit",
+                                      month: "2-digit",
+                                      year: "numeric",
                                     }
                                   )
-                                : ''}
+                                : ""}
                             </Typography>
                           </Box>
                           <ArrowForward
                             sx={{
                               color: settings.textPrimaryColor,
                               fontSize: 20,
-                              transition: 'transform 0.3s',
+                              transition: "transform 0.3s",
                               mt: 0.5,
                               flexShrink: 0,
                             }}
@@ -3583,14 +3894,14 @@ const AdminHome = () => {
                 })}
               {(!Array.isArray(notifications) ||
                 notifications.length === 0) && (
-                <Box sx={{ textAlign: 'center', py: 8 }}>
+                <Box sx={{ textAlign: "center", py: 8 }}>
                   <NotificationsIcon
                     sx={{ fontSize: 80, color: `${settings.primaryColor}33` }}
                   />
                   <Typography
                     sx={{
                       color: settings.textSecondaryColor,
-                      fontSize: '1rem',
+                      fontSize: "1rem",
                     }}
                   >
                     No notifications at the moment
@@ -3598,7 +3909,7 @@ const AdminHome = () => {
                   <Typography
                     sx={{
                       color: settings.textSecondaryColor,
-                      fontSize: '0.85rem',
+                      fontSize: "0.85rem",
                       mt: 1,
                     }}
                   >

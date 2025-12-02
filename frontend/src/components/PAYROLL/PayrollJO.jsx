@@ -753,29 +753,21 @@ const PayrollJO = () => {
   //ACCESSING END2
 
   return (
-    <Box
-      sx={{
-        py: 4,
-        borderRadius: '14px',
-        width: '100vw',
-        mx: 'auto',
-        maxWidth: '100%',
-        overflow: 'hidden',
-        position: 'relative',
-        left: '50%',
-        transform: 'translateX(-50%)',
-      }}
-    >
+     <Box
+          sx={{
+            py: 4,
+            borderRadius: "14px",
+            width: "100%",
+            mx: "auto",
+            maxWidth: "100%",
+            overflow: "hidden",
+            position: "relative",
+            left: "50%",
+            transform: "translateX(-50%)",
+          }}
+        >
       {/* Wider Container */}
-      <Box
-        sx={{
-          px: 6,
-          mx: 'auto',
-          maxWidth: '1600px',
-          width: '100%',
-          overflowX: 'auto',
-        }}
-      >
+     <Box sx={{ px: 6, mx: "auto", maxWidth: "1600px" }}>
         {/* Header */}
         <Fade in timeout={500}>
           <Box sx={{ mb: 4 }}>

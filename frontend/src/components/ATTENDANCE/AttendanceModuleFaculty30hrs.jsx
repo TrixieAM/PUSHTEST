@@ -773,19 +773,22 @@ const AttendanceModuleFaculty = () => {
     "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
   ];
 
+  const [selectedMonth, setSelectedMonth] = useState(null);
+
   const handleMonthClick = (monthIndex) => {
-    const year = new Date().getFullYear();
+  const year = new Date().getFullYear();
 
-    const start = new Date(Date.UTC(year, monthIndex, 1));
-    const end = new Date(Date.UTC(year, monthIndex + 1, 0)); // last day of month
+  const start = new Date(Date.UTC(year, monthIndex, 1));
+  const end = new Date(Date.UTC(year, monthIndex + 1, 0)); // last day of month
 
-    // format as YYYY-MM-DD (ISO format expected by <TextField type="date" />)
-    const formattedStart = start.toISOString().substring(0, 10);
-    const formattedEnd = end.toISOString().substring(0, 10);
+  // format as YYYY-MM-DD (ISO format expected by <TextField type="date" />)
+  const formattedStart = start.toISOString().substring(0, 10);
+  const formattedEnd = end.toISOString().substring(0, 10);
 
-    setStartDate(formattedStart);
-    setEndDate(formattedEnd);
-  };
+  setStartDate(formattedStart);
+  setEndDate(formattedEnd);
+  setSelectedMonth(monthIndex); // Track which month is selected
+};
 
   const exportToExcel = () => {
     const ws = XLSX.utils.json_to_sheet(attendanceData);
@@ -829,39 +832,15 @@ const AttendanceModuleFaculty = () => {
 
   return (
     <Box sx={{ 
-      background: `linear-gradient(135deg, ${accentColor} 0%, ${accentDark} 50%, ${accentColor} 100%)`,
       py: 4,
       borderRadius: '14px'
     }}>
       {/* Wider Container */}
       <Container maxWidth="xl" sx={{ px: 4 }}>
-        {/* Breadcrumbs */}
-        <Fade in timeout={300}>
-          <Box sx={{ mb: 3 }}>
-            <Breadcrumbs aria-label="breadcrumb" sx={{ fontSize: '0.9rem' }}>
-              <Typography
-                underline="hover" 
-                color="inherit" 
-                sx={{ display: 'flex', alignItems: 'center', color: primaryColor }}
-              >
-                <Assessment sx={{ mr: 0.5, fontSize: 20 }} />
-                Attendance Management
-              </Typography>
-              <Typography 
-                color="text.primary" 
-                sx={{ display: 'flex', alignItems: 'center', fontWeight: 600, color: primaryColor }}
-              >
-                <WorkHistory sx={{ mr: 0.5, fontSize: 20 }} />
-                 30hrs | Job Order (JO)
-              </Typography>
-            </Breadcrumbs>
-          </Box>
-        </Fade>
-
         {/* Header */}
         <Fade in timeout={500}>
           <Box sx={{ mb: 4 }}>
-            <GlassCard>
+            <GlassCard sx={{border: `1px solid ${alpha(accentColor, 0.1)}`}}>
               <Box
                 sx={{
                   p: 5,
@@ -954,7 +933,7 @@ const AttendanceModuleFaculty = () => {
 
         {/* Controls */}
         <Fade in timeout={700}>
-          <GlassCard sx={{ mb: 4 }}>
+          <GlassCard sx={{ mb: 4, border: `1px solid ${alpha(accentColor, 0.1)}` }}>
             <CardHeader
               title={
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -1035,40 +1014,48 @@ const AttendanceModuleFaculty = () => {
 
                 <Divider sx={{ my: 4, borderColor: 'rgba(109,35,35,0.1)' }} />
 
-                {/* Month Selection */}
-                <Box sx={{ mb: 4 }}>
-                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: accentColor, display: 'flex', alignItems: 'center', mb: 3 }}>
-                    <DateRange sx={{ mr: 2, fontSize: 24 }} />
-                    FILTERS:
-                  </Typography>
-                  <Box sx={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: { xs: 'repeat(3, 1fr)', sm: 'repeat(6, 1fr)', md: 'repeat(12, 1fr)' },
-                    gap: 1.5 
-                  }}>
-                    {months.map((month, index) => (
-                      <ProfessionalButton
-                        key={month}
-                        variant="outlined"
-                        size="small"
-                        onClick={() => handleMonthClick(index)}
-                        sx={{
-                          borderColor: accentColor,
-                          color: accentColor,
-                          minWidth: 'auto',
-                          fontSize: '0.875rem',
-                          fontWeight: 500,
-                          py: 1,
-                          '&:hover': {
-                            backgroundColor: alpha(accentColor, 0.1),
-                          }
-                        }}
-                      >
-                        {month}
-                      </ProfessionalButton>
-                    ))}
-                  </Box>
-                </Box>
+             {/* Month Selection */}
+<Box sx={{ mb: 4 }}>
+  <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: accentColor, display: 'flex', alignItems: 'center', mb: 3 }}>
+    <DateRange sx={{ mr: 2, fontSize: 24 }} />
+    FILTERS:
+  </Typography>
+  <Box sx={{ 
+    display: 'grid', 
+    gridTemplateColumns: { xs: 'repeat(3, 1fr)', sm: 'repeat(6, 1fr)', md: 'repeat(12, 1fr)' },
+    gap: 1.5 
+  }}>
+    {months.map((month, index) => (
+      <ProfessionalButton
+        key={month}
+        variant={selectedMonth === index ? "contained" : "outlined"}
+        size="small"
+        onClick={() => handleMonthClick(index)}
+        sx={{
+          borderColor: accentColor,
+          color: selectedMonth === index ? '#FFFFFF' : accentColor,
+          backgroundColor: selectedMonth === index ? accentColor : 'transparent',
+          minWidth: 'auto',
+          fontSize: '0.875rem',
+          fontWeight: selectedMonth === index ? 700 : 500,
+          py: 1,
+          transition: 'all 0.3s ease',
+          '&:hover': {
+            backgroundColor: selectedMonth === index 
+              ? alpha(accentColor, 0.8) 
+              : alpha(accentColor, 0.1),
+            transform: 'translateY(-2px)',
+            boxShadow: selectedMonth === index 
+              ? `0 4px 12px ${alpha(accentColor, 0.4)}` 
+              : 'none',
+          }
+        }}
+      >
+        {month}
+      </ProfessionalButton>
+    ))}
+  </Box>
+</Box>
 
                 {/* Generate Button */}
                 <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
@@ -1144,7 +1131,7 @@ const AttendanceModuleFaculty = () => {
         {/* Results */}
         {attendanceData.length > 0 && (
           <Fade in={!loading} timeout={500}>
-            <GlassCard sx={{ mb: 4 }}>
+            <GlassCard sx={{ mb: 4, border: `1px solid ${alpha(accentColor, 0.1)}` }}>
               <Box sx={{ 
                 p: 4, 
                 background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`, 
@@ -1355,7 +1342,7 @@ const AttendanceModuleFaculty = () => {
         {/* Save Button */}
         {attendanceData.length > 0 && (
           <Fade in timeout={900}>
-            <GlassCard>
+            <GlassCard sx={{border: `1px solid ${alpha(accentColor, 0.1)}`}}>
               <CardContent sx={{ p: 4 }}>
                 <ProfessionalButton
                   variant="contained"

@@ -850,7 +850,7 @@ const AllAttendanceRecord = () => {
         {/* Results */}
         {submittedID && (
           <Fade in={!loading} timeout={500}>
-            <GlassCard>
+            <GlassCard sx={{border: `1px solid ${alpha(accentColor, 0.1)}`}}>
               <Box
                 sx={{
                   p: 4,

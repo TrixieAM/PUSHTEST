@@ -1142,7 +1142,7 @@ const OverallAttendance = () => {
         {/* Results */}
         {attendanceData.length > 0 && (
           <Fade in={!loading} timeout={500}>
-            <GlassCard sx={{ mb: 4 }}>
+            <GlassCard sx={{ mb: 4, border: `1px solid ${alpha(accentColor, 0.1)}` }}>
               <Box sx={{ 
                 p: 4, 
                 background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`, 
@@ -1495,7 +1495,7 @@ const OverallAttendance = () => {
         {/* Action Buttons */}
         {attendanceData.length > 0 && (
           <Fade in timeout={900}>
-            <GlassCard>
+            <GlassCard sx={{border: `1px solid ${alpha(accentColor, 0.1)}`}}>
               <CardContent sx={{ p: 4 }}>
                 <Grid container spacing={3}>
                   <Grid item xs={12} md={6}>

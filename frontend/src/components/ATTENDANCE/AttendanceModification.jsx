@@ -319,7 +319,7 @@ const AttendanceSearch = () => {
         {/* Header */}
         <Fade in timeout={500}>
           <Box sx={{ mb: 4 }}>
-            <GlassCard>
+            <GlassCard sx={{border: `1px solid ${alpha(accentColor, 0.1)}`}}>
               <Box
                 sx={{
                   p: 5,
@@ -413,7 +413,7 @@ const AttendanceSearch = () => {
 
         {/* Controls */}
         <Fade in timeout={700}>
-          <GlassCard sx={{ mb: 4 }}>
+          <GlassCard sx={{ mb: 4, border: `1px solid ${alpha(accentColor, 0.1)}` }}>
             <CardContent sx={{ p: 4 }}>
               <Box component="form">
                 <Grid container spacing={4}>
@@ -703,7 +703,7 @@ const AttendanceSearch = () => {
         {/* Results */}
         {records.length > 0 && (
           <Fade in={!loading} timeout={500}>
-            <GlassCard sx={{ mb: 4 }}>
+            <GlassCard sx={{ mb: 4, border: `1px solid ${alpha(accentColor, 0.1)}` }}>
               <Box sx={{ 
                 p: 4, 
                 background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`, 

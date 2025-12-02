@@ -730,7 +730,6 @@ const Payslip = forwardRef(({ employee }, ref) => {
                 sx={{
                   p: 3,
                   mt: 2,
-                  border: '2px solid black',
                   borderRadius: 1,
                   backgroundColor: '#fff',
                   fontFamily: 'Arial, "Helvetica Neue", Helvetica, sans-serif !important',
@@ -764,7 +763,7 @@ const Payslip = forwardRef(({ employee }, ref) => {
                   mb={2}
                   sx={{
                     background: 'linear-gradient(to right, #6d2323, #a31d1d)',
-                    borderRadius: '2px',
+                    borderRadius: '3px',
                   }}
                 >
                   {/* Left Logo */}
@@ -798,7 +797,7 @@ const Payslip = forwardRef(({ employee }, ref) => {
                 </Box>
 
                 {/* Rows */}
-                <Box sx={{ border: '2px solid black', borderBottom: '0px' }}>
+                <Box sx={{ border: '1px solid black', borderBottom: '0px' }}>
                   {/* Row template */}
                   {[
                     {

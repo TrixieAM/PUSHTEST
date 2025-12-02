@@ -425,13 +425,14 @@ const AttendanceUserState = () => {
       position: 'relative',
       left: '50%',
       transform: 'translateX(-50%)', // Center the element
+      
     }}>
       {/* Wider Container */}
       <Box sx={{ px: 6, mx: 'auto', maxWidth: '1600px' }}>
         {/* Header */}
         <Fade in timeout={500}>
           <Box sx={{ mb: 4 }}>
-            <GlassCard>
+            <GlassCard sx={{border: `1px solid ${alpha(accentColor, 0.1)}`}}>
               <Box
                 sx={{
                   p: 5,
@@ -439,6 +440,7 @@ const AttendanceUserState = () => {
                   color: accentColor,
                   position: 'relative',
                   overflow: 'hidden',
+                  
                 }}
               >
                 {/* Decorative elements */}
@@ -471,7 +473,7 @@ const AttendanceUserState = () => {
                         mr: 4, 
                         width: 64, 
                         height: 64,
-                        boxShadow: '0 8px 24px rgba(109,35,35,0.15)'
+                        boxShadow: '0 8px 24px rgba(109,35,35,0.15)',
                       }}
                     >
                       <EventNote sx={{ color: accentColor, fontSize: 32 }} />
@@ -519,13 +521,13 @@ const AttendanceUserState = () => {
 
         {/* Controls */}
         <Fade in timeout={700}>
-          <GlassCard sx={{ mb: 4 }}>
+          <GlassCard sx={{ mb: 4, border: `1px solid ${alpha(accentColor, 0.1)}` }}>
             <CardContent sx={{ p: 4 }}>
               <Grid container spacing={4}>
                 <Grid item xs={12} md={4}>
                   <ModernTextField
                     fullWidth
-                    label="Employee ID"
+                    label="Employee Number"
                     value={personID}
                     disabled
                     variant="outlined"
@@ -768,14 +770,15 @@ const AttendanceUserState = () => {
         {/* Results */}
         {submittedID && (
           <Fade in={!loading} timeout={500}>
-            <GlassCard sx={{ mb: 4 }}>
+            <GlassCard sx={{ mb: 4, border: `1px solid ${alpha(accentColor, 0.1)}` }}>
               <Box sx={{ 
                 p: 4, 
                 background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`, 
                 color: accentColor,
                 display: 'flex',
                 justifyContent: 'space-between',
-                alignItems: 'center'
+                alignItems: 'center',
+                
               }}>
                 <Box>
                   <Typography variant="body2" sx={{ opacity: 0.8, mb: 1, textTransform: 'uppercase', letterSpacing: '0.1em', color: accentDark }}>

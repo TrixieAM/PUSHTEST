@@ -338,7 +338,7 @@ router.post('/api/contact-us', authenticateToken, (req, res) => {
 
       const contactId = result.insertId;
       const submitterName = name || 'A user';
-      const notificationDescription = `${submitterName} submitted a new contact ticket${subject ? `: ${subject}` : ''}. Click to view details.`;
+      const notificationDescription = `${submitterName} submitted a new ticket${subject ? `: ${subject}` : ''}. Click to view details.`;
 
       // Send response immediately (don't wait for notifications)
       res.status(201).json({ id: contactId, message: 'Contact message submitted successfully' });
@@ -393,7 +393,7 @@ router.post('/api/contact-us', authenticateToken, (req, res) => {
             });
 
             Promise.all(notificationPromises).then(() => {
-              console.log(`Created notifications for ${admins.length} admin(s) about new contact ticket ${contactId}`);
+              console.log(`Created notifications for ${admins.length} admin(s) about new ticket ${contactId}`);
             }).catch((err) => {
               console.error('Error creating notifications:', err);
             });
@@ -534,11 +534,11 @@ router.put('/api/contact-us/:id', authenticateToken, (req, res) => {
         let notificationDescription = '';
         
         if (admin_notes) {
-          notificationDescription = `Admin ${adminName} has responded to your contact ticket. Click to view response.`;
+          notificationDescription = `Admin ${adminName} has responded to your ticket. Click to view response.`;
         } else if (status === 'replied') {
-          notificationDescription = `Your contact ticket has been marked as replied by ${adminName}.`;
+          notificationDescription = `Your ticket has been marked as replied by ${adminName}.`;
         } else if (status === 'resolved') {
-          notificationDescription = `Your contact ticket has been resolved by ${adminName}.`;
+          notificationDescription = `Your ticket has been resolved by ${adminName}.`;
         }
 
         if (notificationDescription) {
@@ -560,12 +560,12 @@ router.put('/api/contact-us/:id', authenticateToken, (req, res) => {
                     if (fallbackErr) {
                       console.error(`Error creating notification for staff ${submitterEmpNum}:`, fallbackErr);
                     } else {
-                      console.log(`Created notification for staff ${submitterEmpNum} about contact ticket ${id} response`);
+                      console.log(`Created notification for staff ${submitterEmpNum} about ticket ${id} response`);
                     }
                   }
                 );
               } else {
-                console.log(`Created notification for staff ${submitterEmpNum} about contact ticket ${id} response`);
+                console.log(`Created notification for staff ${submitterEmpNum} about ticket ${id} response`);
               }
             }
           );
@@ -595,73 +595,235 @@ router.delete('/api/contact-us/:id', authenticateToken, (req, res) => {
 });
 
 // ============================================
-// POLICY ROUTES
+// POLICIES ROUTES 
 // ============================================
 
-// GET Policy content
-router.get('/api/policy', (req, res) => {
-  db.query('SELECT * FROM policy ORDER BY id DESC LIMIT 1', (err, results) => {
+// Helper function to generate version
+const generateVersion = (category, id) => {
+  return new Promise((resolve, reject) => {
+    const query = `
+      SELECT CONCAT(COUNT(*) + 1, '.0.0') as version
+      FROM policies 
+      WHERE category = ? AND id <= ?
+    `;
+    db.query(query, [category, id], (err, results) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(results[0].version);
+      }
+    });
+  });
+};
+
+// GET all policies
+router.get('/api/policies', (req, res) => {
+  const { category } = req.query;
+  let query = `
+    SELECT 
+      id, 
+      title, 
+      content, 
+      category, 
+      display_order, 
+      is_active, 
+      created_at, 
+      updated_at, 
+      last_updated_by,
+      (SELECT COUNT(*) + 1 FROM policies p2 WHERE p2.category = policies.category AND p2.id <= policies.id) as version
+    FROM policies 
+    WHERE is_active = 1
+  `;
+  const params = [];
+
+  if (category) {
+    query += ' AND category = ?';
+    params.push(category);
+  }
+
+  query += ' ORDER BY display_order ASC, id ASC';
+
+  db.query(query, params, (err, results) => {
     if (err) {
-      console.error('Error fetching Policy:', err);
-      return res.status(500).json({ error: 'Failed to fetch Policy content' });
+      console.error('Error fetching policies:', err);
+      return res.status(500).json({ error: 'Failed to fetch policies' });
     }
+    res.json(results);
+  });
+});
 
+// GET single policy
+router.get('/api/policies/:id', (req, res) => {
+  const { id } = req.params;
+  const query = `
+    SELECT 
+      id, 
+      title, 
+      content, 
+      category, 
+      display_order, 
+      is_active, 
+      created_at, 
+      updated_at, 
+      last_updated_by,
+      (SELECT COUNT(*) + 1 FROM policies p2 WHERE p2.category = policies.category AND p2.id <= policies.id) as version
+    FROM policies 
+    WHERE id = ?
+  `;
+  
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error('Error fetching policy:', err);
+      return res.status(500).json({ error: 'Failed to fetch policy' });
+    }
     if (results.length === 0) {
-      return res.json({
-        title: 'Privacy Policy & Terms of Service',
-        privacy_policy: '<p>Privacy policy content coming soon...</p>',
-        terms_of_service: '<p>Terms of service content coming soon...</p>',
-      });
+      return res.status(404).json({ error: 'Policy not found' });
     }
-
     res.json(results[0]);
   });
 });
 
-// PUT update Policy (admin only)
-router.put('/api/policy', authenticateToken, (req, res) => {
-  const { title, privacy_policy, terms_of_service } = req.body;
-  const employeeNumber = req.user?.employeeNumber || 'system';
-
-  if (!privacy_policy || !terms_of_service) {
-    return res.status(400).json({ error: 'Privacy policy and terms of service are required' });
+// POST create policy (admin only)
+router.post('/api/policies', authenticateToken, (req, res) => {
+  const userRole = req.user?.role;
+  if (userRole !== 'superadmin' && userRole !== 'administrator') {
+    return res.status(403).json({ error: 'Access denied. Admin only.' });
   }
 
-  // Check if Policy exists
-  db.query('SELECT * FROM policy ORDER BY id DESC LIMIT 1', (err, results) => {
-    if (err) {
-      console.error('Error checking Policy:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
+  const { title, content, category, display_order } = req.body;
 
-    if (results.length === 0) {
-      // Insert new Policy
-      db.query(
-        'INSERT INTO policy (title, privacy_policy, terms_of_service, last_updated_by) VALUES (?, ?, ?, ?)',
-        [title || 'Privacy Policy & Terms of Service', privacy_policy, terms_of_service, employeeNumber],
-        (err, result) => {
-          if (err) {
-            console.error('Error creating Policy:', err);
-            return res.status(500).json({ error: 'Failed to create Policy' });
-          }
-          res.json({ id: result.insertId, message: 'Policy created successfully' });
-        }
-      );
-    } else {
-      // Update existing Policy
-      const id = results[0].id;
-      db.query(
-        'UPDATE policy SET title = ?, privacy_policy = ?, terms_of_service = ?, last_updated_by = ? WHERE id = ?',
-        [title || 'Privacy Policy & Terms of Service', privacy_policy, terms_of_service, employeeNumber, id],
-        (err) => {
-          if (err) {
-            console.error('Error updating Policy:', err);
-            return res.status(500).json({ error: 'Failed to update Policy' });
-          }
-          res.json({ message: 'Policy updated successfully' });
-        }
-      );
+  if (!title || !content) {
+    return res.status(400).json({ error: 'Title and content are required' });
+  }
+
+  const query = `
+    INSERT INTO policies (title, content, category, display_order, last_updated_by)
+    VALUES (?, ?, ?, ?, ?)
+  `;
+
+  db.query(
+    query,
+    [title, content, category || 'general', display_order || 0, req.user?.employeeNumber || 'system'],
+    async (err, result) => {
+      if (err) {
+        console.error('Error creating policy:', err);
+        return res.status(500).json({ error: 'Failed to create policy' });
+      }
+      
+      try {
+        // Generate version for the new policy
+        const version = await generateVersion(category || 'general', result.insertId);
+        res.status(201).json({ 
+          id: result.insertId, 
+          version: version,
+          message: 'Policy created successfully' 
+        });
+      } catch (versionErr) {
+        console.error('Error generating version:', versionErr);
+        res.status(201).json({ 
+          id: result.insertId, 
+          message: 'Policy created successfully' 
+        });
+      }
     }
+  );
+});
+
+// PUT update policy (admin only)
+router.put('/api/policies/:id', authenticateToken, (req, res) => {
+  const userRole = req.user?.role;
+  if (userRole !== 'superadmin' && userRole !== 'administrator') {
+    return res.status(403).json({ error: 'Access denied. Admin only.' });
+  }
+
+  const { id } = req.params;
+  const { title, content, category, display_order, is_active } = req.body;
+
+  const updates = [];
+  const params = [];
+
+  if (title !== undefined) {
+    updates.push('title = ?');
+    params.push(title);
+  }
+  if (content !== undefined) {
+    updates.push('content = ?');
+    params.push(content);
+  }
+  if (category !== undefined) {
+    updates.push('category = ?');
+    params.push(category);
+  }
+  if (display_order !== undefined) {
+    updates.push('display_order = ?');
+    params.push(display_order);
+  }
+  if (is_active !== undefined) {
+    updates.push('is_active = ?');
+    params.push(is_active);
+  }
+
+  if (updates.length === 0) {
+    return res.status(400).json({ error: 'No fields to update' });
+  }
+
+  updates.push('last_updated_by = ?');
+  params.push(req.user?.employeeNumber || 'system');
+  params.push(id);
+
+  const query = `UPDATE policies SET ${updates.join(', ')} WHERE id = ?`;
+
+  db.query(query, params, async (err) => {
+    if (err) {
+      console.error('Error updating policy:', err);
+      return res.status(500).json({ error: 'Failed to update policy' });
+    }
+    
+    try {
+      // Generate new version after update
+      const version = await generateVersion(category || 'general', parseInt(id));
+      res.json({ 
+        version: version,
+        message: 'Policy updated successfully' 
+      });
+    } catch (versionErr) {
+      console.error('Error generating version:', versionErr);
+      res.json({ message: 'Policy updated successfully' });
+    }
+  });
+});
+
+// DELETE policy (admin only)
+router.delete('/api/policies/:id', authenticateToken, (req, res) => {
+  const userRole = req.user?.role;
+  if (userRole !== 'superadmin' && userRole !== 'administrator') {
+    return res.status(403).json({ error: 'Access denied. Admin only.' });
+  }
+
+  const { id } = req.params;
+  
+  // First check if the policy exists
+  const checkQuery = 'SELECT id FROM policies WHERE id = ?';
+  db.query(checkQuery, [id], (err, results) => {
+    if (err) {
+      console.error('Error checking policy:', err);
+      return res.status(500).json({ error: 'Failed to check policy' });
+    }
+    
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'Policy not found' });
+    }
+    
+    // Delete the policy
+    const deleteQuery = 'DELETE FROM policies WHERE id = ?';
+    db.query(deleteQuery, [id], (err, result) => {
+      if (err) {
+        console.error('Error deleting policy:', err);
+        return res.status(500).json({ error: 'Failed to delete policy' });
+      }
+      
+      res.json({ message: 'Policy deleted successfully' });
+    });
   });
 });
 

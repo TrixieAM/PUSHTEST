@@ -694,13 +694,13 @@ const PayslipOverall = forwardRef(({ employee }, ref) => {
 
         {/* Controls */}
         <Fade in timeout={700}>
-          <GlassCard sx={{ mb: 4 }}>
+          <GlassCard sx={{ mb: 4, border: `1px solid ${alpha(accentColor, 0.1)}` }}>
             <CardContent sx={{ p: 4 }}>
               <Grid container spacing={4}>
                 <Grid item xs={12} md={9}>
                   <ModernTextField
                     fullWidth
-                    label="Search Employee by Name or ID"
+                    label="Search Employee by Name or Employee Number"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
@@ -813,7 +813,7 @@ const PayslipOverall = forwardRef(({ employee }, ref) => {
         {/* Payslip Display */}
         {displayEmployee ? (
           <Fade in timeout={900}>
-            <GlassCard sx={{ mb: 4 }}>
+            <GlassCard sx={{ mb: 4, border: `1px solid ${alpha(accentColor, 0.1)}` }}>
               <Box sx={{ 
                 p: 4, 
                 background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`, 
@@ -878,8 +878,7 @@ const PayslipOverall = forwardRef(({ employee }, ref) => {
                 sx={{
                   p: 5,
                   mt: 3,
-                  border: '3px solid black',
-                  borderRadius: 2,
+                  borderRadius: 1,
                   backgroundColor: '#fff',
                   fontFamily: 'Arial, sans-serif',
                   position: 'relative',
@@ -948,7 +947,7 @@ const PayslipOverall = forwardRef(({ employee }, ref) => {
                 </Box>
 
                 {/* Employee Information Section */}
-                <Box sx={{ border: '3px solid black', mb: 3 }}>
+                <Box sx={{ border: '1px solid black', borderRadius: '3px', mb: 3 }}>
                   <Box sx={{ backgroundColor: '#6D2323', color: 'white', p: 2, textAlign: 'center', fontWeight: 'bold', fontSize: '18px' }}>
                     EMPLOYEE INFORMATION
                   </Box>
@@ -1002,7 +1001,7 @@ const PayslipOverall = forwardRef(({ employee }, ref) => {
                 </Box>
 
                 {/* Salary Section */}
-                <Box sx={{ border: '3px solid black', mb: 3 }}>
+                <Box sx={{ border: '1px solid black', borderRadius: '3px', mb: 3 }}>
                   <Box sx={{ backgroundColor: '#6D2323', color: 'white', p: 2, textAlign: 'center', fontWeight: 'bold', fontSize: '18px' }}>
                     SALARY DETAILS
                   </Box>
@@ -1025,7 +1024,7 @@ const PayslipOverall = forwardRef(({ employee }, ref) => {
                         </Typography>
                       </Grid>
                       <Grid item xs={12} md={4}>
-                        <Box sx={{ border: '3px solid #6d2323', borderRadius: 2, p: 2, textAlign: 'center', background: 'rgba(109, 35, 35, 0.05)' }}>
+                        <Box sx={{ border: '1px solid #6d2323', borderRadius: 3, p: 2, textAlign: 'center', background: 'rgba(109, 35, 35, 0.05)' }}>
                           <Typography sx={{ fontSize: '18px', fontWeight: 'bold', mb: 1, color: accentColor }}>
                             NET SALARY:
                           </Typography>
@@ -1039,7 +1038,7 @@ const PayslipOverall = forwardRef(({ employee }, ref) => {
                 </Box>
 
                 {/* Deductions Section */}
-                <Box sx={{ border: '3px solid black', mb: 3 }}>
+                <Box sx={{ border: '1px solid black', borderRadius: '3px', mb: 3 }}>
                   <Box sx={{ backgroundColor: '#6D2323', color: 'white', p: 2, textAlign: 'center', fontWeight: 'bold', fontSize: '18px' }}>
                     DEDUCTIONS BREAKDOWN
                   </Box>
@@ -1082,7 +1081,7 @@ const PayslipOverall = forwardRef(({ employee }, ref) => {
                 </Box>
 
                 {/* Payment Section */}
-                <Box sx={{ border: '3px solid black', mb: 3 }}>
+                <Box sx={{ border: '1px solid black', borderRadius: '3px', mb: 3 }}>
                   <Box sx={{ backgroundColor: '#6D2323', color: 'white', p: 2, textAlign: 'center', fontWeight: 'bold', fontSize: '18px' }}>
                     PAYMENT BREAKDOWN
                   </Box>
@@ -1192,7 +1191,7 @@ const PayslipOverall = forwardRef(({ employee }, ref) => {
         {/* Action Buttons */}
         {displayEmployee && (
           <Fade in timeout={1100}>
-            <GlassCard>
+            <GlassCard sx={{border: `1px solid ${alpha(accentColor, 0.1)}`}}>
               <CardContent sx={{ p: 5 }}>
                 <Grid container spacing={3}>
                   <Grid item xs={12} md={6}>

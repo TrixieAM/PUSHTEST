@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import React, { useState, useEffect, useCallback } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 import {
   IconButton,
   Modal,
@@ -20,12 +20,16 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
-} from '@mui/material';
+  DialogActions,
+  Grow,
+  Fade,
+  Menu,
+  MenuItem,
+} from "@mui/material";
 
-import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
-import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
-import NotificationsIcon from '@mui/icons-material/Notifications';
+import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
+import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
+import NotificationsIcon from "@mui/icons-material/Notifications";
 import {
   AccessTime,
   AccountBalance,
@@ -49,27 +53,116 @@ import {
   Delete,
   Save,
   Flag,
-  ArrowForward
-} from '@mui/icons-material';
+  ArrowForward,
+  PlayArrow,
+  Pause,
+  AccountCircle,
+  HelpOutline,
+  PrivacyTip,
+  EditCalendar,
+  ManageAccounts,
+} from "@mui/icons-material";
 
-const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = "http://localhost:5000";
 
-const COLORS = {
-  primary: '#6d2323',
-  secondary: '#fef9e1',
-  white: '#ffffff',
-  black: '#000000',
-  lightGray: '#f5f5f5',
-  darkGray: '#666666'
+// Add the useSystemSettings hook from HomeAdmin.jsx
+const useSystemSettings = () => {
+  const [settings, setSettings] = useState({
+    primaryColor: "#894444",
+    secondaryColor: "#6d2323",
+    accentColor: "#FEF9E1",
+    textColor: "#FFFFFF",
+    textPrimaryColor: "#6D2323",
+    textSecondaryColor: "#FEF9E1",
+    hoverColor: "#6D2323",
+    backgroundColor: "#FFFFFF",
+  });
+
+  useEffect(() => {
+    const storedSettings = localStorage.getItem("systemSettings");
+    if (storedSettings) {
+      try {
+        const parsedSettings = JSON.parse(storedSettings);
+        setSettings(parsedSettings);
+      } catch (error) {
+        console.error("Error parsing stored settings:", error);
+      }
+    }
+
+    const fetchSettings = async () => {
+      try {
+        const url = API_BASE_URL.includes("/api")
+          ? `${API_BASE_URL}/system-settings`
+          : `${API_BASE_URL}/api/system-settings`;
+
+        const response = await axios.get(url);
+        setSettings(response.data);
+        localStorage.setItem("systemSettings", JSON.stringify(response.data));
+      } catch (error) {
+        console.error("Error fetching system settings:", error);
+      }
+    };
+
+    fetchSettings();
+  }, []);
+
+  return settings;
 };
 
-const HAHAHA = () => {
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [username, setUsername] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [employeeNumber, setEmployeeNumber] = useState('');
-  const [announcements, setAnnouncements] = useState([]);
+// Add the useCarousel hook from AdminHome.jsx
+const useCarousel = (items, autoPlay = true, interval = 5000) => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(autoPlay);
+
+  useEffect(() => {
+    if (!Array.isArray(items) || items.length === 0 || !isPlaying) return;
+    const timer = setInterval(() => {
+      setCurrentSlide((s) => (s + 1) % items.length);
+    }, interval);
+    return () => clearInterval(timer);
+  }, [items, isPlaying, interval]);
+
+  const handlePrevSlide = useCallback(() => {
+    if (!Array.isArray(items)) return;
+    setCurrentSlide((s) => (s - 1 + items.length) % items.length);
+  }, [items]);
+
+  const handleNextSlide = useCallback(() => {
+    if (!Array.isArray(items)) return;
+    setCurrentSlide((s) => (s + 1) % items.length);
+  }, [items]);
+
+  const handleSlideSelect = useCallback(
+    (index) => {
+      if (!Array.isArray(items)) return;
+      setCurrentSlide(index);
+    },
+    [items]
+  );
+
+  const togglePlayPause = useCallback(() => {
+    setIsPlaying((prev) => !prev);
+  }, []);
+
+  return {
+    currentSlide,
+    isPlaying,
+    handlePrevSlide,
+    handleNextSlide,
+    handleSlideSelect,
+    togglePlayPause,
+  };
+};
+
+const Home = () => {
+  // Add the useSystemSettings hook
+  const settings = useSystemSettings();
+
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [username, setUsername] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [employeeNumber, setEmployeeNumber] = useState("");
+  const [announcements, setAnnouncements] = useState([]);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const [openModal, setOpenModal] = useState(false);
   const [profilePicture, setProfilePicture] = useState(null);
@@ -80,16 +173,24 @@ const HAHAHA = () => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [announcementDetails, setAnnouncementDetails] = useState({}); // Store announcement details by notification id
- 
+
   // New states for notes and events
   const [notes, setNotes] = useState([]);
   const [events, setEvents] = useState([]);
   const [openNoteDialog, setOpenNoteDialog] = useState(false);
   const [openEventDialog, setOpenEventDialog] = useState(false);
-  const [currentNote, setCurrentNote] = useState({ date: '', content: '' });
-  const [currentEvent, setCurrentEvent] = useState({ date: '', title: '', description: '' });
-  const [selectedDate, setSelectedDate] = useState('');
+  const [currentNote, setCurrentNote] = useState({ date: "", content: "" });
+  const [currentEvent, setCurrentEvent] = useState({
+    date: "",
+    title: "",
+    description: "",
+  });
+  const [selectedDate, setSelectedDate] = useState("");
   const [viewNotesDialog, setViewNotesDialog] = useState(false);
+
+  // Avatar dropdown state
+  const [anchorEl, setAnchorEl] = useState(null);
+  const openMenu = Boolean(anchorEl);
 
   const navigate = useNavigate();
 
@@ -98,32 +199,77 @@ const HAHAHA = () => {
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
+  // Use the carousel hook for announcements
+  const {
+    currentSlide,
+    isPlaying,
+    handlePrevSlide,
+    handleNextSlide,
+    handleSlideSelect,
+    togglePlayPause,
+  } = useCarousel(announcements);
+
   useEffect(() => {
     const interval = setInterval(() => setCurrentDate(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
 
+  // Helper function to normalize date to YYYY-MM-DD
+  const normalizeDate = (date) => {
+    if (!date) return null;
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return null;
+    const offset = d.getTimezoneOffset();
+    d.setMinutes(d.getMinutes() - offset);
+    return d.toISOString().split("T")[0];
+  };
+
   // Load notes and events from database
   useEffect(() => {
     const fetchNotesAndEvents = async () => {
       if (!employeeNumber) return;
-      
+      console.log(`Fetching notes and events for employee: ${employeeNumber}`);
+
       try {
-        const notesRes = await axios.get(`${API_BASE_URL}/api/notes/${employeeNumber}`);
-        const eventsRes = await axios.get(`${API_BASE_URL}/api/events/${employeeNumber}`);
-        
-        setNotes(Array.isArray(notesRes.data) ? notesRes.data : []);
-        setEvents(Array.isArray(eventsRes.data) ? eventsRes.data : []);
+        const [notesRes, eventsRes] = await Promise.all([
+          axios.get(`${API_BASE_URL}/api/notes/${employeeNumber}`),
+          axios.get(`${API_BASE_URL}/api/events/${employeeNumber}`),
+        ]);
+
+        const fetchedNotes = Array.isArray(notesRes.data) ? notesRes.data : [];
+        const fetchedEvents = Array.isArray(eventsRes.data)
+          ? eventsRes.data
+          : [];
+
+        // Normalize dates from API response
+        const normalizedNotes = fetchedNotes.map((note) => ({
+          ...note,
+          date: normalizeDate(note.date),
+        }));
+        const normalizedEvents = fetchedEvents.map((event) => ({
+          ...event,
+          date: normalizeDate(event.date),
+        }));
+
+        console.log("Normalized Notes:", normalizedNotes);
+        console.log("Normalized Events:", normalizedEvents);
+
+        setNotes(normalizedNotes);
+        setEvents(normalizedEvents);
       } catch (err) {
-        console.error('Error fetching notes and events:', err);
+        console.error("Error fetching notes and events:", err);
         // Fallback to localStorage if API fails
-        const savedNotes = JSON.parse(localStorage.getItem('employeeNotes') || '[]');
-        const savedEvents = JSON.parse(localStorage.getItem('employeeEvents') || '[]');
+        const savedNotes = JSON.parse(
+          localStorage.getItem("employeeNotes") || "[]"
+        );
+        const savedEvents = JSON.parse(
+          localStorage.getItem("employeeEvents") || "[]"
+        );
         setNotes(savedNotes);
         setEvents(savedEvents);
       }
     };
-    
+
     fetchNotesAndEvents();
   }, [employeeNumber]);
 
@@ -131,40 +277,44 @@ const HAHAHA = () => {
   useEffect(() => {
     const fetchNotifications = async () => {
       if (!employeeNumber) {
-        console.log('No employeeNumber, skipping notification fetch');
+        console.log("No employeeNumber, skipping notification fetch");
         return;
       }
-      
-      // Ensure employeeNumber is a string
+
       const empNum = String(employeeNumber).trim();
       if (!empNum) return;
-      
+
       try {
         console.log(`Fetching notifications for employeeNumber: ${empNum}`);
         const [notifRes, unreadRes] = await Promise.all([
           axios.get(`${API_BASE_URL}/api/notifications/${empNum}`),
-          axios.get(`${API_BASE_URL}/api/notifications/${empNum}/unread-count`)
+          axios.get(`${API_BASE_URL}/api/notifications/${empNum}/unread-count`),
         ]);
-        
-        // Filter notifications to ensure they belong to the logged-in employee
-        const filteredNotifications = Array.isArray(notifRes.data) 
-          ? notifRes.data.filter(notif => String(notif.employeeNumber).trim() === empNum)
+
+        const filteredNotifications = Array.isArray(notifRes.data)
+          ? notifRes.data.filter(
+              (notif) => String(notif.employeeNumber).trim() === empNum
+            )
           : [];
-        
-        console.log(`Found ${filteredNotifications.length} notifications for employee ${empNum}`);
+
         setNotifications(filteredNotifications);
         setUnreadCount(unreadRes.data?.count || 0);
 
-        // Fetch announcement details for announcement notifications
-        const announcementNotifs = filteredNotifications.filter(n => n.notification_type === 'announcement' && n.announcement_id);
+        const announcementNotifs = filteredNotifications.filter(
+          (n) => n.notification_type === "announcement" && n.announcement_id
+        );
         if (announcementNotifs.length > 0) {
           try {
             const annRes = await axios.get(`${API_BASE_URL}/api/announcements`);
-            const announcementList = Array.isArray(annRes.data) ? annRes.data : [];
+            const announcementList = Array.isArray(annRes.data)
+              ? annRes.data
+              : [];
             const detailsMap = {};
-            announcementNotifs.forEach(notif => {
-              const announcement = announcementList.find(ann => 
-                ann.id === notif.announcement_id || ann.id === parseInt(notif.announcement_id)
+            announcementNotifs.forEach((notif) => {
+              const announcement = announcementList.find(
+                (ann) =>
+                  ann.id === notif.announcement_id ||
+                  ann.id === parseInt(notif.announcement_id)
               );
               if (announcement) {
                 detailsMap[notif.id] = announcement;
@@ -172,94 +322,89 @@ const HAHAHA = () => {
             });
             setAnnouncementDetails(detailsMap);
           } catch (err) {
-            console.error('Error fetching announcement details:', err);
+            console.error("Error fetching announcement details:", err);
           }
         }
       } catch (err) {
-        console.error('Error fetching notifications:', err);
+        console.error("Error fetching notifications:", err);
         setNotifications([]);
         setUnreadCount(0);
       }
     };
-    
+
     fetchNotifications();
-    // Refresh notifications every 5 seconds for near real-time updates
     const interval = setInterval(fetchNotifications, 5000);
     return () => clearInterval(interval);
   }, [employeeNumber]);
 
   const handleNotificationClick = async (notification) => {
-    // Mark as read in database
     if (notification.read_status === 0) {
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem("token");
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        
-        // Update database
         await axios.put(
           `${API_BASE_URL}/api/notifications/${notification.id}/read`,
           {},
           { headers }
         );
-        
-        // Update local state immediately for better UX
-        setNotifications(prev =>
-          prev.map(n => n.id === notification.id ? { ...n, read_status: 1 } : n)
+        setNotifications((prev) =>
+          prev.map((n) =>
+            n.id === notification.id ? { ...n, read_status: 1 } : n
+          )
         );
-        setUnreadCount(prev => Math.max(0, prev - 1));
+        setUnreadCount((prev) => Math.max(0, prev - 1));
       } catch (err) {
-        console.error('Error marking notification as read:', err);
-        // Still allow navigation even if marking as read fails
+        console.error("Error marking notification as read:", err);
       }
     }
 
-    // Handle based on notification type
-    if (notification.notification_type === 'payslip' || 
-        (notification.action_link && notification.action_link.includes('payslip'))) {
+    if (
+      notification.notification_type === "payslip" ||
+      (notification.action_link && notification.action_link.includes("payslip"))
+    ) {
       setNotifModalOpen(false);
-      navigate('/payslip');
-    } else if (notification.notification_type === 'contact' ||
-               (notification.action_link && notification.action_link.includes('settings'))) {
+      navigate("/payslip");
+    } else if (
+      notification.notification_type === "contact" ||
+      (notification.action_link &&
+        notification.action_link.includes("settings"))
+    ) {
       setNotifModalOpen(false);
-      navigate('/settings');
-    } else if (notification.notification_type === 'announcement' || 
-               (notification.action_link && notification.action_link.includes('announcement'))) {
-      // Fetch the announcement details
+      navigate("/settings");
+    } else if (
+      notification.notification_type === "announcement" ||
+      (notification.action_link &&
+        notification.action_link.includes("announcement"))
+    ) {
       try {
         const annRes = await axios.get(`${API_BASE_URL}/api/announcements`);
         const announcementList = Array.isArray(annRes.data) ? annRes.data : [];
-        
-        // Try to find by announcement_id first, then fallback to title matching
         let matchingAnnouncement = null;
         if (notification.announcement_id) {
           matchingAnnouncement = announcementList.find(
-            ann => ann.id === notification.announcement_id || ann.id === parseInt(notification.announcement_id)
+            (ann) =>
+              ann.id === notification.announcement_id ||
+              ann.id === parseInt(notification.announcement_id)
           );
         }
-        
-        // If not found by ID, try to get from announcementDetails state
         if (!matchingAnnouncement && notification.announcement_id) {
           const cachedAnnouncement = announcementDetails[notification.id];
           if (cachedAnnouncement) {
             matchingAnnouncement = cachedAnnouncement;
           }
         }
-        
-        // If still not found, get the most recent announcement
         if (!matchingAnnouncement && announcementList.length > 0) {
-          matchingAnnouncement = announcementList[0]; // Most recent
+          matchingAnnouncement = announcementList[0];
         }
-        
         if (matchingAnnouncement) {
           setNotifModalOpen(false);
           setSelectedAnnouncement(matchingAnnouncement);
           setOpenModal(true);
         } else {
-          // If not found, just close notification modal
           setNotifModalOpen(false);
         }
       } catch (err) {
-        console.error('Error fetching announcement:', err);
+        console.error("Error fetching announcement:", err);
         setNotifModalOpen(false);
       }
     } else if (notification.action_link) {
@@ -269,17 +414,17 @@ const HAHAHA = () => {
   };
 
   const getUserInfo = () => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (!token) return {};
     try {
-      const decoded = JSON.parse(atob(token.split('.')[1]));
+      const decoded = JSON.parse(atob(token.split(".")[1]));
       return {
         role: decoded.role,
         employeeNumber: decoded.employeeNumber,
         username: decoded.username,
       };
     } catch (err) {
-      console.error('Error decoding token:', err);
+      console.error("Error decoding token:", err);
       return {};
     }
   };
@@ -296,22 +441,12 @@ const HAHAHA = () => {
         const res = await axios.get(`${API_BASE_URL}/api/announcements`);
         setAnnouncements(Array.isArray(res.data) ? res.data : []);
       } catch (err) {
-        console.error('Error fetching announcements:', err);
+        console.error("Error fetching announcements:", err);
         setAnnouncements([]);
       }
     };
     fetchAnnouncements();
   }, []);
-
-  const handlePrevSlide = () => {
-    if (announcements.length === 0) return;
-    setCurrentSlide((prev) => (prev - 1 + announcements.length) % announcements.length);
-  };
-
-  const handleNextSlide = () => {
-    if (announcements.length === 0) return;
-    setCurrentSlide((prev) => (prev + 1) % announcements.length);
-  };
 
   const handleOpenModal = (announcement) => {
     setSelectedAnnouncement(announcement);
@@ -324,23 +459,30 @@ const HAHAHA = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    navigate('/login');
+    localStorage.removeItem("token");
+    navigate("/login");
   };
 
   useEffect(() => {
     const fetchProfilePicture = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/personalinfo/person_table`);
+        const res = await axios.get(
+          `${API_BASE_URL}/personalinfo/person_table`
+        );
         const list = Array.isArray(res.data) ? res.data : [];
-        const match = list.find((p) => String(p.agencyEmployeeNum) === String(employeeNumber));
-        if (match && match.profile_picture) setProfilePicture(match.profile_picture);
-        const fullNameFromPerson = `${match.firstName || ''} ${match.middleName || ''} ${match.lastName || ''} ${match.nameExtension || ''}`.trim();
+        const match = list.find(
+          (p) => String(p.agencyEmployeeNum) === String(employeeNumber)
+        );
+        if (match && match.profile_picture)
+          setProfilePicture(match.profile_picture);
+        const fullNameFromPerson = `${match.firstName || ""} ${
+          match.middleName || ""
+        } ${match.lastName || ""} ${match.nameExtension || ""}`.trim();
         if (fullNameFromPerson) {
           setFullName(fullNameFromPerson);
         }
       } catch (err) {
-        console.error('Error loading profile picture:', err);
+        console.error("Error loading profile picture:", err);
       }
     };
 
@@ -353,23 +495,28 @@ const HAHAHA = () => {
       try {
         const res = await axios.get(`${API_BASE_URL}/api/finalized-payroll`);
         const list = Array.isArray(res.data) ? res.data : [];
-        const userPayroll = list.find((p) =>
-          String(p.employeeNumber) === String(employeeNumber) ||
-          String(p.agencyEmployeeNum) === String(employeeNumber)
+        const userPayroll = list.find(
+          (p) =>
+            String(p.employeeNumber) === String(employeeNumber) ||
+            String(p.agencyEmployeeNum) === String(employeeNumber)
         );
         setPayrollData(userPayroll || null);
       } catch (err) {
-        console.error('Error fetching payroll:', err);
+        console.error("Error fetching payroll:", err);
       }
     };
     fetchPayrollData();
   }, [employeeNumber]);
 
   const formatCurrency = (value) => {
-    if (value === undefined || value === null || value === '' || value === '0') return '₱0.00';
-    const num = typeof value === 'string' ? parseFloat(value) : value;
-    if (isNaN(num)) return '₱0.00';
-    return `₱${num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (value === undefined || value === null || value === "" || value === "0")
+      return "₱0.00";
+    const num = typeof value === "string" ? parseFloat(value) : value;
+    if (isNaN(num)) return "₱0.00";
+    return `₱${num.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
   };
 
   const generateCalendar = () => {
@@ -390,16 +537,19 @@ const HAHAHA = () => {
       try {
         const res = await axios.get(`${API_BASE_URL}/holiday`);
         if (Array.isArray(res.data)) {
-          const transformedHolidays = res.data.map(item => {
+          const transformedHolidays = res.data.map((item) => {
             const d = new Date(item.date);
             const normalizedDate = !isNaN(d)
-              ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+              ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+                  2,
+                  "0"
+                )}-${String(d.getDate()).padStart(2, "0")}`
               : item.date;
 
             return {
               date: normalizedDate,
               name: item.description,
-              status: item.status
+              status: item.status,
             };
           });
           setHolidays(transformedHolidays);
@@ -414,1277 +564,1963 @@ const HAHAHA = () => {
   // Note and Event handlers
   const handleAddNote = () => {
     if (!selectedDate) return;
-    setCurrentNote({ date: selectedDate, content: '' });
+    setCurrentNote({ date: selectedDate, content: "" });
     setOpenNoteDialog(true);
   };
 
   const handleSaveNote = async () => {
     try {
-      const newNote = {
+      const newNotePayload = {
         employee_number: employeeNumber,
-        date: currentNote.date,
-        content: currentNote.content
+        date: currentNote.date, // This should already be in YYYY-MM-DD format
+        content: currentNote.content,
       };
-      
-      const res = await axios.post(`${API_BASE_URL}/api/notes`, newNote);
-      const updatedNotes = [...notes, res.data];
-      setNotes(updatedNotes);
-      
-      // Also save to localStorage as backup
-      localStorage.setItem('employeeNotes', JSON.stringify(updatedNotes));
-      
+      console.log("Saving note with payload:", newNotePayload);
+
+      const res = await axios.post(`${API_BASE_URL}/api/notes`, newNotePayload);
+      const savedNote = res.data;
+      // Normalize the date from the response to be safe
+      const normalizedNote = {
+        ...savedNote,
+        date: normalizeDate(savedNote.date),
+      };
+
+      console.log("Saved and normalized note:", normalizedNote);
+      setNotes((prevNotes) => [...prevNotes, normalizedNote]);
+      localStorage.setItem(
+        "employeeNotes",
+        JSON.stringify([...notes, normalizedNote])
+      );
+
       setOpenNoteDialog(false);
-      setCurrentNote({ date: '', content: '' });
+      setCurrentNote({ date: "", content: "" });
     } catch (err) {
-      console.error('Error saving note:', err);
+      console.error("Error saving note:", err);
       // Fallback to localStorage if API fails
       const newNote = {
         id: Date.now(),
         date: currentNote.date,
         content: currentNote.content,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       };
       const updatedNotes = [...notes, newNote];
       setNotes(updatedNotes);
-      localStorage.setItem('employeeNotes', JSON.stringify(updatedNotes));
+      localStorage.setItem("employeeNotes", JSON.stringify(updatedNotes));
       setOpenNoteDialog(false);
-      setCurrentNote({ date: '', content: '' });
+      setCurrentNote({ date: "", content: "" });
     }
   };
 
   const handleDeleteNote = async (noteId) => {
     try {
       await axios.delete(`${API_BASE_URL}/api/notes/${noteId}`);
-      const updatedNotes = notes.filter(n => n.id !== noteId);
+      const updatedNotes = notes.filter((n) => n.id !== noteId);
       setNotes(updatedNotes);
-      
-      // Also update localStorage
-      localStorage.setItem('employeeNotes', JSON.stringify(updatedNotes));
+      localStorage.setItem("employeeNotes", JSON.stringify(updatedNotes));
     } catch (err) {
-      console.error('Error deleting note:', err);
-      // Fallback to localStorage if API fails
-      const updatedNotes = notes.filter(n => n.id !== noteId);
+      console.error("Error deleting note:", err);
+      const updatedNotes = notes.filter((n) => n.id !== noteId);
       setNotes(updatedNotes);
-      localStorage.setItem('employeeNotes', JSON.stringify(updatedNotes));
+      localStorage.setItem("employeeNotes", JSON.stringify(updatedNotes));
     }
   };
 
   const handleAddEvent = () => {
     if (!selectedDate) return;
-    setCurrentEvent({ date: selectedDate, title: '', description: '' });
+    setCurrentEvent({ date: selectedDate, title: "", description: "" });
     setOpenEventDialog(true);
   };
 
   const handleSaveEvent = async () => {
     try {
-      const newEvent = {
+      const newEventPayload = {
         employee_number: employeeNumber,
-        date: currentEvent.date,
+        date: currentEvent.date, // This should already be in YYYY-MM-DD format
         title: currentEvent.title,
-        description: currentEvent.description
+        description: currentEvent.description,
       };
-      
-      const res = await axios.post(`${API_BASE_URL}/api/events`, newEvent);
-      const updatedEvents = [...events, res.data];
-      setEvents(updatedEvents);
-      
-      // Also save to localStorage as backup
-      localStorage.setItem('employeeEvents', JSON.stringify(updatedEvents));
-      
+      console.log("Saving event with payload:", newEventPayload);
+
+      const res = await axios.post(
+        `${API_BASE_URL}/api/events`,
+        newEventPayload
+      );
+      const savedEvent = res.data;
+      // Normalize the date from the response to be safe
+      const normalizedEvent = {
+        ...savedEvent,
+        date: normalizeDate(savedEvent.date),
+      };
+
+      console.log("Saved and normalized event:", normalizedEvent);
+      setEvents((prevEvents) => [...prevEvents, normalizedEvent]);
+      localStorage.setItem(
+        "employeeEvents",
+        JSON.stringify([...events, normalizedEvent])
+      );
+
       setOpenEventDialog(false);
-      setCurrentEvent({ date: '', title: '', description: '' });
+      setCurrentEvent({ date: "", title: "", description: "" });
     } catch (err) {
-      console.error('Error saving event:', err);
-      // Fallback to localStorage if API fails
+      console.error("Error saving event:", err);
       const newEvent = {
         id: Date.now(),
         date: currentEvent.date,
         title: currentEvent.title,
         description: currentEvent.description,
         createdAt: new Date().toISOString(),
-        notified: false
+        notified: false,
       };
       const updatedEvents = [...events, newEvent];
       setEvents(updatedEvents);
-      localStorage.setItem('employeeEvents', JSON.stringify(updatedEvents));
+      localStorage.setItem("employeeEvents", JSON.stringify(updatedEvents));
       setOpenEventDialog(false);
-      setCurrentEvent({ date: '', title: '', description: '' });
+      setCurrentEvent({ date: "", title: "", description: "" });
     }
   };
 
   const handleDeleteEvent = async (eventId) => {
     try {
       await axios.delete(`${API_BASE_URL}/api/events/${eventId}`);
-      const updatedEvents = events.filter(e => e.id !== eventId);
+      const updatedEvents = events.filter((e) => e.id !== eventId);
       setEvents(updatedEvents);
-      
-      // Also update localStorage
-      localStorage.setItem('employeeEvents', JSON.stringify(updatedEvents));
+      localStorage.setItem("employeeEvents", JSON.stringify(updatedEvents));
     } catch (err) {
-      console.error('Error deleting event:', err);
-      // Fallback to localStorage if API fails
-      const updatedEvents = events.filter(e => e.id !== eventId);
+      console.error("Error deleting event:", err);
+      const updatedEvents = events.filter((e) => e.id !== eventId);
       setEvents(updatedEvents);
-      localStorage.setItem('employeeEvents', JSON.stringify(updatedEvents));
+      localStorage.setItem("employeeEvents", JSON.stringify(updatedEvents));
     }
   };
 
   const getNotesForDate = (dateStr) => {
-    return notes.filter(n => n.date === dateStr);
+    const dayNotes = notes.filter((n) => n.date === dateStr);
+    console.log(`Notes for ${dateStr}:`, dayNotes);
+    return dayNotes;
   };
 
   const getEventsForDate = (dateStr) => {
-    return events.filter(e => e.date === dateStr);
+    const dayEvents = events.filter((e) => e.date === dateStr);
+    console.log(`Events for ${dateStr}:`, dayEvents);
+    return dayEvents;
   };
 
   const getTodayEvents = () => {
-    const today = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}-${String(new Date().getDate()).padStart(2, "0")}`;
-    return events.filter(e => e.date === today);
+    const today = normalizeDate(new Date());
+    return events.filter((e) => e.date === today);
   };
 
   const getUpcomingEvents = () => {
-    const today = new Date();
-    const threeDaysLater = new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000);
-    return events.filter(e => {
-      const eventDate = new Date(e.date);
-      return eventDate >= today && eventDate <= threeDaysLater;
-    });
+    const today = normalizeDate(new Date());
+    const threeDaysLater = normalizeDate(
+      new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+    );
+    return events.filter((e) => e.date >= today && e.date <= threeDaysLater);
   };
 
-  // Combine notes and events for recent activity
   const getRecentActivity = () => {
     const allActivity = [
-      ...notes.map(note => ({
+      ...notes.map((note) => ({
         id: note.id,
-        type: 'note',
-        title: 'Note',
+        type: "note",
+        title: "Note",
         content: note.content,
         date: note.date,
-        createdAt: note.createdAt || new Date().toISOString()
+        createdAt: note.createdAt || new Date().toISOString(),
       })),
-      ...events.map(event => ({
+      ...events.map((event) => ({
         id: event.id,
-        type: 'event',
+        type: "event",
         title: event.title,
         content: event.description,
         date: event.date,
-        createdAt: event.createdAt || new Date().toISOString()
-      }))
+        createdAt: event.createdAt || new Date().toISOString(),
+      })),
     ];
-    
-    // Sort by creation date (newest first) and take the latest 5
-    return allActivity.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);
+    return allActivity
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 5);
   };
 
   const quickActions = [
-    { icon: <AccessTime />, label: 'DTR', link: '/daily_time_record', color: COLORS.primary },
-    { icon: <Receipt />, label: 'Payslip', link: '/payslip', color: COLORS.primary },
-    { icon: <ContactPage />, label: 'PDS', link: '/pds1', color: COLORS.primary },
-    { icon: <WorkHistory />, label: 'Attendance', link: '/attendance-user-state', color: COLORS.primary },
+    {
+      icon: <AccessTime />,
+      label: "DTR",
+      link: "/daily_time_record",
+      color: settings.primaryColor,
+    },
+    {
+      icon: <Receipt />,
+      label: "Payslip",
+      link: "/payslip",
+      color: settings.primaryColor,
+    },
+    {
+      icon: <ContactPage />,
+      label: "PDS",
+      link: "/pds1",
+      color: settings.primaryColor,
+    },
+    {
+      icon: <WorkHistory />,
+      label: "Attendance",
+      link: "/attendance-user-state",
+      color: settings.primaryColor,
+    },
   ];
 
+  const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
+  const handleMenuClose = () => setAnchorEl(null);
 
   return (
-    <Box sx={{
-      minHeight: '100vh',
-      p: { xs: 2, md: 1 }
-    }}>
+    <Box sx={{ minHeight: "100vh", p: { xs: 2, md: 1 }, mt: -1, mb: 3 }}>
       {/* Header */}
-      <Paper
-        elevation={0}
-        sx={{
-          p: { xs: 2, md: 3 },
-          mb: 3,
-          borderRadius: 3,
-          background: COLORS.primary,
-          color: COLORS.white,
-          position: 'relative',
-          overflow: 'hidden',
-          boxShadow: '0 8px 32px rgba(109, 35, 35, 0.3)'
-        }}
-      >
-        <Box sx={{
-          position: 'absolute',
-          top: -50,
-          right: -50,
-          width: 200,
-          height: 200,
-          borderRadius: '50%',
-          background: 'rgba(255, 255, 255, 0.05)',
-        }} />
-       
-        <Grid container alignItems="center" spacing={2}>
-          <Grid item xs={12} md={8}>
-            <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, fontSize: { xs: '1.5rem', md: '2rem' } }}>
-              Welcome back, {fullName || username || 'Employee'}!
+      <Grow in timeout={300}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mb: 3,
+            background: settings.accentColor,
+            backdropFilter: "blur(15px)",
+            borderRadius: 4,
+            p: 2,
+            border: `1px solid ${settings.secondaryColor}`,
+            boxShadow: `0 15px 40px ${settings.primaryColor}33`,
+            mt: -2,
+          }}
+        >
+          <Box>
+            <Typography
+              variant="h5"
+              sx={{ color: settings.textPrimaryColor, fontWeight: 700 }}
+            >
+              Hello, {fullName || username}!
             </Typography>
-            <Typography variant="body1" sx={{ opacity: 0.9, fontSize: { xs: '0.875rem', md: '1rem' } }}>
-              {currentDate.toLocaleDateString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
+            <Typography
+              variant="body2"
+              sx={{
+                color: settings.textPrimaryColor,
+                mt: 0.25,
+                display: "flex",
+                alignItems: "center",
+                gap: 0.5,
+              }}
+            >
+              <AccessTime sx={{ fontSize: 14 }} />
+              {currentDate.toLocaleDateString("en-US", {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+                year: "numeric",
               })}
+              <span style={{ marginLeft: "8px" }}>
+                {currentDate.toLocaleTimeString("en-US", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
             </Typography>
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <Box sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'flex-end' }, gap: 2, alignItems: 'center' }}>
-              <Box sx={{
-                textAlign: 'right',
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                backdropFilter: 'blur(10px)',
-                p: 2,
-                borderRadius: 2
-              }}>
-                <Typography variant="h4" sx={{ fontWeight: 700, fontSize: { xs: '1.5rem', md: '2rem' } }}>
-                  {currentDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                </Typography>
-              </Box>
-              <IconButton
-                onClick={async () => {
-                  // Immediately fetch latest notifications when opening modal
-                  if (employeeNumber) {
-                    try {
-                      const empNum = String(employeeNumber).trim();
-                      const [notifRes, unreadRes] = await Promise.all([
-                        axios.get(`${API_BASE_URL}/api/notifications/${empNum}`),
-                        axios.get(`${API_BASE_URL}/api/notifications/${empNum}/unread-count`)
-                      ]);
-                      
-                      // Filter notifications to ensure they belong to the logged-in employee
-                      const filteredNotifications = Array.isArray(notifRes.data) 
-                        ? notifRes.data.filter(notif => String(notif.employeeNumber).trim() === empNum)
-                        : [];
-                      
-                      setNotifications(filteredNotifications);
-                      setUnreadCount(unreadRes.data?.count || 0);
-                    } catch (err) {
-                      console.error('Error fetching notifications:', err);
-                    }
+          </Box>
+          <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
+            <IconButton
+              size="small"
+              sx={{
+                bgcolor: `${settings.primaryColor}1A`,
+                "&:hover": { bgcolor: `${settings.primaryColor}33` },
+                color: settings.textPrimaryColor,
+              }}
+              onClick={async () => {
+                if (employeeNumber) {
+                  try {
+                    const empNum = String(employeeNumber).trim();
+                    const [notifRes, unreadRes] = await Promise.all([
+                      axios.get(`${API_BASE_URL}/api/notifications/${empNum}`),
+                      axios.get(
+                        `${API_BASE_URL}/api/notifications/${empNum}/unread-count`
+                      ),
+                    ]);
+                    const filteredNotifications = Array.isArray(notifRes.data)
+                      ? notifRes.data.filter(
+                          (notif) =>
+                            String(notif.employeeNumber).trim() === empNum
+                        )
+                      : [];
+                    setNotifications(filteredNotifications);
+                    setUnreadCount(unreadRes.data?.count || 0);
+                  } catch (err) {
+                    console.error("Error fetching notifications:", err);
                   }
-                  setNotifModalOpen(true);
-                }}
-                sx={{
-                  color: COLORS.white,
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                  '&:hover': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                    transform: 'scale(1.1)'
-                  },
-                  transition: 'all 0.3s'
-                }}
-              >
-                <Badge badgeContent={unreadCount} color="error">
-                  <NotificationsIcon />
-                </Badge>
+                }
+                setNotifModalOpen(true);
+              }}
+            >
+              <Badge badgeContent={unreadCount} color="error" max={9}>
+                <NotificationsIcon fontSize="small" />
+              </Badge>
+            </IconButton>
+            <Box
+              sx={{
+                position: "relative",
+                "&::before": {
+                  content: '""',
+                  position: "absolute",
+                  inset: -2,
+                  borderRadius: "50%",
+                  padding: "2px",
+                  background: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
+                  WebkitMask:
+                    "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+                  WebkitMaskComposite: "xor",
+                  maskComposite: "exclude",
+                },
+              }}
+            >
+              <IconButton onClick={handleMenuOpen} sx={{ p: 0.5 }}>
+                <Avatar
+                  alt={username}
+                  src={
+                    profilePicture
+                      ? `${API_BASE_URL}${profilePicture}`
+                      : undefined
+                  }
+                  sx={{ width: 36, height: 36 }}
+                />
               </IconButton>
             </Box>
-          </Grid>
-        </Grid>
-      </Paper>
+            <Menu
+              anchorEl={anchorEl}
+              open={openMenu}
+              onClose={handleMenuClose}
+              anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+              transformOrigin={{ vertical: "top", horizontal: "right" }}
+              PaperProps={{
+                sx: {
+                  borderRadius: 2,
+                  minWidth: 180,
+                  backgroundColor: settings.accentColor,
+                  border: `1px solid ${settings.primaryColor}26`,
+                  boxShadow: `0 15px 40px ${settings.primaryColor}33`,
+                  "& .MuiMenuItem-root": {
+                    fontSize: "0.875rem",
+                    color: settings.textPrimaryColor,
+                    "&:hover": { background: `${settings.primaryColor}0A` },
+                  },
+                },
+              }}
+            >
+              <MenuItem
+                onClick={() => {
+                  handleMenuClose();
+                  navigate("/profile");
+                }}
+              >
+                <AccountCircle
+                  sx={{ mr: 1, fontSize: 20, color: settings.textPrimaryColor }}
+                />{" "}
+                Profile
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  handleMenuClose();
+                  navigate("/settings");
+                }}
+              >
+                <Settings
+                  sx={{ mr: 1, fontSize: 20, color: settings.textPrimaryColor }}
+                />{" "}
+                Settings
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  handleMenuClose();
+                  navigate("/settings");
+                }}
+              >
+                <HelpOutline
+                  sx={{ mr: 1, fontSize: 20, color: settings.textPrimaryColor }}
+                />{" "}
+                FAQs
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  handleMenuClose();
+                  navigate("/settings");
+                }}
+              >
+                <PrivacyTip
+                  sx={{ mr: 1, fontSize: 20, color: settings.textPrimaryColor }}
+                />{" "}
+                Privacy Policy
+              </MenuItem>
+              <Divider sx={{ borderColor: `${settings.primaryColor}26` }} />
+              <MenuItem
+                onClick={() => {
+                  handleMenuClose();
+                  handleLogout();
+                }}
+              >
+                <Logout
+                  sx={{ mr: 1, fontSize: 20, color: settings.textPrimaryColor }}
+                />{" "}
+                Sign Out
+              </MenuItem>
+            </Menu>
+          </Box>
+        </Box>
+      </Grow>
 
       <Grid container spacing={3}>
         {/* Left Column */}
         <Grid item xs={12} md={7} lg={8}>
-          {/* Announcement Slideshow - BIGGER */}
-          <Paper
-            elevation={0}
-            sx={{
-              mb: 3,
-              borderRadius: 3,
-              overflow: 'hidden',
-              position: 'relative',
-              height: { xs: 350, sm: 450, md: 550 },
-              cursor: 'pointer',
-              transition: 'all 0.3s',
-              backgroundColor: COLORS.white,
-              boxShadow: '0 8px 32px rgba(109, 35, 35, 0.15)',
-              '&:hover': {
-                transform: 'translateY(-8px)',
-                boxShadow: '0 16px 48px rgba(109, 35, 35, 0.25)'
-              }
-            }}
-            onClick={() => announcements[currentSlide] && handleOpenModal(announcements[currentSlide])}
-          >
-            {announcements.length > 0 ? (
-              <>
-                <Box
-                  component="img"
-                  src={
-                    announcements[currentSlide]?.image
-                      ? `${API_BASE_URL}${announcements[currentSlide].image}`
-                      : "/api/placeholder/1200/600"
-                  }
-                  alt={announcements[currentSlide]?.title || "Announcement"}
-                  sx={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                  }}
-                />
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 50%, transparent 100%)',
-                    p: { xs: 2, md: 4 },
-                  }}
-                >
-                  <Chip
-                    label="Announcement"
-                    size="small"
-                    sx={{
-                      mb: 2,
-                      backgroundColor: COLORS.secondary,
-                      color: COLORS.primary,
-                      fontWeight: 700,
-                      fontSize: '0.875rem',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
-                    }}
-                  />
-                  <Typography variant="h4" sx={{ color: COLORS.white, fontWeight: 700, mb: 1, fontSize: { xs: '1.25rem', md: '2rem' } }}>
-                    {announcements[currentSlide]?.title}
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: COLORS.white, opacity: 0.9, fontSize: { xs: '0.75rem', md: '1rem' } }}>
-                    {new Date(announcements[currentSlide]?.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                  </Typography>
-                </Box>
-                <IconButton
-                  onClick={(e) => { e.stopPropagation(); handlePrevSlide(); }}
-                  sx={{
-                    position: 'absolute',
-                    left: { xs: 10, md: 20 },
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    backgroundColor: 'rgba(254, 249, 225, 0.95)',
-                    color: COLORS.primary,
-                    boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
-                    '&:hover': {
-                      backgroundColor: COLORS.secondary,
-                      transform: 'translateY(-50%) scale(1.1)'
-                    },
-                    transition: 'all 0.3s'
-                  }}
-                >
-                  <ArrowBackIosNewIcon />
-                </IconButton>
-                <IconButton
-                  onClick={(e) => { e.stopPropagation(); handleNextSlide(); }}
-                  sx={{
-                    position: 'absolute',
-                    right: { xs: 10, md: 20 },
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    backgroundColor: 'rgba(254, 249, 225, 0.95)',
-                    color: COLORS.primary,
-                    boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
-                    '&:hover': {
-                      backgroundColor: COLORS.secondary,
-                      transform: 'translateY(-50%) scale(1.1)'
-                    },
-                    transition: 'all 0.3s'
-                  }}
-                >
-                  <ArrowForwardIosIcon />
-                </IconButton>
-               
-                {/* Slide Indicators */}
-                <Box sx={{
-                  position: 'absolute',
-                  bottom: 20,
-                  right: 20,
-                  display: 'flex',
-                  gap: 1
-                }}>
-                  {announcements.map((_, idx) => (
+          {/* Announcement Slideshow */}
+          <Grow in timeout={400}>
+            <Card
+              sx={{
+                background: settings.accentColor,
+                backdropFilter: "blur(15px)",
+                border: `1px solid ${settings.primaryColor}26`,
+                borderRadius: 4,
+                mb: 3,
+                overflow: "hidden",
+                boxShadow: `0 15px 40px ${settings.primaryColor}33`,
+                position: "relative",
+                height: { xs: 350, sm: 450, md: 550 },
+                cursor: "pointer",
+                transition: "all 0.3s",
+                "&:hover": {
+                  transform: "translateY(-8px)",
+                  boxShadow: `0 16px 48px ${settings.primaryColor}4D`,
+                },
+              }}
+            >
+              <Box sx={{ position: "relative", height: "100%" }}>
+                {announcements.length > 0 ? (
+                  <>
                     <Box
-                      key={idx}
+                      component="img"
+                      src={
+                        announcements[currentSlide]?.image
+                          ? `${API_BASE_URL}${announcements[currentSlide].image}`
+                          : "/api/placeholder/1200/600"
+                      }
+                      alt={announcements[currentSlide]?.title || "Announcement"}
                       sx={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: '50%',
-                        backgroundColor: idx === currentSlide ? COLORS.secondary : 'rgba(255,255,255,0.5)',
-                        transition: 'all 0.3s',
-                        cursor: 'pointer'
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCurrentSlide(idx);
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        transition: "transform 0.7s ease",
+                        transform: "scale(1)",
                       }}
                     />
-                  ))}
-                </Box>
-              </>
-            ) : (
-              <Box sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: '100%',
-                backgroundColor: COLORS.lightGray
-              }}>
-                <Typography color="textSecondary">No announcements available</Typography>
-              </Box>
-            )}
-          </Paper>
-
-                    
-          {/* Quick Actions Grid - Compact */}
-          <Paper elevation={0} sx={{ backgroundColor: COLORS.white, p: { xs: 2, md: 3 }, borderRadius: 3, mb: 3, boxShadow: '0 4px 20px rgba(109, 35, 35, 0.08)' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <DashboardIcon sx={{ color: COLORS.primary, mr: 1, fontSize: 24 }} />
-              <Typography variant="h6" sx={{ fontWeight: 700, color: COLORS.primary, fontSize: '1.125rem' }}>
-                Employee Panel
-              </Typography>
-            </Box>
-            <Grid container spacing={2}>
-              {quickActions.map((action, index) => (
-                <Grid item xs={6} sm={6} md={3} key={index}>
-                  <Link to={action.link} style={{ textDecoration: 'none' }}>
-                    <Paper
-                      elevation={0}
+                    <Box
                       sx={{
-                        p: { xs: 2, sm: 3 },
-                        textAlign: 'center',
-                        borderRadius: 2,
-                        backgroundColor: COLORS.white,
-                        transition: 'all 0.3s',
-                        cursor: 'pointer',
-                        boxShadow: '0 2px 8px rgba(109, 35, 35, 0.08)',
-                        '&:hover': {
-                          backgroundColor: COLORS.primary,
-                          transform: 'translateY(-8px)',
-                          boxShadow: '0 12px 24px rgba(109, 35, 35, 0.2)',
-                          '& .action-icon': {
-                            color: COLORS.white,
-                            transform: 'scale(1.2) rotate(5deg)'
-                          },
-                          '& .action-label': { color: COLORS.white }
-                        }
+                        position: "absolute",
+                        inset: 0,
+                        background:
+                          "linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0) 70%)",
+                      }}
+                    />
+                    <IconButton
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePrevSlide();
+                      }}
+                      sx={{
+                        position: "absolute",
+                        left: { xs: 10, md: 20 },
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        bgcolor: `${settings.primaryColor}4D`,
+                        backdropFilter: "blur(10px)",
+                        border: `1px solid ${settings.primaryColor}26`,
+                        "&:hover": {
+                          bgcolor: `${settings.primaryColor}80`,
+                          transform: "translateY(-50%) scale(1.1)",
+                        },
+                        color: "#ffffff",
+                        boxShadow: "0 4px 24px rgba(0,0,0,0.2)",
+                        transition: "all 0.3s",
                       }}
                     >
-                      <Box
-                        className="action-icon"
+                      <ArrowBackIosNewIcon />
+                    </IconButton>
+                    <IconButton
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleNextSlide();
+                      }}
+                      sx={{
+                        position: "absolute",
+                        right: { xs: 10, md: 20 },
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        bgcolor: `${settings.primaryColor}4D`,
+                        backdropFilter: "blur(10px)",
+                        border: `1px solid ${settings.primaryColor}26`,
+                        "&:hover": {
+                          bgcolor: `${settings.primaryColor}80`,
+                          transform: "translateY(-50%) scale(1.1)",
+                        },
+                        color: "#ffffff",
+                        boxShadow: "0 4px 24px rgba(0,0,0,0.2)",
+                        transition: "all 0.3s",
+                      }}
+                    >
+                      <ArrowForwardIosIcon />
+                    </IconButton>
+                    <IconButton
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        togglePlayPause();
+                      }}
+                      sx={{
+                        position: "absolute",
+                        top: { xs: 10, md: 20 },
+                        right: { xs: 10, md: 20 },
+                        bgcolor: `${settings.primaryColor}4D`,
+                        backdropFilter: "blur(10px)",
+                        border: `1px solid ${settings.primaryColor}26`,
+                        "&:hover": {
+                          bgcolor: `${settings.primaryColor}80`,
+                          transform: "scale(1.1)",
+                        },
+                        color: "#ffffff",
+                        boxShadow: "0 4px 24px rgba(0,0,0,0.2)",
+                        transition: "all 0.3s",
+                      }}
+                    >
+                      {isPlaying ? <Pause /> : <PlayArrow />}
+                    </IconButton>
+                    <Box
+                      onClick={() =>
+                        handleOpenModal(announcements[currentSlide])
+                      }
+                      sx={{
+                        position: "absolute",
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        p: { xs: 2, md: 4 },
+                        color: "#ffffff",
+                        cursor: "pointer",
+                        transition: "transform 0.3s",
+                        "&:hover": { transform: "translateY(-4px)" },
+                      }}
+                    >
+                      <Chip
+                        label="ANNOUNCEMENT"
+                        size="small"
                         sx={{
-                          color: action.color,
-                          mb: 1,
-                          fontSize: { xs: 32, sm: 40 },
-                          transition: 'all 0.3s',
-                          display: 'flex',
-                          justifyContent: 'center'
+                          mb: 2,
+                          bgcolor: `${settings.primaryColor}80`,
+                          backdropFilter: "blur(10px)",
+                          color: "#ffffff",
+                          fontWeight: 700,
+                          fontSize: "0.7rem",
+                          border: "1px solid rgba(254, 249, 225, 0.3)",
                         }}
-                      >
-                        {action.icon}
-                      </Box>
+                      />
                       <Typography
-                        className="action-label"
-                        variant="caption"
+                        variant="h3"
                         sx={{
-                          fontWeight: 600,
-                          color: COLORS.black,
-                          transition: 'color 0.3s',
-                          fontSize: { xs: '0.8rem', sm: '0.9rem' }
+                          color: "#ffffff",
+                          fontWeight: 800,
+                          mb: 1,
+                          textShadow: "0 4px 12px rgba(0,0,0,0.5)",
+                          lineHeight: 1.2,
+                          fontSize: { xs: "1.25rem", md: "2rem" },
                         }}
                       >
-                        {action.label}
+                        {announcements[currentSlide]?.title}
                       </Typography>
-                    </Paper>
-                  </Link>
+                      <Typography
+                        sx={{
+                          color: "rgba(255,255,255,0.9)",
+                          fontSize: { xs: "0.75rem", md: "1rem" },
+                          textShadow: "0 2px 8px rgba(0,0,0,0.5)",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                        }}
+                      >
+                        <AccessTime sx={{ fontSize: 18 }} />
+                        {new Date(
+                          announcements[currentSlide]?.date
+                        ).toLocaleDateString("en-US", {
+                          month: "long",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </Typography>
+                    </Box>
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        bottom: 20,
+                        right: 20,
+                        display: "flex",
+                        gap: 1.5,
+                        alignItems: "center",
+                      }}
+                    >
+                      {announcements.map((_, idx) => (
+                        <Box
+                          key={idx}
+                          sx={{
+                            width: currentSlide === idx ? 32 : 10,
+                            height: 10,
+                            borderRadius: 5,
+                            bgcolor:
+                              currentSlide === idx
+                                ? "#ffffff"
+                                : "rgba(254,249,225,0.4)",
+                            transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+                            cursor: "pointer",
+                            border: "1px solid rgba(254,249,225,0.3)",
+                            "&:hover": {
+                              bgcolor: "rgba(254,249,225,0.7)",
+                              transform: "scale(1.2)",
+                            },
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSlideSelect(idx);
+                          }}
+                        />
+                      ))}
+                    </Box>
+                  </>
+                ) : (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      height: "100%",
+                      flexDirection: "column",
+                      gap: 2,
+                    }}
+                  >
+                    <Flag
+                      sx={{ fontSize: 80, color: `${settings.primaryColor}4D` }}
+                    />
+                    <Typography
+                      variant="h5"
+                      sx={{ color: settings.textPrimaryColor }}
+                    >
+                      No announcements available
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            </Card>
+          </Grow>
+
+          {/* Quick Actions Grid */}
+          <Grow in timeout={500}>
+            <Card
+              sx={{
+                background: settings.accentColor,
+                backdropFilter: "blur(15px)",
+                border: `1px solid ${settings.primaryColor}26`,
+                borderRadius: 4,
+                mb: 3,
+                boxShadow: `0 15px 40px ${settings.primaryColor}33`,
+              }}
+            >
+              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+                <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                  <DashboardIcon
+                    sx={{
+                      color: settings.textPrimaryColor,
+                      mr: 1,
+                      fontSize: 24,
+                    }}
+                  />
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 700,
+                      color: settings.textPrimaryColor,
+                      fontSize: "1.125rem",
+                    }}
+                  >
+                    Employee Panel
+                  </Typography>
+                </Box>
+                <Grid container spacing={2}>
+                  {quickActions.map((action, index) => (
+                    <Grid item xs={6} sm={6} md={3} key={index}>
+                      <Link to={action.link} style={{ textDecoration: "none" }}>
+                        <Box
+                          sx={{
+                            p: { xs: 2, sm: 3 },
+                            textAlign: "center",
+                            borderRadius: 2,
+                            backgroundColor: `${settings.primaryColor}0A`,
+                            border: `1px solid ${settings.primaryColor}26`,
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            gap: 1,
+                            transition: "all 0.3s",
+                            cursor: "pointer",
+                            "&:hover": {
+                              backgroundColor: settings.primaryColor,
+                              transform: "translateY(-8px)",
+                              boxShadow: `0 12px 24px ${settings.primaryColor}4D`,
+                              "& .action-icon": {
+                                color: settings.textColor,
+                                transform: "scale(1.2) rotate(5deg)",
+                              },
+                              "& .action-label": { color: settings.textColor },
+                            },
+                          }}
+                        >
+                          <Box
+                            className="action-icon"
+                            sx={{
+                              color: action.color,
+                              fontSize: { xs: 32, sm: 40 },
+                              transition: "all 0.3s",
+                              display: "flex",
+                              justifyContent: "center",
+                            }}
+                          >
+                            {action.icon}
+                          </Box>
+                          <Typography
+                            className="action-label"
+                            variant="caption"
+                            sx={{
+                              fontWeight: 600,
+                              color: settings.textPrimaryColor,
+                              transition: "color 0.3s",
+                              fontSize: { xs: "0.8rem", sm: "0.9rem" },
+                            }}
+                          >
+                            {action.label}
+                          </Typography>
+                        </Box>
+                      </Link>
+                    </Grid>
+                  ))}
                 </Grid>
-              ))}
-            </Grid>
-          </Paper>
+              </CardContent>
+            </Card>
+          </Grow>
 
           {/* Payslip Card */}
-          <Paper elevation={0} sx={{ backgroundColor: COLORS.white, p: { xs: 2, md: 3 }, borderRadius: 3, boxShadow: '0 4px 20px rgba(109, 35, 35, 0.08)' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 1 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Receipt sx={{ color: COLORS.primary, mr: 1, fontSize: 24 }} />
-                <Typography variant="h6" sx={{ fontWeight: 700, color: COLORS.primary, fontSize: '1.125rem' }}>
-                  Latest Payslip
-                </Typography>
-              </Box>
-              <Chip
-                label={payrollData?.period || 'Latest Period'}
-                sx={{
-                  backgroundColor: COLORS.secondary,
-                  color: COLORS.primary,
-                  fontWeight: 600
-                }}
-              />
-            </Box>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <Card
-                  elevation={0}
+          <Grow in timeout={600}>
+            <Card
+              sx={{
+                background: settings.accentColor,
+                backdropFilter: "blur(15px)",
+                border: `1px solid ${settings.primaryColor}26`,
+                borderRadius: 4,
+                boxShadow: `0 15px 40px ${settings.primaryColor}33`,
+              }}
+            >
+              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+                <Box
                   sx={{
-                    background: `linear-gradient(135deg, ${COLORS.primary} 0%, #8d3333 100%)`,
-                    color: COLORS.white,
-                    borderRadius: 2,
-                    transition: 'all 0.3s',
-                    boxShadow: '0 4px 16px rgba(109, 35, 35, 0.2)',
-                    '&:hover': {
-                      transform: 'scale(1.05)',
-                      boxShadow: '0 8px 24px rgba(109, 35, 35, 0.3)'
-                    }
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    mb: 3,
+                    flexWrap: "wrap",
+                    gap: 1,
                   }}
                 >
-                  <CardContent>
-                    <Typography variant="caption" sx={{ opacity: 0.9, mb: 1, display: 'block' }}>
-                      1st Quincena
+                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                    <Receipt
+                      sx={{
+                        color: settings.textPrimaryColor,
+                        mr: 1,
+                        fontSize: 24,
+                      }}
+                    />
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        fontWeight: 700,
+                        color: settings.textPrimaryColor,
+                        fontSize: "1.125rem",
+                      }}
+                    >
+                      Latest Payslip
                     </Typography>
-                    <Typography variant="h4" sx={{ fontWeight: 700, fontSize: { xs: '1.75rem', md: '2.125rem' } }}>
-                      {payrollData ? formatCurrency(payrollData.pay1st) : '₱-.--'}
-                    </Typography>
-                    <Box sx={{ mt: 2, display: 'flex', alignItems: 'center' }}>
-                      <AccountBalance sx={{ mr: 1, fontSize: 18 }} />
-                      <Typography variant="caption">{payrollData?.period1_desc || '1st Half'}</Typography>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Card
-                  elevation={0}
-                  sx={{
-                    background: `linear-gradient(135deg, #8d3333 0%, ${COLORS.primary} 100%)`,
-                    color: COLORS.white,
-                    borderRadius: 2,
-                    transition: 'all 0.3s',
-                    boxShadow: '0 4px 16px rgba(109, 35, 35, 0.2)',
-                    '&:hover': {
-                      transform: 'scale(1.05)',
-                      boxShadow: '0 8px 24px rgba(109, 35, 35, 0.3)'
-                    }
-                  }}
-                >
-                  <CardContent>
-                    <Typography variant="caption" sx={{ opacity: 0.9, mb: 1, display: 'block' }}>
-                      2nd Quincena
-                    </Typography>
-                    <Typography variant="h4" sx={{ fontWeight: 700, fontSize: { xs: '1.75rem', md: '2.125rem' } }}>
-                      {payrollData ? formatCurrency(payrollData.pay2nd) : '₱-.--'}
-                    </Typography>
-                    <Box sx={{ mt: 2, display: 'flex', alignItems: 'center' }}>
-                      <AccountBalance sx={{ mr: 1, fontSize: 18 }} />
-                      <Typography variant="caption">{payrollData?.period2_desc || '2nd Half'}</Typography>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-            </Grid>
-            <Link to="/payslip" style={{ textDecoration: 'none' }}>
-              <Button
-                fullWidth
-                variant="outlined"
-                sx={{
-                  mt: 2,
-                  borderColor: COLORS.primary,
-                  color: COLORS.primary,
-                  fontWeight: 600,
-                  borderWidth: 2,
-                  '&:hover': {
-                    borderColor: COLORS.primary,
-                    backgroundColor: COLORS.primary,
-                    color: COLORS.white,
-                    borderWidth: 2,
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(109, 35, 35, 0.2)'
-                  },
-                  transition: 'all 0.3s'
-                }}
-                startIcon={<Download />}
-              >
-                View Full Payslip
-              </Button>
-            </Link>
-          </Paper>
+                  </Box>
+                  <Chip
+                    label={payrollData?.period || "Latest Period"}
+                    sx={{
+                      backgroundColor: `${settings.primaryColor}1A`,
+                      color: settings.textPrimaryColor,
+                      fontWeight: 600,
+                    }}
+                  />
+                </Box>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <Card
+                      elevation={0}
+                      sx={{
+                        background: `linear-gradient(135deg, ${settings.primaryColor} 0%, ${settings.secondaryColor} 100%)`,
+                        color: settings.textColor,
+                        borderRadius: 2,
+                        transition: "all 0.3s",
+                        boxShadow: `0 4px 16px ${settings.primaryColor}33`,
+                        "&:hover": {
+                          transform: "scale(1.05)",
+                          boxShadow: `0 8px 24px ${settings.primaryColor}4D`,
+                        },
+                      }}
+                    >
+                      <CardContent>
+                        <Typography
+                          variant="caption"
+                          sx={{ opacity: 0.9, mb: 1, display: "block" }}
+                        >
+                          1st Quincena
+                        </Typography>
+                        <Typography
+                          variant="h4"
+                          sx={{
+                            fontWeight: 700,
+                            fontSize: { xs: "1.75rem", md: "2.125rem" },
+                          }}
+                        >
+                          {payrollData
+                            ? formatCurrency(payrollData.pay1st)
+                            : "₱-.--"}
+                        </Typography>
+                        <Box
+                          sx={{ mt: 2, display: "flex", alignItems: "center" }}
+                        >
+                          <AccountBalance sx={{ mr: 1, fontSize: 18 }} />
+                          <Typography variant="caption">
+                            {payrollData?.period1_desc || "1st Half"}
+                          </Typography>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Card
+                      elevation={0}
+                      sx={{
+                        background: `linear-gradient(135deg, ${settings.secondaryColor} 0%, ${settings.primaryColor} 100%)`,
+                        color: settings.textColor,
+                        borderRadius: 2,
+                        transition: "all 0.3s",
+                        boxShadow: `0 4px 16px ${settings.primaryColor}33`,
+                        "&:hover": {
+                          transform: "scale(1.05)",
+                          boxShadow: `0 8px 24px ${settings.primaryColor}4D`,
+                        },
+                      }}
+                    >
+                      <CardContent>
+                        <Typography
+                          variant="caption"
+                          sx={{ opacity: 0.9, mb: 1, display: "block" }}
+                        >
+                          2nd Quincena
+                        </Typography>
+                        <Typography
+                          variant="h4"
+                          sx={{
+                            fontWeight: 700,
+                            fontSize: { xs: "1.75rem", md: "2.125rem" },
+                          }}
+                        >
+                          {payrollData
+                            ? formatCurrency(payrollData.pay2nd)
+                            : "₱-.--"}
+                        </Typography>
+                        <Box
+                          sx={{ mt: 2, display: "flex", alignItems: "center" }}
+                        >
+                          <AccountBalance sx={{ mr: 1, fontSize: 18 }} />
+                          <Typography variant="caption">
+                            {payrollData?.period2_desc || "2nd Half"}
+                          </Typography>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
+                <Link to="/payslip" style={{ textDecoration: "none" }}>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    sx={{
+                      mt: 2,
+                      borderColor: settings.primaryColor,
+                      color: settings.textPrimaryColor,
+                      fontWeight: 600,
+                      borderWidth: 1,
+                      "&:hover": {
+                        borderColor: settings.primaryColor,
+                        backgroundColor: settings.primaryColor,
+                        color: settings.textColor,
+                        borderWidth: 1,
+                        transform: "translateY(-2px)",
+                        boxShadow: `0 4px 12px ${settings.primaryColor}33`,
+                      },
+                      transition: "all 0.3s",
+                    }}
+                    startIcon={<Download />}
+                  >
+                    View Full Payslip
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </Grow>
         </Grid>
 
         {/* Right Column */}
         <Grid item xs={12} md={5} lg={4}>
           {/* Profile Card */}
-          <Paper elevation={0} sx={{ backgroundColor: COLORS.white, p: 3, borderRadius: 3, mb: 3, textAlign: 'center', boxShadow: '0 4px 20px rgba(109, 35, 35, 0.08)' }}>
-            <Avatar
-              src={profilePicture ? `${API_BASE_URL}${profilePicture}` : undefined}
+          <Grow in timeout={400}>
+            <Card
               sx={{
-                width: 100,
-                height: 100,
-                margin: '0 auto 16px',
-                border: `4px solid ${COLORS.primary}`,
-                boxShadow: '0 4px 15px rgba(109, 35, 35, 0.2)',
-                transition: 'all 0.3s',
-                '&:hover': {
-                  transform: 'scale(1.1)',
-                  boxShadow: '0 8px 24px rgba(109, 35, 35, 0.3)'
-                }
+                background: settings.accentColor,
+                backdropFilter: "blur(15px)",
+                border: `1px solid ${settings.primaryColor}26`,
+                borderRadius: 4,
+                mb: 3,
+                textAlign: "center",
+                boxShadow: `0 15px 40px ${settings.primaryColor}33`,
               }}
-            />
-            <Typography variant="h6" sx={{ fontWeight: 700, color: COLORS.primary, mb: 0.5 }}>
-              {fullName || username || 'Employee Name'}
-            </Typography>
-            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-              ID: {employeeNumber || '#00000000'}
-            </Typography>
-            <Divider sx={{ my: 2 }} />
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button
-                fullWidth
-                variant="contained"
-                size="small"
-                startIcon={<Settings />}
-                sx={{
-                  backgroundColor: COLORS.primary,
-                  color: "white",
-                  '&:hover': {
-                    backgroundColor: '#8d3333',
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(109, 35, 35, 0.3)',
-                    '& .MuiSvgIcon-root': {
-                      transform: 'rotate(90deg)'
+            >
+              <CardContent sx={{ p: 3 }}>
+                <Box>
+                  <Avatar
+                    src={
+                      profilePicture
+                        ? `${API_BASE_URL}${profilePicture}`
+                        : undefined
                     }
-                  },
-                  '& .MuiSvgIcon-root': {
-                    transition: 'transform 0.3s'
-                  }
-                }}
-              >
-                Profile
-              </Button>
-              <Button
-                fullWidth
-                variant="contained"
-                size="small"
-                startIcon={<Logout />}
-                onClick={handleLogout}
-                sx={{
-                  backgroundColor: COLORS.primary,
-                  '&:hover': {
-                    backgroundColor: '#8d3333',
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(109, 35, 35, 0.3)'
-                  },
-                  transition: 'all 0.3s'
-                }}
-              >
-                Logout
-              </Button>
-            </Box>
-          </Paper>
+                    onClick={() => navigate("/profile")}
+                    sx={{
+                      border: `2px solid ${settings.primaryColor}`,
+                      width: 100,
+                      height: 100,
+                      margin: "0 auto 16px",
+                      cursor: "pointer",
+                      transition: "all 0.3s",
+                      "&:hover": { transform: "scale(1.1)" },
+                    }}
+                  />
+                </Box>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontWeight: 700,
+                    color: settings.textPrimaryColor,
+                    mb: 0.5,
+                  }}
+                >
+                  {fullName || username || "Employee Name"}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="textSecondary"
+                  sx={{ mb: 2 }}
+                >
+                  ID: {employeeNumber || "#00000000"}
+                </Typography>
+                <Divider sx={{ my: 2 }} />
+                <Box sx={{ display: "flex", gap: 1 }}>
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    size="small"
+                    startIcon={<ManageAccounts />}
+                    component={Link}
+                    to="/profile"
+                    sx={{
+                      backgroundColor: settings.primaryColor,
+                      color: settings.textColor,
+                      "&:hover": {
+                        backgroundColor: settings.hoverColor,
+                        transform: "translateY(-2px)",
+                        boxShadow: `0 4px 12px ${settings.primaryColor}4D`,
+                      },
+                      "& .MuiSvgIcon-root": { transition: "transform 0.3s" },
+                    }}
+                  >
+                    Profile
+                  </Button>
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    size="small"
+                    startIcon={<Logout />}
+                    onClick={handleLogout}
+                    sx={{
+                      backgroundColor: settings.primaryColor,
+                      "&:hover": {
+                        backgroundColor: settings.hoverColor,
+                        transform: "translateY(-2px)",
+                        boxShadow: `0 4px 12px ${settings.primaryColor}4D`,
+                      },
+                      transition: "all 0.3s",
+                    }}
+                  >
+                    Logout
+                  </Button>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grow>
 
           {/* Calendar with Notes */}
-          <Paper elevation={0} sx={{ backgroundColor: COLORS.white, p: 3, borderRadius: 3, mb: 3, boxShadow: '0 4px 20px rgba(109, 35, 35, 0.08)' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <IconButton
-                size="small"
-                onClick={() => setCalendarDate(new Date(year, month - 1, 1))}
-                sx={{
-                  color: COLORS.primary,
-                  '&:hover': {
-                    backgroundColor: COLORS.secondary,
-                    transform: 'scale(1.1)'
-                  },
-                  transition: 'all 0.3s'
-                }}
-              >
-                <ArrowBackIosNewIcon fontSize="small" />
-              </IconButton>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <CalendarMonth sx={{ color: COLORS.primary, mr: 1 }} />
-                <Typography fontWeight={700} sx={{ color: COLORS.primary }}>
-                  {new Date(year, month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                </Typography>
-              </Box>
-              <IconButton
-                size="small"
-                onClick={() => setCalendarDate(new Date(year, month + 1, 1))}
-                sx={{
-                  color: COLORS.primary,
-                  '&:hover': {
-                    backgroundColor: COLORS.secondary,
-                    transform: 'scale(1.1)'
-                  },
-                  transition: 'all 0.3s'
-                }}
-              >
-                <ArrowForwardIosIcon fontSize="small" />
-              </IconButton>
-            </Box>
-
-            <Grid container spacing={0.5} sx={{ mb: 1 }}>
-              {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => (
-                <Grid item xs={12 / 7} key={i}>
-                  <Typography
+          <Grow in timeout={500}>
+            <Card
+              sx={{
+                background: settings.accentColor,
+                backdropFilter: "blur(15px)",
+                border: `1px solid ${settings.primaryColor}26`,
+                borderRadius: 4,
+                mb: 3,
+                boxShadow: `0 15px 40px ${settings.primaryColor}33`,
+              }}
+            >
+              <CardContent sx={{ p: 3 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    mb: 2,
+                  }}
+                >
+                  <IconButton
+                    size="small"
+                    onClick={() =>
+                      setCalendarDate(new Date(year, month - 1, 1))
+                    }
                     sx={{
-                      textAlign: 'center',
-                      fontWeight: 700,
-                      fontSize: '0.75rem',
-                      color: COLORS.primary,
-                      py: 0.5
+                      color: settings.textPrimaryColor,
+                      "&:hover": {
+                        backgroundColor: `${settings.primaryColor}1A`,
+                        transform: "scale(1.1)",
+                      },
+                      transition: "all 0.3s",
                     }}
                   >
-                    {day}
-                  </Typography>
-                </Grid>
-              ))}
-            </Grid>
-
-            <Grid container spacing={0.5}>
-              {calendarDays.map((day, index) => {
-                const currentDateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-                const holidayData = holidays.find(h => h.date === currentDateStr && h.status === "Active");
-                const dayNotes = getNotesForDate(currentDateStr);
-                const dayEvents = getEventsForDate(currentDateStr);
-                const hasNotesOrEvents = dayNotes.length > 0 || dayEvents.length > 0;
-                const isToday = day === new Date().getDate() &&
-                               month === new Date().getMonth() &&
-                               year === new Date().getFullYear();
-
-                return (
-                  <Grid item xs={12 / 7} key={index}>
-                    <Tooltip
-                      title={
-                        holidayData ? holidayData.name :
-                        hasNotesOrEvents ? `${dayNotes.length} note(s), ${dayEvents.length} event(s)` :
-                        ""
-                      }
-                      arrow
+                    <ArrowBackIosNewIcon fontSize="small" />
+                  </IconButton>
+                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                    <Typography
+                      fontWeight={700}
+                      sx={{
+                        color: settings.textPrimaryColor,
+                        fontSize: "1.2rem",
+                      }}
                     >
-                      <Box
-                        onClick={() => {
-                          if (day) {
-                            setSelectedDate(currentDateStr);
-                            setViewNotesDialog(true);
-                          }
-                        }}
-                        sx={{
-                          textAlign: 'center',
-                          p: 0.8,
-                          fontSize: '0.875rem',
-                          borderRadius: 1,
-                          minHeight: 21,
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: holidayData ? COLORS.white : isToday ? COLORS.white : day ? COLORS.black : 'transparent',
-                          backgroundColor: holidayData ? COLORS.primary : isToday ? '#8d3333' : 'transparent',
-                          fontWeight: holidayData || isToday ? 700 : 400,
-                          border: isToday ? `2px solid ${COLORS.secondary}` : 'none',
-                          cursor: day ? 'pointer' : 'default',
-                          position: 'relative',
-                          transition: 'all 0.2s',
-                          '&:hover': day ? {
-                            transform: 'scale(1.15)',
-                            boxShadow: '0 4px 12px rgba(109, 35, 35, 0.2)',
-                            backgroundColor: holidayData ? COLORS.primary : isToday ? '#8d3333' : COLORS.secondary,
-                            zIndex: 10
-                          } : {}
-                        }}
-                      >
-                        {day || ''}
-                        {hasNotesOrEvents && day && (
-                          <Box sx={{
-                            display: 'flex',
-                            gap: 0.25,
-                            mt: 0.25,
-                            position: 'absolute',
-                            bottom: 2
-                          }}>
-                            {dayNotes.length > 0 && (
-                              <Box sx={{
-                                width: 4,
-                                height: 4,
-                                borderRadius: '50%',
-                                backgroundColor: holidayData || isToday ? COLORS.white : '#ff9800'
-                              }} />
-                            )}
-                            {dayEvents.length > 0 && (
-                              <Box sx={{
-                                width: 4,
-                                height: 4,
-                                borderRadius: '50%',
-                                backgroundColor: holidayData || isToday ? COLORS.white : '#4caf50'
-                              }} />
-                            )}
-                          </Box>
-                        )}
-                      </Box>
-                    </Tooltip>
-                  </Grid>
-                );
-              })}
-            </Grid>
-
-            <Divider sx={{ my: 2 }} />
-           
-            <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
-              <Tooltip title="Add Note">
-                <IconButton
-                  size="small"
-                  onClick={() => {
-                    const today = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}-${String(new Date().getDate()).padStart(2, "0")}`;
-                    setSelectedDate(today);
-                    handleAddNote();
-                  }}
-                  sx={{
-                    backgroundColor: COLORS.secondary,
-                    color: COLORS.primary,
-                    '&:hover': {
-                      backgroundColor: COLORS.primary,
-                      color: COLORS.white,
-                      transform: 'scale(1.1) rotate(90deg)'
-                    },
-                    transition: 'all 0.3s'
-                  }}
-                >
-                  <Note fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Add Event">
-                <IconButton
-                  size="small"
-                  onClick={() => {
-                    const today = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}-${String(new Date().getDate()).padStart(2, "0")}`;
-                    setSelectedDate(today);
-                    handleAddEvent();
-                  }}
-                  sx={{
-                    backgroundColor: COLORS.secondary,
-                    color: COLORS.primary,
-                    '&:hover': {
-                      backgroundColor: COLORS.primary,
-                      color: COLORS.white,
-                      transform: 'scale(1.1) rotate(90deg)'
-                    },
-                    transition: 'all 0.3s'
-                  }}
-                >
-                  <Add fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            </Box>
-
-            <Box sx={{ mt: 2, display: 'flex', gap: 2, justifyContent: 'center', fontSize: '0.75rem' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#ff9800' }} />
-                <Typography variant="caption">Notes</Typography>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#4caf50' }} />
-                <Typography variant="caption">Events</Typography>
-              </Box>
-            </Box>
-          </Paper>
-
-          {/* Recent Activity - Updated to show Notes and Events */}
-          <Paper elevation={0} sx={{ backgroundColor: COLORS.white, p: 3, borderRadius: 3, boxShadow: '0 4px 20px rgba(109, 35, 35, 0.08)' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <TrendingUp sx={{ color: COLORS.primary, mr: 1 }} />
-              <Typography variant="h6" sx={{ fontWeight: 700, color: COLORS.primary, fontSize: '1.125rem' }}>
-                Your Notes and Events
-              </Typography>
-            </Box>
-            <Box sx={{ maxHeight: 215, overflowY: 'auto' }}>
-              {getRecentActivity().length > 0 ? (
-                getRecentActivity().map((item, idx) => (
-                  <Box
-                    key={idx}
-                    sx={{
-                      mb: 2,
-                      p: 2,
-                      backgroundColor: item.type === 'note' ? COLORS.secondary : '#e8f5e9',
-                      borderRadius: 2,
-                      borderLeft: `4px solid ${item.type === 'note' ? COLORS.primary : '#4caf50'}`,
-                      cursor: 'pointer',
-                      transition: 'all 0.3s',
-                      boxShadow: '0 2px 8px rgba(109, 35, 35, 0.08)',
-                      '&:hover': {
-                        transform: 'translateX(8px)',
-                        boxShadow: '0 4px 16px rgba(109, 35, 35, 0.15)'
-                      }
-                    }}
-                    onClick={() => {
-                      setSelectedDate(item.date);
-                      setViewNotesDialog(true);
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                      {item.type === 'note' ? <Note sx={{ fontSize: 16, mr: 1, color: COLORS.primary }} /> : <Event sx={{ fontSize: 16, mr: 1, color: '#4caf50' }} />}
-                      <Typography variant="caption" sx={{ color: item.type === 'note' ? COLORS.primary : '#2e7d32', fontWeight: 600, display: 'block' }}>
-                        {item.type === 'note' ? 'Note' : 'Event'}: {item.title}
-                      </Typography>
-                    </Box>
-                    <Typography variant="caption" color="textSecondary" sx={{ display: 'block', ml: 3.5 }}>
-                      {item.content && item.content.length > 50 ? `${item.content.substring(0, 50)}...` : item.content}
-                    </Typography>
-                    <Typography variant="caption" color="textSecondary" sx={{ display: 'block', ml: 3.5, mt: 0.5 }}>
-                      {new Date(item.date).toLocaleDateString()}
+                      {new Date(year, month).toLocaleDateString("en-US", {
+                        month: "long",
+                        year: "numeric",
+                      })}
                     </Typography>
                   </Box>
-                ))
-              ) : (
-                <Typography variant="body2" color="textSecondary" sx={{ textAlign: 'center', py: 3 }}>
-                  No recent activity
-                </Typography>
-              )}
-            </Box>
-          </Paper>
+                  <IconButton
+                    size="medium"
+                    onClick={() =>
+                      setCalendarDate(new Date(year, month + 1, 1))
+                    }
+                    sx={{
+                      color: settings.textPrimaryColor,
+                      "&:hover": {
+                        backgroundColor: `${settings.primaryColor}1A`,
+                        transform: "scale(1.1)",
+                      },
+                      transition: "all 0.3s",
+                    }}
+                  >
+                    <ArrowForwardIosIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+                <Grid container spacing={0.5} sx={{ mb: 1 }}>
+                  {["M", "T", "W", "T", "F", "S", "S"].map((day, i) => (
+                    <Grid item xs={12 / 7} key={i}>
+                      <Typography
+                        sx={{
+                          textAlign: "center",
+                          fontWeight: 700,
+                          fontSize: "0.75rem",
+                          color: settings.textPrimaryColor,
+                          py: 0.5,
+                        }}
+                      >
+                        {day}
+                      </Typography>
+                    </Grid>
+                  ))}
+                </Grid>
+                <Grid container spacing={0.5}>
+                  {calendarDays.map((day, index) => {
+                    const currentDateStr = `${year}-${String(
+                      month + 1
+                    ).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+                    const holidayData = holidays.find(
+                      (h) => h.date === currentDateStr && h.status === "Active"
+                    );
+                    const dayNotes = getNotesForDate(currentDateStr);
+                    const dayEvents = getEventsForDate(currentDateStr);
+
+                    // Add this to get announcements for the current date
+                    const dayAnnouncements = announcements.filter(
+                      (announcement) => {
+                        const announcementDate = normalizeDate(
+                          announcement.date
+                        );
+                        return announcementDate === currentDateStr;
+                      }
+                    );
+                    const hasAnnouncements = dayAnnouncements.length > 0;
+
+                    const hasNotesOrEvents =
+                      dayNotes.length > 0 ||
+                      dayEvents.length > 0 ||
+                      hasAnnouncements;
+                    const isToday =
+                      day === new Date().getDate() &&
+                      month === new Date().getMonth() &&
+                      year === new Date().getFullYear();
+                    return (
+                   <Grid item xs={12 / 7} key={index}>
+  <Tooltip
+    title={
+      isToday
+        ? "Today"
+        : holidayData
+        ? holidayData.name
+        : hasAnnouncements
+        ? `${dayAnnouncements[0].title}` //Announcement(s)
+        : hasNotesOrEvents
+        ? `${dayNotes.length} note(s), ${dayEvents.length} event(s)`
+        : ""
+    }
+    arrow
+  >
+    <Box
+      onClick={() => {
+        if (day) {
+          setSelectedDate(currentDateStr);
+          setViewNotesDialog(true);
+        }
+      }}
+      sx={{
+        textAlign: "center",
+        p: 0.8,
+        fontSize: "0.875rem",
+        borderRadius: 1,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        color: holidayData
+          ? "#d32f2f"
+          : isToday
+          ? settings.textColor
+          : day
+          ? settings.textPrimaryColor
+          : "transparent",
+        backgroundColor: isToday
+          ? settings.secondaryColor
+          : hasAnnouncements
+          ? `${settings.primaryColor}0F`
+          : hasNotesOrEvents
+          ? `${settings.primaryColor}0F`
+          : "transparent",
+        fontWeight:
+          holidayData || isToday || hasNotesOrEvents || hasAnnouncements
+            ? 700
+            : 400,
+        border: isToday
+          ? `2px solid ${settings.accentColor}`
+          : hasNotesOrEvents || hasAnnouncements
+          ? `1px solid ${settings.primaryColor}40`
+          : "none",
+        cursor: day ? "pointer" : "default",
+        position: "relative",
+        transition: "all 0.2s",
+        "&:hover": day
+          ? {
+              transform: "scale(1.15)",
+              boxShadow: `0 4px 12px ${settings.primaryColor}33`,
+              backgroundColor: isToday
+                ? settings.textSecondaryColor
+                : hasAnnouncements || hasNotesOrEvents
+                ? `${settings.primaryColor}1A`
+                : "transparent",
+              color: holidayData
+                ? "#b71c1c"
+                : settings.textPrimaryColor,
+              zIndex: 10,
+            }
+          : {},
+      }}
+    >
+      {day || ""}
+      {hasNotesOrEvents && day && (
+        <Box
+          sx={{
+            display: "flex",
+            gap: 0.5,
+            mt: 0.5,
+            position: "absolute",
+            bottom: 4,
+            left: 0,
+            right: 0,
+            justifyContent: "center",
+          }}
+        >
+          {dayNotes.length > 0 && (
+            <Tooltip
+              title={`${dayNotes.length} note(s)`}
+              arrow
+            >
+              <Box
+                sx={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: "50%",
+                  backgroundColor: holidayData
+                    ? "#d32f2f" 
+                    : isToday
+                    ? settings.textColor
+                    : "#ff9800",
+                  boxShadow: "0 0 4px rgba(0,0,0,0.3)",
+                }}
+              />
+            </Tooltip>
+          )}
+          {dayEvents.length > 0 && (
+            <Tooltip
+              title={`${dayEvents.length} event(s)`}
+              arrow
+            >
+              <Box
+                sx={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: "50%",
+                  backgroundColor: holidayData
+                    ? "#d32f2f"
+                    : isToday
+                    ? settings.textColor
+                    : "#4caf50",
+                  boxShadow: "0 0 4px rgba(0,0,0,0.3)",
+                }}
+              />
+            </Tooltip>
+          )}
+          {/* Add announcement indicator */}
+          {hasAnnouncements && (
+            <Tooltip
+              title={`${dayAnnouncements.length} announcement(s)`}
+              arrow
+            >
+              <Box
+                sx={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: "50%",
+                  backgroundColor: holidayData
+                    ? "#d32f2f"
+                    : isToday
+                    ? settings.textColor
+                    : "#2196f3",
+                  boxShadow: "0 0 4px 0,0,0,0.3)",
+                }}
+              />
+            </Tooltip>
+          )}
+        </Box>
+      )}
+    </Box>
+  </Tooltip>
+</Grid>
+                    );
+                  })}
+                </Grid>
+                <Box
+                  sx={{
+                    textAlign: "center",
+                    borderRadius: 2,
+                    backgroundColor: `${settings.primaryColor}0A`,
+                    border: `1px dashed ${settings.primaryColor}26`,
+                  }}
+                >
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: settings.textPrimaryColor,
+                      fontWeight: 500,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 1,
+                    }}
+                  >
+                    <CalendarMonth sx={{ fontSize: 16 }} />
+                    Click on any day to view or add notes and events
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: settings.textPrimaryColor,
+                      display: "block",
+                    }}
+                  ></Typography>
+                </Box>
+                <Divider sx={{ my: 2.5 }} />
+                <Box sx={{ display: "flex", gap: 1, justifyContent: "center" }}>
+                  <Tooltip title="Add Note">
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        const today = normalizeDate(new Date());
+                        setSelectedDate(today);
+                        handleAddNote();
+                      }}
+                      sx={{
+                        backgroundColor: `${settings.primaryColor}1A`,
+                        color: settings.textPrimaryColor,
+                        "&:hover": {
+                          backgroundColor: settings.primaryColor,
+                          color: settings.textColor,
+                          transform: "scale(1.1) rotate(90deg)",
+                        },
+                        transition: "all 0.3s",
+                      }}
+                    >
+                      <Note fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Add Event">
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        const today = normalizeDate(new Date());
+                        setSelectedDate(today);
+                        handleAddEvent();
+                      }}
+                      sx={{
+                        backgroundColor: `${settings.primaryColor}1A`,
+                        color: settings.textPrimaryColor,
+                        "&:hover": {
+                          backgroundColor: settings.primaryColor,
+                          color: settings.textColor,
+                          transform: "scale(1.1) rotate(90deg)",
+                        },
+                        transition: "all 0.3s",
+                      }}
+                    >
+                      <Add fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+                <Box
+                  sx={{
+                    mt: 2,
+                    display: "flex",
+                    gap: 2,
+                    justifyContent: "center",
+                    fontSize: "0.75rem",
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    <Box
+                      sx={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: "50%",
+                        backgroundColor: "#ff9800",
+                      }}
+                    />
+                    <Typography variant="caption">Notes</Typography>
+                  </Box>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    <Box
+                      sx={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: "50%",
+                        backgroundColor: "#4caf50",
+                      }}
+                    />
+                    <Typography variant="caption">Events</Typography>
+                  </Box>
+                  {/* Add announcement to the legend */}
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    <Box
+                      sx={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: "50%",
+                        backgroundColor: "#2196f3",
+                      }}
+                    />
+                    <Typography variant="caption">Announcements</Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grow>
+
+          {/* Recent Activity */}
+          <Grow in timeout={600}>
+            <Card
+              sx={{
+                background: settings.accentColor,
+                backdropFilter: "blur(15px)",
+                border: `1px solid ${settings.primaryColor}26`,
+                borderRadius: 4,
+                boxShadow: `0 15px 40px ${settings.primaryColor}33`,
+              }}
+            >
+              <CardContent sx={{ p: 3 }}>
+                <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 700,
+                      color: settings.textPrimaryColor,
+                      fontSize: "1.125rem",
+                    }}
+                  >
+                    Notes and Events
+                  </Typography>
+                </Box>
+                <Box sx={{ maxHeight: 215, overflowY: "auto" }}>
+                  {getRecentActivity().length > 0 ? (
+                    getRecentActivity().map((item, idx) => (
+                      <Grow in timeout={300 + idx * 50} key={idx}>
+                        <Box
+                          sx={{
+                            mb: 2,
+                            p: 2,
+                            backgroundColor:
+                              item.type === "note"
+                                ? `${settings.primaryColor}1A`
+                                : "#e8f5e9",
+                            borderRadius: 2,
+                            borderLeft: `4px solid ${
+                              item.type === "note"
+                                ? settings.primaryColor
+                                : "#4caf50"
+                            }`,
+                            cursor: "pointer",
+                            transition: "all 0.3s",
+                            boxShadow: `0 2px 8px ${settings.primaryColor}33`,
+                            "&:hover": {
+                              transform: "translateX(8px)",
+                              boxShadow: `0 4px 16px ${settings.primaryColor}4D`,
+                            },
+                          }}
+                          onClick={() => {
+                            setSelectedDate(item.date);
+                            setViewNotesDialog(true);
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              mb: 0.5,
+                            }}
+                          >
+                            {item.type === "note" ? (
+                              <Note
+                                sx={{
+                                  fontSize: 16,
+                                  mr: 1,
+                                  color: settings.textPrimaryColor,
+                                }}
+                              />
+                            ) : (
+                              <Event
+                                sx={{ fontSize: 16, mr: 1, color: "#4caf50" }}
+                              />
+                            )}
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                color:
+                                  item.type === "note"
+                                    ? settings.textPrimaryColor
+                                    : "#2e7d32",
+                                fontWeight: 600,
+                                display: "block",
+                              }}
+                            >
+                              {item.type === "note" ? "Note" : "Event"}:{" "}
+                              {item.title}
+                            </Typography>
+                          </Box>
+                          <Typography
+                            variant="caption"
+                            color="textSecondary"
+                            sx={{ display: "block", ml: 3.5 }}
+                          >
+                            {item.content && item.content.length > 50
+                              ? `${item.content.substring(0, 50)}...`
+                              : item.content}
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            color="textSecondary"
+                            sx={{ display: "block", ml: 3.5, mt: 0.5 }}
+                          >
+                            {new Date(item.date).toLocaleDateString()}
+                          </Typography>
+                        </Box>
+                      </Grow>
+                    ))
+                  ) : (
+                    <Typography
+                      variant="body2"
+                      color="textSecondary"
+                      sx={{ textAlign: "center", py: 3 }}
+                    >
+                      No recent activity
+                    </Typography>
+                  )}
+                </Box>
+              </CardContent>
+            </Card>
+          </Grow>
         </Grid>
       </Grid>
 
       {/* Announcement Detail Modal */}
-      <Modal open={openModal} onClose={handleCloseModal}>
-        <Box
-          sx={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: { xs: '90%', sm: '80%', md: '600px' },
-            maxHeight: '90vh',
-            overflowY: 'auto',
-            bgcolor: COLORS.white,
-            borderRadius: 3,
-            boxShadow: '0 24px 48px rgba(0,0,0,0.3)',
-            p: 4
-          }}
-        >
-          {selectedAnnouncement && (
-            <>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
-                <Typography variant="h5" sx={{ fontWeight: 700, color: COLORS.primary, flex: 1 }}>
-                  {selectedAnnouncement.title}
-                </Typography>
-                <IconButton
-                  onClick={handleCloseModal}
-                  sx={{
-                    color: COLORS.primary,
-                    '&:hover': {
-                      backgroundColor: COLORS.secondary,
-                      transform: 'rotate(90deg)'
-                    },
-                    transition: 'all 0.3s'
-                  }}
-                >
-                  <Close />
-                </IconButton>
-              </Box>
-             
-              {selectedAnnouncement.image && (
-                <Box
-                  component="img"
-                  src={`${API_BASE_URL}${selectedAnnouncement.image}`}
-                  alt={selectedAnnouncement.title}
-                  sx={{
-                    width: '100%',
-                    height: 'auto',
-                    maxHeight: 400,
-                    objectFit: 'cover',
-                    borderRadius: 2,
-                    mb: 3
-                  }}
-                />
-              )}
-             
-              <Typography variant="body1" paragraph sx={{ color: COLORS.darkGray, lineHeight: 1.8 }}>
-                {selectedAnnouncement.about}
-              </Typography>
-             
-              <Divider sx={{ my: 2 }} />
-             
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="caption" color="textSecondary">
-                  Posted on: {new Date(selectedAnnouncement.date).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </Typography>
-                <Button
-                  variant="contained"
-                  onClick={handleCloseModal}
-                  sx={{
-                    backgroundColor: COLORS.primary,
-                    '&:hover': {
-                      backgroundColor: '#8d3333',
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 4px 12px rgba(109, 35, 35, 0.3)'
-                    },
-                    transition: 'all 0.3s'
-                  }}
-                >
-                  Close
-                </Button>
-              </Box>
-            </>
-          )}
-        </Box>
+      <Modal open={openModal} onClose={handleCloseModal} maxWidth="md">
+        <Fade in={openModal}>
+          <Box
+            sx={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: { xs: "90%", sm: "80%", md: "800px" },
+              maxHeight: "90vh",
+              overflowY: "auto",
+              bgcolor: settings.accentColor,
+              backdropFilter: "blur(40px)",
+              border: `1px solid ${settings.primaryColor}26`,
+              boxShadow: `0 24px 64px ${settings.primaryColor}4D`,
+              borderRadius: 4,
+              overflow: "hidden",
+            }}
+          >
+            {selectedAnnouncement && (
+              <>
+                <Box sx={{ position: "relative" }}>
+                  {selectedAnnouncement.image && (
+                    <Box
+                      component="img"
+                      src={`${API_BASE_URL}${selectedAnnouncement.image}`}
+                      alt={selectedAnnouncement.title}
+                      sx={{ width: "100%", height: 350, objectFit: "cover" }}
+                    />
+                  )}
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      inset: 0,
+                      background:
+                        "linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0, 0, 0, 0.7) 100%)",
+                    }}
+                  />
+                  <IconButton
+                    onClick={handleCloseModal}
+                    sx={{
+                      position: "absolute",
+                      top: 20,
+                      right: 20,
+                      bgcolor: `${settings.primaryColor}4D`,
+                      backdropFilter: "blur(10px)",
+                      border: `1px solid ${settings.primaryColor}26`,
+                      color: "#ffffff",
+                      "&:hover": {
+                        bgcolor: `${settings.primaryColor}80`,
+                        transform: "rotate(90deg)",
+                      },
+                      transition: "all 0.3s",
+                    }}
+                  >
+                    <Close />
+                  </IconButton>
+                </Box>
+                <Box sx={{ p: 4, overflowY: "auto" }}>
+                  <Typography
+                    variant="h3"
+                    sx={{
+                      fontWeight: 800,
+                      mb: 2,
+                      color: settings.textPrimaryColor,
+                    }}
+                  >
+                    {selectedAnnouncement.title}
+                  </Typography>
+                  <Chip
+                    icon={
+                      <AccessTime sx={{ color: settings.textPrimaryColor }} />
+                    }
+                    label={new Date(
+                      selectedAnnouncement.date
+                    ).toLocaleDateString()}
+                    sx={{
+                      mb: 3,
+                      bgcolor: `${settings.primaryColor}1A`,
+                      color: settings.textPrimaryColor,
+                      border: `1px solid ${settings.primaryColor}26`,
+                    }}
+                  />
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      color: settings.textPrimaryColor,
+                      lineHeight: 1.8,
+                      fontSize: "1.05rem",
+                    }}
+                  >
+                    {selectedAnnouncement.about}
+                  </Typography>
+                </Box>
+              </>
+            )}
+          </Box>
+        </Fade>
       </Modal>
 
       {/* Notifications Modal */}
       <Modal open={notifModalOpen} onClose={() => setNotifModalOpen(false)}>
-        <Box
-          sx={{
-            position: 'absolute',
-            top: { xs: '50%', md: '80px' },
-            right: { xs: '50%', md: '20px' },
-            transform: { xs: 'translate(50%, -50%)', md: 'none' },
-            width: { xs: '90%', sm: '400px' },
-            maxHeight: '80vh',
-            overflowY: 'auto',
-            bgcolor: COLORS.white,
-            borderRadius: 3,
-            boxShadow: '0 24px 48px rgba(0,0,0,0.3)',
-            p: 3
-          }}
-        >
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <NotificationsIcon sx={{ color: COLORS.primary, mr: 1 }} />
-              <Typography variant="h6" sx={{ fontWeight: 700, color: COLORS.primary }}>
-                Notifications
-              </Typography>
-            </Box>
-            <IconButton
-              size="small"
-              onClick={() => setNotifModalOpen(false)}
+        <Fade in={notifModalOpen}>
+          <Box
+            sx={{
+              position: "absolute",
+              top: { xs: "50%", md: "80px" },
+              right: { xs: "50%", md: "20px" },
+              transform: { xs: "translate(50%, -50%)", md: "none" },
+              width: { xs: "90%", sm: "400px" },
+              maxHeight: "80vh",
+              overflowY: "auto",
+              bgcolor: settings.accentColor,
+              backdropFilter: "blur(40px)",
+              border: `1px solid ${settings.primaryColor}26`,
+              boxShadow: `0 24px 64px ${settings.primaryColor}4D`,
+              borderRadius: 4,
+              overflow: "hidden",
+            }}
+          >
+            <Box
               sx={{
-                color: COLORS.primary,
-                '&:hover': {
-                  backgroundColor: COLORS.secondary,
-                  transform: 'rotate(90deg)'
-                },
-                transition: 'all 0.3s'
+                p: 3,
+                borderBottom: `1px solid ${settings.primaryColor}26`,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                background: `linear-gradient(135deg, ${settings.primaryColor}1A 0%, ${settings.secondaryColor}0D 100%)`,
               }}
             >
-              <Close />
-            </IconButton>
-          </Box>
-
-          {/* System Notifications (Payslip, Announcements, etc.) */}
-          {Array.isArray(notifications) && notifications.length > 0 && (
-            <>
-              {notifications.slice(0, 10).map((notif) => {
-                const announcement = notif.notification_type === 'announcement' 
-                  ? announcementDetails[notif.id] 
-                  : null;
-                
-                // For announcement notifications, show full image with overlaid title
-                if (notif.notification_type === 'announcement' && announcement) {
-                  return (
-                    <Box
-                      key={`notif-${notif.id}`}
-                      sx={{
-                        mb: 2,
-                        borderRadius: 2,
-                        overflow: 'hidden',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                        opacity: notif.read_status === 1 ? 0.7 : 1,
-                        position: 'relative',
-                        height: 200,
-                        '&:hover': {
-                          transform: 'translateY(-4px)',
-                          boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
-                          opacity: 1
-                        }
-                      }}
-                      onClick={() => handleNotificationClick(notif)}
-                    >
-                      <Box
-                        component="img"
-                        src={announcement.image ? `${API_BASE_URL}${announcement.image}` : '/api/placeholder/400/200'}
-                        alt={announcement.title}
-                        sx={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover',
-                        }}
-                      />
-                      <Box
-                        sx={{
-                          position: 'absolute',
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                          background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 50%, transparent 100%)',
-                          p: 2,
-                        }}
+              <Typography
+                variant="h6"
+                sx={{ fontWeight: 700, color: settings.textPrimaryColor }}
+              >
+                Notifications
+              </Typography>
+              <IconButton
+                size="small"
+                onClick={() => setNotifModalOpen(false)}
+                sx={{
+                  color: settings.textPrimaryColor,
+                  "&:hover": {
+                    backgroundColor: `${settings.primaryColor}1A`,
+                    transform: "rotate(90deg)",
+                  },
+                  transition: "all 0.3s",
+                }}
+              >
+                <Close />
+              </IconButton>
+            </Box>
+            <Box
+              sx={{ maxHeight: "calc(100vh - 250px)", overflowY: "auto", p: 2 }}
+            >
+              {Array.isArray(notifications) && notifications.length > 0 ? (
+                notifications.slice(0, 10).map((notif, idx) => {
+                  const announcement =
+                    notif.notification_type === "announcement"
+                      ? announcementDetails[notif.id]
+                      : null;
+                  if (
+                    notif.notification_type === "announcement" &&
+                    announcement
+                  ) {
+                    return (
+                      <Grow
+                        in
+                        timeout={300 + idx * 50}
+                        key={`notif-${notif.id}`}
                       >
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                          <Flag 
-                            sx={{ 
-                              color: '#ff69b4',
-                              fontSize: 18,
-                            }} 
+                        <Box
+                          sx={{
+                            mb: 2,
+                            borderRadius: 3,
+                            overflow: "hidden",
+                            cursor: "pointer",
+                            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                            boxShadow: `0 2px 8px ${settings.primaryColor}33`,
+                            opacity: notif.read_status === 1 ? 0.7 : 1,
+                            position: "relative",
+                            height: 200,
+                            "&:hover": {
+                              transform: "translateY(-4px)",
+                              boxShadow: `0 8px 24px ${settings.primaryColor}4D`,
+                              opacity: 1,
+                            },
+                          }}
+                          onClick={() => handleNotificationClick(notif)}
+                        >
+                          <Box
+                            component="img"
+                            src={
+                              announcement.image
+                                ? `${API_BASE_URL}${announcement.image}`
+                                : "/api/placeholder/400/200"
+                            }
+                            alt={announcement.title}
+                            sx={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                            }}
                           />
-                          <Typography 
-                            fontSize="0.75rem"
-                            sx={{ 
-                              color: '#fff',
-                              fontWeight: 600,
-                              textTransform: 'uppercase',
-                              letterSpacing: 0.5
+                          <Box
+                            sx={{
+                              position: "absolute",
+                              bottom: 0,
+                              left: 0,
+                              right: 0,
+                              background:
+                                "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 50%, transparent 100%)",
+                              p: 2,
                             }}
                           >
-                            New Announcement
-                          </Typography>
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1,
+                                mb: 0.5,
+                              }}
+                            >
+                              <Flag sx={{ color: "#ff69b4", fontSize: 18 }} />
+                              <Typography
+                                fontSize="0.75rem"
+                                sx={{
+                                  color: "#fff",
+                                  fontWeight: 600,
+                                  textTransform: "uppercase",
+                                  letterSpacing: 0.5,
+                                }}
+                              >
+                                New Announcement
+                              </Typography>
+                            </Box>
+                            <Typography
+                              fontWeight={700}
+                              fontSize="1.1rem"
+                              sx={{
+                                color: "#fff",
+                                mb: 0.5,
+                                lineHeight: 1.3,
+                                textShadow: "0 2px 8px rgba(0,0,0,0.5)",
+                              }}
+                            >
+                              {announcement.title}
+                            </Typography>
+                            <Typography
+                              fontSize="0.75rem"
+                              sx={{
+                                color: "rgba(255,255,255,0.9)",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 0.5,
+                              }}
+                            >
+                              <AccessTime sx={{ fontSize: 12 }} />
+                              {notif.created_at
+                                ? new Date(notif.created_at).toLocaleDateString(
+                                    "en-GB",
+                                    {
+                                      day: "2-digit",
+                                      month: "2-digit",
+                                      year: "numeric",
+                                    }
+                                  )
+                                : ""}
+                            </Typography>
+                          </Box>
                         </Box>
-                        <Typography 
-                          fontWeight={700} 
-                          fontSize="1.1rem" 
-                          sx={{ 
-                            color: '#fff',
-                            mb: 0.5,
-                            lineHeight: 1.3,
-                            textShadow: '0 2px 8px rgba(0,0,0,0.5)'
-                          }}
-                        >
-                          {announcement.title}
-                        </Typography>
-                        <Typography 
-                          fontSize="0.75rem" 
-                          sx={{ 
-                            color: 'rgba(255,255,255,0.9)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 0.5
-                          }}
-                        >
-                          <AccessTime sx={{ fontSize: 12 }} />
-                          {notif.created_at
-                            ? new Date(notif.created_at).toLocaleDateString('en-GB', {
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: 'numeric'
-                              })
-                            : ''}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  );
-                }
-                
-                // For other notifications (payslip, etc.), use the regular style
-                return (
-                  <Box
-                    key={`notif-${notif.id}`}
-                    sx={{
-                      mb: 2,
-                      p: 2.5,
-                      backgroundColor: notif.read_status === 0 
-                        ? (notif.notification_type === 'payslip' 
-                            ? '#e8f5e9' 
-                            : notif.notification_type === 'contact'
-                            ? '#fff3e0'
-                            : COLORS.secondary)
-                        : COLORS.lightGray,
-                      borderRadius: 2,
-                      borderLeft: `4px solid ${
-                        notif.notification_type === 'payslip' 
-                          ? '#4caf50' 
-                          : notif.notification_type === 'contact'
-                          ? '#ff9800'
-                          : COLORS.primary
-                      }`,
-                      cursor: 'pointer',
-                      transition: 'all 0.3s',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                      opacity: notif.read_status === 1 ? 0.7 : 1,
-                      position: 'relative',
-                      '&:hover': {
-                        transform: 'translateX(8px)',
-                        boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-                        opacity: 1
-                      }
-                    }}
-                    onClick={() => handleNotificationClick(notif)}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+                      </Grow>
+                    );
+                  }
+                  return (
+                    <Grow in timeout={300 + idx * 50} key={`notif-${notif.id}`}>
                       <Box
                         sx={{
-                          width: 12,
-                          height: 12,
-                          borderRadius: "50%",
-                          background: notif.notification_type === 'payslip'
-                            ? `linear-gradient(135deg, #4caf50, #2e7d32)`
-                            : notif.notification_type === 'contact'
-                            ? `linear-gradient(135deg, #ff9800, #f57c00)`
-                            : `linear-gradient(135deg, ${COLORS.primary}, ${COLORS.secondary})`,
-                          mt: 0.5,
-                          flexShrink: 0,
-                          opacity: notif.read_status === 0 ? 1 : 0.5,
+                          mb: 2,
+                          p: 2.5,
+                          borderRadius: 3,
+                          background:
+                            notif.read_status === 0
+                              ? notif.notification_type === "payslip"
+                                ? "rgba(76, 175, 80, 0.1)"
+                                : notif.notification_type === "contact"
+                                ? "rgba(255, 152, 0, 0.1)"
+                                : `${settings.primaryColor}1A`
+                              : `${settings.primaryColor}0A`,
+                          border: `1px solid ${settings.primaryColor}26`,
+                          borderLeft:
+                            notif.read_status === 0
+                              ? notif.notification_type === "payslip"
+                                ? "4px solid #4caf50"
+                                : notif.notification_type === "contact"
+                                ? "4px solid #ff9800"
+                                : `4px solid ${settings.primaryColor}`
+                              : `1px solid ${settings.primaryColor}26`,
+                          cursor: "pointer",
+                          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                          position: "relative",
+                          overflow: "hidden",
+                          "&:hover": {
+                            background: `${settings.primaryColor}1A`,
+                            transform: "translateX(8px)",
+                            boxShadow: `0 8px 24px ${settings.primaryColor}4D`,
+                          },
                         }}
-                      />
-                      <Box sx={{ flex: 1 }}>
-                        <Typography 
-                          fontWeight={700} 
-                          fontSize="1rem" 
-                          sx={{ 
-                            color: notif.notification_type === 'payslip' 
-                              ? '#2e7d32' 
-                              : notif.notification_type === 'contact'
-                              ? '#ff9800'
-                              : COLORS.primary, 
-                            mb: 0.5,
-                            lineHeight: 1.4
+                        onClick={() => handleNotificationClick(notif)}
+                      >
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "flex-start",
+                            gap: 1.5,
                           }}
                         >
-                          {notif.notification_type === 'payslip' 
-                            ? '💰 Payslip Available' 
-                            : notif.notification_type === 'contact'
-                            ? '📧 Contact Ticket Response'
-                            : '📢 Notification'}
-                        </Typography>
-                        <Typography fontSize="0.85rem" color="textSecondary" sx={{ mb: 0.5 }}>
-                          {notif.description}
-                        </Typography>
-                        <Typography 
-                          fontSize="0.8rem" 
-                          color="textSecondary"
-                          sx={{ 
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 0.5
-                          }}
-                        >
-                          <AccessTime sx={{ fontSize: 12 }} />
-                          {notif.created_at
-                            ? new Date(notif.created_at).toLocaleDateString('en-GB', {
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: 'numeric'
-                              })
-                            : ''}
-                        </Typography>
+                          <Box
+                            sx={{
+                              width: 12,
+                              height: 12,
+                              borderRadius: "50%",
+                              background:
+                                notif.notification_type === "payslip"
+                                  ? `linear-gradient(135deg, #4caf50, #2e7d32)`
+                                  : notif.notification_type === "contact"
+                                  ? `linear-gradient(135deg, #ff9800, #f57c00)`
+                                  : `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
+                              mt: 0.5,
+                              flexShrink: 0,
+                              boxShadow: `0 0 12px ${settings.primaryColor}99`,
+                              opacity: notif.read_status === 0 ? 1 : 0.5,
+                            }}
+                          />
+                          <Box sx={{ flex: 1 }}>
+                            <Typography
+                              sx={{
+                                fontWeight: 700,
+                                fontSize: "1rem",
+                                color: settings.textPrimaryColor,
+                                mb: 0.5,
+                                lineHeight: 1.4,
+                              }}
+                            >
+                              {notif.notification_type === "payslip"
+                                ? "Payslip Available"
+                                : notif.notification_type === "contact"
+                                ? "New Ticket"
+                                : "Notification"}
+                            </Typography>
+                            <Typography
+                              sx={{
+                                fontSize: "0.85rem",
+                                color: settings.textPrimaryColor,
+                                mb: 0.5,
+                              }}
+                            >
+                              {notif.description}
+                            </Typography>
+                            <Typography
+                              sx={{
+                                fontSize: "0.8rem",
+                                color: settings.textPrimaryColor,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 0.5,
+                              }}
+                            >
+                              <AccessTime sx={{ fontSize: 14 }} />
+                              {notif.created_at
+                                ? new Date(notif.created_at).toLocaleDateString(
+                                    "en-GB",
+                                    {
+                                      day: "2-digit",
+                                      month: "2-digit",
+                                      year: "numeric",
+                                    }
+                                  )
+                                : ""}
+                            </Typography>
+                          </Box>
+                          <ArrowForward
+                            sx={{
+                              color: settings.textPrimaryColor,
+                              fontSize: 20,
+                              transition: "transform 0.3s",
+                              mt: 0.5,
+                              flexShrink: 0,
+                            }}
+                          />
+                        </Box>
                       </Box>
-                      <ArrowForward
-                        sx={{
-                          color: COLORS.primary,
-                          fontSize: 20,
-                          transition: "transform 0.3s",
-                          mt: 0.5,
-                          flexShrink: 0
-                        }}
-                      />
-                    </Box>
-                  </Box>
-                );
-              })}
-            </>
-          )}
-
-          {(!Array.isArray(notifications) || notifications.length === 0) && (
-            <Box sx={{ textAlign: 'center', py: 4 }}>
-              <NotificationsIcon sx={{ fontSize: 48, color: COLORS.darkGray, opacity: 0.3, mb: 2 }} />
-              <Typography color="textSecondary">No notifications at the moment</Typography>
+                    </Grow>
+                  );
+                })
+              ) : (
+                <Box sx={{ textAlign: "center", py: 8 }}>
+                  <NotificationsIcon
+                    sx={{ fontSize: 80, color: `${settings.primaryColor}33` }}
+                  />
+                  <Typography
+                    sx={{ color: settings.textPrimaryColor, fontSize: "1rem" }}
+                  >
+                    No notifications at the moment
+                  </Typography>
+                  <Typography
+                    sx={{
+                      color: settings.textPrimaryColor,
+                      fontSize: "0.85rem",
+                      mt: 1,
+                    }}
+                  >
+                    You're all caught up!
+                  </Typography>
+                </Box>
+              )}
             </Box>
-          )}
-        </Box>
+          </Box>
+        </Fade>
       </Modal>
 
       {/* View Notes/Events Dialog */}
@@ -1693,93 +2529,301 @@ const HAHAHA = () => {
         onClose={() => setViewNotesDialog(false)}
         maxWidth="sm"
         fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            p: 2,
+            bgcolor: settings.accentColor,
+            backdropFilter: "blur(12px)",
+            border: `1px solid ${settings.primaryColor}26`,
+            boxShadow: `0 15px 40px ${settings.primaryColor}33`,
+          },
+        }}
       >
-        <DialogTitle sx={{ backgroundColor: COLORS.primary, color: COLORS.white }}>
-          {selectedDate && new Date(selectedDate).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          })}
+        <DialogTitle
+          sx={{
+            pb: 1,
+            fontSize: "1rem",
+            fontWeight: 600,
+            color: settings.textPrimaryColor,
+          }}
+        >
+          {selectedDate &&
+            new Date(selectedDate).toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
         </DialogTitle>
-        <DialogContent sx={{ mt: 2 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: COLORS.primary, mb: 1, display: 'flex', alignItems: 'center' }}>
+        <DialogContent sx={{ pt: 1 }}>
+          <Typography
+            variant="subtitle1"
+            sx={{
+              fontWeight: 700,
+              color: settings.textPrimaryColor,
+              mb: 1,
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
             <Note sx={{ mr: 1 }} /> Notes
           </Typography>
           {getNotesForDate(selectedDate).length > 0 ? (
-            getNotesForDate(selectedDate).map(note => (
-              <Box key={note.id} sx={{ mb: 2, p: 2, backgroundColor: COLORS.secondary, borderRadius: 2 }}>
+            getNotesForDate(selectedDate).map((note) => (
+              <Box
+                key={note.id}
+                sx={{
+                  mb: 2,
+                  p: 2,
+                  backgroundColor: `${settings.primaryColor}1A`,
+                  borderRadius: 2,
+                }}
+              >
                 <Typography variant="body2">{note.content}</Typography>
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
-                  <IconButton size="small" onClick={() => handleDeleteNote(note.id)} sx={{ color: '#d32f2f' }}>
+                <Box
+                  sx={{ display: "flex", justifyContent: "flex-end", mt: 1 }}
+                >
+                  <IconButton
+                    size="small"
+                    onClick={() => handleDeleteNote(note.id)}
+                    sx={{ color: "#d32f2f" }}
+                  >
                     <Delete fontSize="small" />
                   </IconButton>
                 </Box>
               </Box>
             ))
           ) : (
-            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>No notes for this date</Typography>
+            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+              No notes for this date
+            </Typography>
           )}
 
-          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: COLORS.primary, mb: 1, mt: 3, display: 'flex', alignItems: 'center' }}>
+          <Typography
+            variant="subtitle1"
+            sx={{
+              fontWeight: 700,
+              color: settings.textPrimaryColor,
+              mb: 1,
+              mt: 3,
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
             <Event sx={{ mr: 1 }} /> Events
           </Typography>
           {getEventsForDate(selectedDate).length > 0 ? (
-            getEventsForDate(selectedDate).map(event => (
-              <Box key={event.id} sx={{ mb: 2, p: 2, backgroundColor: '#e8f5e9', borderRadius: 2 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>{event.title}</Typography>
+            getEventsForDate(selectedDate).map((event) => (
+              <Box
+                key={event.id}
+                sx={{
+                  mb: 2,
+                  p: 2,
+                  backgroundColor: "#e8f5e9",
+                  borderRadius: 2,
+                }}
+              >
+                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                  {event.title}
+                </Typography>
                 <Typography variant="body2">{event.description}</Typography>
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
-                  <IconButton size="small" onClick={() => handleDeleteEvent(event.id)} sx={{ color: '#d32f2f' }}>
+                <Box
+                  sx={{ display: "flex", justifyContent: "flex-end", mt: 1 }}
+                >
+                  <IconButton
+                    size="small"
+                    onClick={() => handleDeleteEvent(event.id)}
+                    sx={{ color: "#d32f2f" }}
+                  >
                     <Delete fontSize="small" />
                   </IconButton>
                 </Box>
               </Box>
             ))
           ) : (
-            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>No events for this date</Typography>
+            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+              No events for this date
+            </Typography>
           )}
+
+          {/* Add announcements section to the dialog */}
+          <Typography
+            variant="subtitle1"
+            sx={{
+              fontWeight: 700,
+              color: settings.textPrimaryColor,
+              mb: 1,
+              mt: 3,
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <Flag sx={{ mr: 1 }} /> Announcements
+          </Typography>
+          {(() => {
+            const dateAnnouncements = announcements.filter((announcement) => {
+              const announcementDate = normalizeDate(announcement.date);
+              return announcementDate === selectedDate;
+            });
+
+            return dateAnnouncements.length > 0 ? (
+              dateAnnouncements.map((announcement) => (
+                <Box
+                  key={announcement.id}
+                  sx={{
+                    mb: 2,
+                    p: 2,
+                    backgroundColor: "#e3f2fd",
+                    borderRadius: 2,
+                    cursor: "pointer",
+                    transition: "all 0.3s",
+                    "&:hover": {
+                      backgroundColor: "#bbdefb",
+                      transform: "translateX(4px)",
+                    },
+                  }}
+                  onClick={() => {
+                    setViewNotesDialog(false);
+                    handleOpenModal(announcement);
+                  }}
+                >
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                    {announcement.title}
+                  </Typography>
+                  <Typography variant="body2" sx={{ mt: 0.5 }}>
+                    {announcement.about && announcement.about.length > 100
+                      ? `${announcement.about.substring(0, 100)}...`
+                      : announcement.about}
+                  </Typography>
+                </Box>
+              ))
+            ) : (
+              <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                No announcements for this date
+              </Typography>
+            );
+          })()}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => { setViewNotesDialog(false); handleAddNote(); }} startIcon={<Note />} sx={{ backgroundColor: "#000000", color: '#FFFFFF' }}>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={() => {
+              setViewNotesDialog(false);
+              handleAddNote();
+            }}
+            startIcon={<Note />}
+            sx={{
+              borderRadius: 2,
+              textTransform: "none",
+              fontWeight: 500,
+              color: settings.textColor,
+              bgcolor: settings.primaryColor,
+            }}
+          >
             Add Note
           </Button>
-          <Button onClick={() => { setViewNotesDialog(false); handleAddEvent(); }} startIcon={<Add />} sx={{ backgroundColor: "#000000", color: '#FFFFFF' }}>
+          <Button
+            onClick={() => {
+              setViewNotesDialog(false);
+              handleAddEvent();
+            }}
+            startIcon={<Add />}
+            sx={{
+              borderRadius: 2,
+              textTransform: "none",
+              fontWeight: 500,
+              color: settings.textColor,
+              bgcolor: settings.primaryColor,
+            }}
+          >
             Add Event
           </Button>
-          <Button onClick={() => setViewNotesDialog(false)} variant="contained" sx={{ backgroundColor: COLORS.primary }}>
+          <Button
+            onClick={() => setViewNotesDialog(false)}
+            variant="contained"
+            sx={{
+              borderRadius: 2,
+              textTransform: "none",
+              fontWeight: 500,
+              color: settings.textColor,
+              bgcolor: settings.primaryColor,
+            }}
+          >
             Close
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Add Note Dialog */}
-      <Dialog open={openNoteDialog} onClose={() => setOpenNoteDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ backgroundColor: COLORS.primary, color: COLORS.white }}>Add Note</DialogTitle>
-        <DialogContent sx={{ mt: 2 }}>
+      <Dialog
+        open={openNoteDialog}
+        onClose={() => setOpenNoteDialog(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            p: 2,
+            bgcolor: settings.accentColor,
+            backdropFilter: "blur(12px)",
+            border: `1px solid ${settings.primaryColor}26`,
+            boxShadow: `0 15px 40px ${settings.primaryColor}33`,
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            pb: 1,
+            fontSize: "1rem",
+            fontWeight: 600,
+            color: settings.textPrimaryColor,
+          }}
+        >
+          Add Note
+        </DialogTitle>
+        <DialogContent sx={{ pt: 1 }}>
           <TextField
             fullWidth
             multiline
             rows={4}
             label="Note Content"
             value={currentNote.content}
-            onChange={(e) => setCurrentNote({ ...currentNote, content: e.target.value })}
-            sx={{ mb: 2 }}
+            onChange={(e) =>
+              setCurrentNote({ ...currentNote, content: e.target.value })
+            }
+            sx={{ mb: 2, "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
           />
           <Typography variant="caption" color="textSecondary">
-            Date: {currentNote.date && new Date(currentNote.date).toLocaleDateString()}
+            Date:{" "}
+            {currentNote.date &&
+              new Date(currentNote.date).toLocaleDateString()}
           </Typography>
         </DialogContent>
-        <DialogActions>
-          <Button 
-            onClick={() => setOpenNoteDialog(false)} 
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={() => setOpenNoteDialog(false)}
             variant="contained"
-            sx={{ backgroundColor: "#000000"}}
-            disabled={!currentNote.content}>Cancel</Button>
+            sx={{
+              borderRadius: 2,
+              textTransform: "none",
+              fontWeight: 500,
+              color: settings.textColor,
+              bgcolor: settings.primaryColor,
+            }}
+            disabled={!currentNote.content}
+          >
+            Cancel
+          </Button>
           <Button
             onClick={handleSaveNote}
             variant="contained"
             startIcon={<Save />}
-            sx={{ backgroundColor: COLORS.primary }}
+            sx={{
+              borderRadius: 2,
+              textTransform: "none",
+              fontWeight: 600,
+              bgcolor: settings.primaryColor,
+              "&:hover": { bgcolor: settings.hoverColor },
+            }}
             disabled={!currentNote.content}
           >
             Save Note
@@ -1788,15 +2832,41 @@ const HAHAHA = () => {
       </Dialog>
 
       {/* Add Event Dialog */}
-      <Dialog open={openEventDialog} onClose={() => setOpenEventDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ backgroundColor: COLORS.primary, color: COLORS.white }}>Add Event</DialogTitle>
-        <DialogContent sx={{ mt: 2 }}>
+      <Dialog
+        open={openEventDialog}
+        onClose={() => setOpenEventDialog(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            p: 2,
+            bgcolor: settings.accentColor,
+            backdropFilter: "blur(12px)",
+            border: `1px solid ${settings.primaryColor}26`,
+            boxShadow: `0 15px 40px ${settings.primaryColor}33`,
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            pb: 1,
+            fontSize: "1rem",
+            fontWeight: 600,
+            color: settings.textPrimaryColor,
+          }}
+        >
+          Add Event
+        </DialogTitle>
+        <DialogContent sx={{ pt: 1 }}>
           <TextField
             fullWidth
             label="Event Title"
             value={currentEvent.title}
-            onChange={(e) => setCurrentEvent({ ...currentEvent, title: e.target.value })}
-            sx={{ mb: 2 }}
+            onChange={(e) =>
+              setCurrentEvent({ ...currentEvent, title: e.target.value })
+            }
+            sx={{ mb: 2, "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
           />
           <TextField
             fullWidth
@@ -1804,24 +2874,43 @@ const HAHAHA = () => {
             rows={3}
             label="Event Description"
             value={currentEvent.description}
-            onChange={(e) => setCurrentEvent({ ...currentEvent, description: e.target.value })}
-            sx={{ mb: 2 }}
+            onChange={(e) =>
+              setCurrentEvent({ ...currentEvent, description: e.target.value })
+            }
+            sx={{ mb: 2, "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
           />
           <Typography variant="caption" color="textSecondary">
-            Date: {currentEvent.date && new Date(currentEvent.date).toLocaleDateString()}
+            Date:{" "}
+            {currentEvent.date &&
+              new Date(currentEvent.date).toLocaleDateString()}
           </Typography>
         </DialogContent>
-        <DialogActions>
-          <Button 
-          onClick={() => setOpenEventDialog(false)} 
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={() => setOpenEventDialog(false)}
             variant="contained"
-            sx={{ backgroundColor: "#000000" }}
-            disabled={!currentNote.content}>Cancel</Button>
+            sx={{
+              borderRadius: 2,
+              textTransform: "none",
+              fontWeight: 500,
+              color: settings.textColor,
+              bgcolor: settings.primaryColor,
+            }}
+            disabled={!currentEvent.title}
+          >
+            Cancel
+          </Button>
           <Button
             onClick={handleSaveEvent}
             variant="contained"
             startIcon={<Save />}
-            sx={{ backgroundColor: COLORS.primary }}
+            sx={{
+              borderRadius: 2,
+              textTransform: "none",
+              fontWeight: 600,
+              bgcolor: settings.primaryColor,
+              "&:hover": { bgcolor: settings.hoverColor },
+            }}
             disabled={!currentEvent.title}
           >
             Save Event
@@ -1832,4 +2921,4 @@ const HAHAHA = () => {
   );
 };
 
-export default HAHAHA;
+export default Home;

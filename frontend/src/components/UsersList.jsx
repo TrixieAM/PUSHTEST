@@ -50,6 +50,8 @@ import {
   alpha,
   Breadcrumbs,
   Link,
+  Modal,
+  Snackbar,
 } from "@mui/material";
 import {
   People,
@@ -89,9 +91,37 @@ import {
   PersonPin,
   Home,
   Assessment,
+  Delete as DeleteIcon,
+  DeleteForever,
 } from "@mui/icons-material";
 import SearchIcon from "@mui/icons-material/Search";
 import axios from "axios";
+
+// Get user role from token
+const getUserRole = () => {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+    
+    // Parse JWT token to get user role
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map(function (c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        })
+        .join('')
+    );
+    
+    const payload = JSON.parse(jsonPayload);
+    return payload.role || payload.userRole || null;
+  } catch (error) {
+    console.error('Error parsing token:', error);
+    return null;
+  }
+};
 
 // System Settings Hook (from AdminHome)
 const useSystemSettings = () => {
@@ -142,6 +172,16 @@ const useSystemSettings = () => {
 };
 
 const UsersList = () => {
+  // Module Access State
+  const [moduleAuthorized, setModuleAuthorized] = useState(false);
+  const [confidentialPasswordInput, setConfidentialPasswordInput] = useState('');
+  const [openConfidentialPassword, setOpenConfidentialPassword] = useState(true);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [userRole, setUserRole] = useState(null);
+  const [roleChecked, setRoleChecked] = useState(false);
+
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -180,6 +220,59 @@ const UsersList = () => {
   // Use system settings
   const settings = useSystemSettings();
   
+  // Check user role on component mount
+  useEffect(() => {
+    const role = getUserRole();
+    setUserRole(role);
+    setRoleChecked(true);
+  }, []);
+
+  // Check if user is superadmin
+  const isSuperAdmin = userRole === 'superadmin';
+
+  // Handle module authorization
+  const handleModuleAuthorization = async () => {
+    if (!confidentialPasswordInput) {
+      setSnackbarMessage('Please enter an authorized password.');
+      setSnackbarOpen(true);
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        `${API_BASE_URL}/api/confidential-password/verify`,
+        { password: confidentialPasswordInput },
+        getAuthHeaders()
+      );
+
+      if (response.data.verified) {
+        setModuleAuthorized(true);
+        setOpenConfidentialPassword(false);
+        setConfidentialPasswordInput('');
+        // Load users after successful authorization
+        fetchUsers();
+      } else {
+        setSnackbarMessage('Password verification failed. Please try again.');
+        setSnackbarOpen(true);
+        setConfidentialPasswordInput('');
+      }
+    } catch (error) {
+      console.error('Error verifying authorized password:', error);
+      setSnackbarMessage(error.response?.data?.error || 'Failed to verify password. Please try again.');
+      setSnackbarOpen(true);
+      setConfidentialPasswordInput('');
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  const handleModuleAccessCancel = () => {
+    // Redirect back to admin home if user cancels
+    navigate('/admin-home');
+  };
+
   // Memoize styled components to prevent recreation on every render
   const GlassCard = useMemo(() => styled(Card)(({ theme }) => ({
     borderRadius: 20,
@@ -321,7 +414,7 @@ const UsersList = () => {
       setFilteredUsers(mergedUsers);
 
       if (refreshing) {
-        setSuccessMessage("Users list refreshed successfully");
+        setSuccessMessage;
         setTimeout(() => setSuccessMessage(""), 3000);
       }
     } catch (err) {
@@ -352,8 +445,6 @@ const UsersList = () => {
           ? accessDataRaw
           : accessDataRaw.data || [];
         const accessMap = (accessData || []).reduce((acc, curr) => {
-          // Check if page_privilege indicates any level of access (not "0" or empty)
-          // Privileges like "1", "12", "2", etc. all indicate access
           const privilege = String(curr.page_privilege || "0");
           acc[curr.page_id] = privilege !== "0" && privilege !== "";
           return acc;
@@ -440,8 +531,6 @@ const UsersList = () => {
             ? accessDataRaw
             : accessDataRaw.data || [];
           const accessMap = (accessData || []).reduce((acc, curr) => {
-            // Check if page_privilege indicates any level of access (not "0" or empty)
-            // Privileges like "1", "12", "2", etc. all indicate access
             const privilege = String(curr.page_privilege || "0");
             acc[curr.page_id] = privilege !== "0" && privilege !== "";
             return acc;
@@ -645,7 +734,6 @@ const UsersList = () => {
       );
 
       setSuccessMessage(
-        `Role updated from ${pendingRoleChange.oldRole} to ${pendingRoleChange.newRole} for ${pendingRoleChange.user.fullName}`
       );
       setTimeout(() => setSuccessMessage(""), 3000);
 
@@ -665,8 +753,11 @@ const UsersList = () => {
   };
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    // Only fetch users if module is authorized
+    if (moduleAuthorized) {
+      fetchUsers();
+    }
+  }, [moduleAuthorized]);
 
   useEffect(() => {
     const filtered = users.filter((user) => {
@@ -746,6 +837,162 @@ const UsersList = () => {
     return (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase();
   };
 
+  // If module is not authorized, show password modal
+  if (!moduleAuthorized) {
+    return (
+      <Modal
+        open={openConfidentialPassword}
+        onClose={handleModuleAccessCancel}
+        disableEscapeKeyDown
+      >
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: { xs: '90%', sm: 500 },
+            maxWidth: 600,
+            bgcolor: 'white',
+            borderRadius: 3,
+            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+            overflow: 'hidden',
+            border: `2px solid ${settings?.primaryColor || '#894444'}`,
+          }}
+        >
+          {/* Header */}
+          <Box
+            sx={{
+              p: 3,
+              bgcolor: 'white',
+              borderBottom: `3px solid ${settings?.primaryColor || '#894444'}`,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+            }}
+          >
+            <Avatar
+              sx={{
+                bgcolor: alpha(settings?.primaryColor || '#894444', 0.1),
+                color: settings?.primaryColor || '#894444',
+                width: 56,
+                height: 56,
+              }}
+            >
+              <Lock sx={{ fontSize: 28 }} />
+            </Avatar>
+            <Box>
+              <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#333' }}>
+                User Management Access
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#666' }}>
+                This module requires authorization
+              </Typography>
+            </Box>
+          </Box>
+
+          {/* Content */}
+          <Box sx={{ p: 4, bgcolor: 'white' }}>
+            <Alert
+              severity="info"
+              icon={<Security />}
+              sx={{
+                mb: 3,
+                borderRadius: 2,
+                bgcolor: alpha(settings?.primaryColor || '#894444', 0.05),
+                border: `1px solid ${alpha(settings?.primaryColor || '#894444', 0.2)}`,
+                '& .MuiAlert-icon': {
+                  color: settings?.primaryColor || '#894444',
+                  fontSize: 28,
+                },
+              }}
+            >
+              <Typography variant="body1" sx={{ fontWeight: 600, mb: 1, color: '#333' }}>
+                Restricted Access
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#666' }}>
+                The User Management contains sensitive information and requires authorized access. 
+                Please enter authorized password to proceed.
+              </Typography>
+            </Alert>
+
+            <TextField
+              autoFocus
+              margin="dense"
+              label="Enter Authorized Password"
+              type="password"
+              fullWidth
+              variant="outlined"
+              value={confidentialPasswordInput}
+              onChange={(e) => setConfidentialPasswordInput(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  handleModuleAuthorization();
+                }
+              }}
+              disabled={passwordLoading}
+              sx={{
+                mb: 3,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                },
+              }}
+            />
+
+            {/* Action Buttons */}
+            <Box display="flex" justifyContent="flex-end" gap={2} mt={2}>
+              <Button
+                onClick={handleModuleAccessCancel}
+                variant="outlined"
+                disabled={passwordLoading}
+                sx={{
+                  color: settings?.primaryColor || '#894444',
+                  borderColor: settings?.primaryColor || '#894444',
+                  px: 3,
+                  py: 1.2,
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  borderRadius: 2,
+                  '&:hover': {
+                    borderColor: settings?.secondaryColor || '#6d2323',
+                    backgroundColor: alpha(settings?.primaryColor || '#894444', 0.08),
+                  },
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleModuleAuthorization}
+                variant="contained"
+                disabled={passwordLoading}
+                sx={{
+                  backgroundColor: settings?.primaryColor || '#894444',
+                  color: 'white',
+                  px: 4,
+                  py: 1.2,
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  borderRadius: 2,
+                  minWidth: 140,
+                  '&:hover': {
+                    backgroundColor: settings?.secondaryColor || '#6d2323',
+                  },
+                  '&:disabled': {
+                    backgroundColor: alpha(settings?.primaryColor || '#894444', 0.5),
+                  },
+                }}
+                startIcon={passwordLoading ? <CircularProgress size={18} sx={{ color: 'white' }} /> : <Lock />}
+              >
+                {passwordLoading ? 'Verifying...' : 'Access'}
+              </Button>
+            </Box>
+          </Box>
+        </Box>
+      </Modal>
+    );
+  }
+
+  // Main component content (shown only after authorization)
   return (
     <Box
       sx={{
@@ -893,20 +1140,37 @@ const UsersList = () => {
                       Single Registration
                     </ProfessionalButton>
 
-                    <ProfessionalButton
-                      variant="contained"
-                      startIcon={<Pages />}
-                      onClick={() => navigate("/pages-list")}
-                      sx={{
-                        bgcolor: settings?.primaryColor || '#894444',
-                        color: settings?.accentColor || '#FEF9E1',
-                        "&:hover": {
-                          bgcolor: settings?.secondaryColor || '#6d2323',
-                        },
-                      }}
+                    {/* Pages Library Button - Disabled for non-superadmin */}
+                    <Tooltip 
+                      title={isSuperAdmin ? "Manage system pages" : "This page is restricted to authorized personnel only"}
+                      arrow
                     >
-                      Pages Library
-                    </ProfessionalButton>
+                      <span>
+                        <ProfessionalButton
+                          variant="contained"
+                          startIcon={<Pages />}
+                          onClick={() => isSuperAdmin && navigate("/pages-list")}
+                          disabled={!isSuperAdmin}
+                          sx={{
+                            bgcolor: isSuperAdmin 
+                              ? (settings?.primaryColor || '#894444')
+                              : alpha(settings?.primaryColor || '#894444', 0.5),
+                            color: isSuperAdmin 
+                              ? (settings?.accentColor || '#FEF9E1')
+                              : alpha(settings?.accentColor || '#FEF9E1', 0.7),
+                            "&:hover": {
+                              bgcolor: isSuperAdmin 
+                                ? (settings?.secondaryColor || '#6d2323')
+                                : alpha(settings?.primaryColor || '#894444', 0.5),
+                            },
+                            cursor: isSuperAdmin ? 'pointer' : 'not-allowed',
+                            opacity: isSuperAdmin ? 1 : 0.7,
+                          }}
+                        >
+                          Page Management
+                        </ProfessionalButton>
+                      </span>
+                    </Tooltip>
                   </Box>
                 </Box>
               </Box>
@@ -2213,6 +2477,41 @@ const UsersList = () => {
             </ProfessionalButton>
           </DialogActions>
         </Dialog>
+
+        {/* Snackbar for password errors */}
+        <Snackbar
+          open={snackbarOpen}
+          autoHideDuration={4000}
+          onClose={() => setSnackbarOpen(false)}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+          sx={{
+            '& .MuiSnackbarContent-root': {
+              backgroundColor: '#d32f2f',
+              color: 'white',
+              fontWeight: 600,
+              borderRadius: 2,
+              boxShadow: '0 4px 20px rgba(211, 47, 47, 0.3)',
+            },
+          }}
+        >
+          <Alert
+            onClose={() => setSnackbarOpen(false)}
+            severity="error"
+            sx={{
+              width: '100%',
+              backgroundColor: '#d32f2f',
+              color: 'white',
+              '& .MuiAlert-icon': {
+                color: 'white',
+              },
+              '& .MuiAlert-action': {
+                color: 'white',
+              },
+            }}
+          >
+            {snackbarMessage}
+          </Alert>
+        </Snackbar>
       </Box>
     </Box>
   );

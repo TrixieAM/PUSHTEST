@@ -1021,6 +1021,7 @@ const EmployeeRemittance = () => {
                   height: 'calc(100vh - 200px)',
                   display: 'flex',
                   flexDirection: 'column',
+                  border: `1px solid ${alpha(accentColor, 0.1)}`
                 }}
               >
                 <Box
@@ -1247,6 +1248,7 @@ const EmployeeRemittance = () => {
                   height: 'calc(100vh - 200px)',
                   display: 'flex',
                   flexDirection: 'column',
+                  border: `1px solid ${alpha(accentColor, 0.1)}`
                 }}
               >
                 <Box

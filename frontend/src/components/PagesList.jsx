@@ -89,6 +89,32 @@ const getAuthHeaders = () => {
   };
 };
 
+// Get user role from token
+const getUserRole = () => {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+    
+    // Parse JWT token to get user role
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map(function (c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        })
+        .join('')
+    );
+    
+    const payload = JSON.parse(jsonPayload);
+    return payload.role || payload.userRole || null;
+  } catch (error) {
+    console.error('Error parsing token:', error);
+    return null;
+  }
+};
+
 // System Settings Hook (from AdminHome)
 const useSystemSettings = () => {
   const [settings, setSettings] = useState({
@@ -159,8 +185,17 @@ const PagesList = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [addDialog, setAddDialog] = useState(false);
   const [deleteConfirmed, setDeleteConfirmed] = useState(false);
+  const [userRole, setUserRole] = useState(null);
+  const [roleChecked, setRoleChecked] = useState(false);
 
   const navigate = useNavigate();
+
+  // Check user role on component mount
+  useEffect(() => {
+    const role = getUserRole();
+    setUserRole(role);
+    setRoleChecked(true);
+  }, []);
 
   // Use system settings
   const settings = useSystemSettings();
@@ -254,12 +289,13 @@ const PagesList = () => {
   // Page description options for dropdown
   const descriptionOptions = [
     'General',
+    'System Administration',
     'Registration',
-    'Information management',
-    'Attendance management',
-    'Payroll management',
+    'Information Management',
+    'Attendance Management',
+    'Payroll Management',
     'Form',
-    'Pages management',
+    'Pages Management',
     'Personal Data Sheets'
   ];
 
@@ -270,14 +306,14 @@ const PagesList = () => {
     'staff'
   ];
 
-  // Dynamic page access control using component identifier
-  const { hasAccess, loading: accessLoading, error: accessError } = usePageAccess('pages-list');
+  // Check if user is superadmin
+  const isSuperAdmin = userRole === 'superadmin';
 
   useEffect(() => {
-    if (hasAccess) {
+    if (isSuperAdmin && roleChecked) {
       fetchPages();
     }
-  }, [hasAccess]);
+  }, [isSuperAdmin, roleChecked]);
 
   useEffect(() => {
     const filtered = pages.filter((pg) => {
@@ -471,6 +507,11 @@ const PagesList = () => {
           sx: { bgcolor: alpha(settings?.primaryColor || '#894444', 0.15), color: settings?.primaryColor || '#894444' },
           icon: <Category />,
         };
+        case 'system administration':
+        return {
+          sx: { bgcolor: alpha(settings?.primaryColor || '#894444', 0.15), color: settings?.primaryColor || '#894444' },
+          icon: <Category />,
+        };
       case 'registration':
         return {
           sx: { bgcolor: alpha(settings?.secondaryColor || '#6d2323', 0.15), color: settings?.secondaryColor || '#6d2323' },
@@ -554,7 +595,7 @@ const PagesList = () => {
   );
 
   // Loading state
-  if (accessLoading) {
+  if (!roleChecked) {
     return (
       <Container maxWidth="md" sx={{ py: 8 }}>
         <Box
@@ -566,7 +607,7 @@ const PagesList = () => {
         >
           <CircularProgress sx={{ color: settings?.primaryColor || '#894444', mb: 2 }} />
           <Typography variant="h6" sx={{ color: settings?.primaryColor || '#894444' }}>
-            Loading access information...
+            Verifying access permissions...
           </Typography>
         </Box>
       </Container>
@@ -574,13 +615,13 @@ const PagesList = () => {
   }
 
   // Access denied state
-  if (hasAccess === false) {
+  if (!isSuperAdmin) {
     return (
       <AccessDenied
-        title="Access Denied"
-        message="You do not have permission to access Page Management. Contact your administrator to request access."
-        returnPath="/admin-home"
-        returnButtonText="Return to Home"
+        title="Access Required"
+        message="Page Management is restricted to Technical users only. You do not have sufficient privileges to access this feature."
+        returnPath="/users-list"
+        returnButtonText="Return to User Management"
       />
     );
   }
@@ -652,7 +693,7 @@ const PagesList = () => {
                         boxShadow: `0 8px 24px ${alpha(settings?.primaryColor || '#894444', 0.15)}`,
                       }}
                     >
-                      <Pages sx={{ fontSize: 32, color: settings?.primaryColor || '#894444' }} />
+                      <SupervisorAccount sx={{ fontSize: 32, color: settings?.primaryColor || '#894444' }} />
                     </Avatar>
                     <Box>
                       <Typography
@@ -675,7 +716,7 @@ const PagesList = () => {
                           color: settings?.textPrimaryColor || '#6D2323',
                         }}
                       >
-                        Manage system pages and access groups
+                        Superadmin only: Manage system pages and access groups
                       </Typography>
                     </Box>
                   </Box>

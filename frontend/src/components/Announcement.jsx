@@ -18,6 +18,8 @@ import {
   Image as ImageIcon, FilterList, Refresh, CheckCircle,
   Error, Info, Warning
 } from "@mui/icons-material";
+import usePageAccess from '../hooks/usePageAccess';
+import AccessDenied from './AccessDenied';
 
 // Get auth headers function
 const getAuthHeaders = () => {
@@ -95,6 +97,16 @@ const AnnouncementForm = () => {
   const [successMessage, setSuccessMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  //ACCESSING
+    // Dynamic page access control using component identifier
+    // The identifier 'philhealth' should match the component_identifier in the pages table
+    const {
+      hasAccess,
+      loading: accessLoading,
+      error: accessError,
+    } = usePageAccess('announcement');
+    // ACCESSING END
 
   // Use system settings
   const settings = useSystemSettings();
@@ -331,6 +343,40 @@ const AnnouncementForm = () => {
       return dateString;
     }
   };
+
+
+    // ACCESSING 2
+    // Loading state
+    if (accessLoading) {
+      return (
+        <Container maxWidth="md" sx={{ py: 8 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+            }}
+          >
+            <CircularProgress sx={{ color: '#6d2323', mb: 2 }} />
+            <Typography variant="h6" sx={{ color: '#6d2323' }}>
+              Loading access information...
+            </Typography>
+          </Box>
+        </Container>
+      );
+    }
+    // Access denied state - Now using the reusable component
+    if (!accessLoading && hasAccess !== true) {
+      return (
+        <AccessDenied
+          title="Access Denied"
+          message="You do not have permission to access PhilHealth Table. Contact your administrator to request access."
+          returnPath="/admin-home"
+          returnButtonText="Return to Home"
+        />
+      );
+    }
+    //ACCESSING END2
 
   return (
     <Box

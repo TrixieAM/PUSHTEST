@@ -123,6 +123,17 @@ const ModernTextField = styled(TextField)(({ theme }) => ({
 }));
 
 const DepartmentTable = () => {
+  const { settings } = useSystemSettings();
+  
+  // Get colors from system settings
+  const primaryColor = settings.accentColor || '#FEF9E1'; // Cards color
+  const secondaryColor = settings.backgroundColor || '#FFF8E7'; // Background
+  const accentColor = settings.primaryColor || '#6d2323'; // Primary accent
+  const accentDark = settings.secondaryColor || '#8B3333'; // Darker accent
+  const textPrimaryColor = settings.textPrimaryColor || '#6d2323';
+  const textSecondaryColor = settings.textSecondaryColor || '#FEF9E1';
+  const hoverColor = settings.hoverColor || '#6D2323';
+  
   const [data, setData] = useState([]);
   const [newEntry, setNewEntry] = useState({
     code: '',
@@ -322,8 +333,8 @@ const DepartmentTable = () => {
             alignItems: 'center',
           }}
         >
-          <CircularProgress sx={{ color: '#6d2323', mb: 2 }} />
-          <Typography variant="h6" sx={{ color: '#6d2323' }}>
+          <CircularProgress sx={{ color: textPrimaryColor, mb: 2 }} />
+          <Typography variant="h6" sx={{ color: textPrimaryColor }}>
             Loading access information...
           </Typography>
         </Box>
@@ -357,12 +368,21 @@ const DepartmentTable = () => {
         {/* Header */}
         <Fade in timeout={500}>
           <Box sx={{ mb: 4 }}>
-            <GlassCard>
+            <GlassCard
+              sx={{
+                background: `rgba(${hexToRgb(primaryColor)}, 0.95)`,
+                boxShadow: `0 8px 40px ${alpha(accentColor, 0.08)}`,
+                border: `1px solid ${alpha(accentColor, 0.1)}`,
+                '&:hover': {
+                  boxShadow: `0 12px 48px ${alpha(accentColor, 0.15)}`,
+                },
+              }}
+            >
               <Box
                 sx={{
                   p: 5,
-                  background: `linear-gradient(135deg, #FEF9E1 0%, #FFF8E7 100%)`,
-                  color: '#6d2323',
+                  background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
+                  color: textPrimaryColor,
                   position: 'relative',
                   overflow: 'hidden',
                 }}
@@ -375,8 +395,10 @@ const DepartmentTable = () => {
                     right: -50,
                     width: 200,
                     height: 200,
-                    background:
-                      'radial-gradient(circle, rgba(109,35,35,0.1) 0%, rgba(109,35,35,0) 70%)',
+                    background: `radial-gradient(circle, ${alpha(
+                      accentColor,
+                      0.1
+                    )} 0%, ${alpha(accentColor, 0)} 70%)`,
                   }}
                 />
                 <Box
@@ -386,8 +408,10 @@ const DepartmentTable = () => {
                     left: '30%',
                     width: 150,
                     height: 150,
-                    background:
-                      'radial-gradient(circle, rgba(109,35,35,0.08) 0%, rgba(109,35,35,0) 70%)',
+                    background: `radial-gradient(circle, ${alpha(
+                      accentColor,
+                      0.08
+                    )} 0%, ${alpha(accentColor, 0)} 70%)`,
                   }}
                 />
 
@@ -401,14 +425,14 @@ const DepartmentTable = () => {
                   <Box display="flex" alignItems="center">
                     <Avatar
                       sx={{
-                        bgcolor: 'rgba(109,35,35,0.15)',
+                        bgcolor: alpha(accentColor, 0.15),
                         mr: 4,
                         width: 64,
                         height: 64,
-                        boxShadow: '0 8px 24px rgba(109,35,35,0.15)',
+                        boxShadow: `0 8px 24px ${alpha(accentColor, 0.15)}`,
                       }}
                     >
-                      <Domain sx={{ color: '#6d2323', fontSize: 32 }} />
+                      <Domain sx={{ color: textPrimaryColor, fontSize: 32 }} />
                     </Avatar>
                     <Box>
                       <Typography
@@ -418,14 +442,14 @@ const DepartmentTable = () => {
                           fontWeight: 700,
                           mb: 1,
                           lineHeight: 1.2,
-                          color: '#6d2323',
+                          color: textPrimaryColor,
                         }}
                       >
                         Department Information Management
                       </Typography>
                       <Typography
                         variant="body1"
-                        sx={{ opacity: 0.8, fontWeight: 400, color: '#8B3333' }}
+                        sx={{ opacity: 0.8, fontWeight: 400, color: accentDark }}
                       >
                         Add and manage department records
                       </Typography>
@@ -436,8 +460,8 @@ const DepartmentTable = () => {
                       label="Enterprise Grade"
                       size="small"
                       sx={{
-                        bgcolor: 'rgba(109,35,35,0.15)',
-                        color: '#6d2323',
+                        bgcolor: alpha(accentColor, 0.15),
+                        color: textPrimaryColor,
                         fontWeight: 500,
                         '& .MuiChip-label': { px: 1 },
                       }}
@@ -446,9 +470,9 @@ const DepartmentTable = () => {
                       <IconButton
                         onClick={() => window.location.reload()}
                         sx={{
-                          bgcolor: 'rgba(109,35,35,0.1)',
-                          '&:hover': { bgcolor: 'rgba(109,35,35,0.2)' },
-                          color: '#6d2323',
+                          bgcolor: alpha(accentColor, 0.1),
+                          '&:hover': { bgcolor: alpha(accentColor, 0.2) },
+                          color: textPrimaryColor,
                           width: 48,
                           height: 48,
                         }}
@@ -465,12 +489,12 @@ const DepartmentTable = () => {
 
         {/* Loading Backdrop */}
         <Backdrop
-          sx={{ color: '#FEF9E1', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+          sx={{ color: textSecondaryColor, zIndex: (theme) => theme.zIndex.drawer + 1 }}
           open={loading}
         >
           <Box sx={{ textAlign: 'center' }}>
             <CircularProgress color="inherit" size={60} thickness={4} />
-            <Typography variant="h6" sx={{ mt: 2, color: '#FEF9E1' }}>
+            <Typography variant="h6" sx={{ mt: 2, color: textSecondaryColor }}>
               Processing department record...
             </Typography>
           </Box>
@@ -486,13 +510,14 @@ const DepartmentTable = () => {
                   height: 'calc(100vh - 200px)',
                   display: 'flex',
                   flexDirection: 'column',
+                  border: `1px solid ${alpha(accentColor, 0.1)}`
                 }}
               >
                 <Box
                   sx={{
                     p: 4,
-                    background: `linear-gradient(135deg, #FEF9E1 0%, #FFF8E7 100%)`,
-                    color: '#6d2323',
+                    background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
+                    color: textPrimaryColor,
                     display: 'flex',
                     alignItems: 'center',
                     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
@@ -524,7 +549,7 @@ const DepartmentTable = () => {
                       sx={{
                         fontWeight: 600,
                         mb: 2,
-                        color: '#6d2323',
+                        color: textPrimaryColor,
                         display: 'flex',
                         alignItems: 'center',
                       }}
@@ -547,7 +572,7 @@ const DepartmentTable = () => {
                       <Grid item xs={12} sm={6}>
                         <Typography
                           variant="body2"
-                          sx={{ fontWeight: 500, mb: 1, color: '#6d2323' }}
+                          sx={{ fontWeight: 500, mb: 1, color: textPrimaryColor }}
                         >
                           Department Code
                         </Typography>
@@ -561,14 +586,14 @@ const DepartmentTable = () => {
                           sx={{
                             '& .MuiOutlinedInput-root': {
                               '& fieldset': {
-                                borderColor: '#6d2323',
+                                borderColor: accentColor,
                                 borderWidth: '1.5px',
                               },
                               '&:hover fieldset': {
-                                borderColor: '#6d2323',
+                                borderColor: accentColor,
                               },
                               '&.Mui-focused fieldset': {
-                                borderColor: '#6d2323',
+                                borderColor: accentColor,
                               },
                             },
                           }}
@@ -578,7 +603,7 @@ const DepartmentTable = () => {
                       <Grid item xs={12} sm={6}>
                         <Typography
                           variant="body2"
-                          sx={{ fontWeight: 500, mb: 1, color: '#6d2323' }}
+                          sx={{ fontWeight: 500, mb: 1, color: textPrimaryColor }}
                         >
                           Department Description
                         </Typography>
@@ -595,14 +620,14 @@ const DepartmentTable = () => {
                           sx={{
                             '& .MuiOutlinedInput-root': {
                               '& fieldset': {
-                                borderColor: '#6d2323',
+                                borderColor: accentColor,
                                 borderWidth: '1.5px',
                               },
                               '&:hover fieldset': {
-                                borderColor: '#6d2323',
+                                borderColor: accentColor,
                               },
                               '&.Mui-focused fieldset': {
-                                borderColor: '#6d2323',
+                                borderColor: accentColor,
                               },
                             },
                           }}
@@ -618,12 +643,12 @@ const DepartmentTable = () => {
                       startIcon={<AddIcon />}
                       fullWidth
                       sx={{
-                        backgroundColor: '#6d2323',
-                        color: '#FEF9E1',
+                        backgroundColor: accentColor,
+                        color: textSecondaryColor,
                         py: 1.5,
                         fontSize: '1rem',
                         '&:hover': {
-                          backgroundColor: '#8B3333',
+                          backgroundColor: accentDark,
                         },
                       }}
                     >
@@ -643,13 +668,14 @@ const DepartmentTable = () => {
                   height: 'calc(100vh - 200px)',
                   display: 'flex',
                   flexDirection: 'column',
+                  border: `1px solid ${alpha(accentColor, 0.1)}`
                 }}
               >
                 <Box
                   sx={{
                     p: 4,
-                    background: `linear-gradient(135deg, #FEF9E1 0%, #FFF8E7 100%)`,
-                    color: '#6d2323',
+                    background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
+                    color: textPrimaryColor,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
@@ -677,12 +703,12 @@ const DepartmentTable = () => {
                     sx={{
                       backgroundColor: 'rgba(255, 255, 255, 0.2)',
                       '& .MuiToggleButton-root': {
-                        color: '#6d2323',
-                        borderColor: 'rgba(109, 35, 35, 0.5)',
+                        color: textPrimaryColor,
+                        borderColor: alpha(accentColor, 0.5),
                         padding: '4px 8px',
                         '&.Mui-selected': {
                           backgroundColor: 'rgba(255, 255, 255, 0.3)',
-                          color: '#6d2323',
+                          color: textPrimaryColor,
                         },
                       },
                     }}
@@ -715,7 +741,7 @@ const DepartmentTable = () => {
                       fullWidth
                       InputProps={{
                         startAdornment: (
-                          <SearchIcon sx={{ color: '#6d2323', mr: 1 }} />
+                          <SearchIcon sx={{ color: textPrimaryColor, mr: 1 }} />
                         ),
                       }}
                     />
@@ -734,7 +760,7 @@ const DepartmentTable = () => {
                         borderRadius: '3px',
                       },
                       '&::-webkit-scrollbar-thumb': {
-                        background: '#6d2323',
+                        background: accentColor,
                         borderRadius: '3px',
                       },
                     }}
@@ -747,16 +773,15 @@ const DepartmentTable = () => {
                               onClick={() => startEditing(department)}
                               sx={{
                                 cursor: 'pointer',
-                                border: '1px solid rgba(109, 35, 35, 0.1)',
+                                border: `1px solid ${alpha(accentColor, 0.1)}`,
                                 height: '100%',
                                 display: 'flex',
                                 flexDirection: 'column',
                                 '&:hover': {
-                                  borderColor: '#6d2323',
+                                  borderColor: accentColor,
                                   transform: 'translateY(-2px)',
                                   transition: 'all 0.2s ease',
-                                  boxShadow:
-                                    '0 4px 8px rgba(109, 35, 35, 0.15)',
+                                  boxShadow: `0 4px 8px ${alpha(accentColor, 0.15)}`,
                                 },
                               }}
                             >
@@ -778,14 +803,14 @@ const DepartmentTable = () => {
                                   <Domain
                                     sx={{
                                       fontSize: 18,
-                                      color: '#6d2323',
+                                      color: accentColor,
                                       mr: 0.5,
                                     }}
                                   />
                                   <Typography
                                     variant="caption"
                                     sx={{
-                                      color: '#6d2323',
+                                      color: textPrimaryColor,
                                       px: 0.5,
                                       py: 0.2,
                                       borderRadius: 0.5,
@@ -826,11 +851,11 @@ const DepartmentTable = () => {
                           onClick={() => startEditing(department)}
                           sx={{
                             cursor: 'pointer',
-                            border: '1px solid rgba(109, 35, 35, 0.1)',
+                            border: `1px solid ${alpha(accentColor, 0.1)}`,
                             mb: 1,
                             '&:hover': {
-                              borderColor: '#6d2323',
-                              backgroundColor: 'rgba(254, 249, 225, 0.3)',
+                              borderColor: accentColor,
+                              backgroundColor: alpha(primaryColor, 0.3),
                             },
                           }}
                         >
@@ -840,7 +865,7 @@ const DepartmentTable = () => {
                             >
                               <Box sx={{ mr: 1.5, mt: 0.2 }}>
                                 <Domain
-                                  sx={{ fontSize: 20, color: '#6d2323' }}
+                                  sx={{ fontSize: 20, color: accentColor }}
                                 />
                               </Box>
 
@@ -855,7 +880,7 @@ const DepartmentTable = () => {
                                   <Typography
                                     variant="caption"
                                     sx={{
-                                      color: '#6d2323',
+                                      color: textPrimaryColor,
                                       px: 0.5,
                                       py: 0.2,
                                       borderRadius: 0.5,
@@ -893,7 +918,7 @@ const DepartmentTable = () => {
                       <Box textAlign="center" py={4}>
                         <Typography
                           variant="h6"
-                          color="#6d2323"
+                          color={textPrimaryColor}
                           fontWeight="bold"
                           sx={{ mb: 1 }}
                         >
@@ -939,8 +964,8 @@ const DepartmentTable = () => {
                 <Box
                   sx={{
                     p: 4,
-                    background: `linear-gradient(135deg, #FEF9E1 0%, #FFF8E7 100%)`,
-                    color: '#6d2323',
+                    background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
+                    color: textPrimaryColor,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
@@ -956,7 +981,7 @@ const DepartmentTable = () => {
                   </Typography>
                   <IconButton
                     onClick={() => setModalOpen(false)}
-                    sx={{ color: '#6d2323' }}
+                    sx={{ color: textPrimaryColor }}
                   >
                     <Close />
                   </IconButton>
@@ -977,7 +1002,7 @@ const DepartmentTable = () => {
                       borderRadius: '3px',
                     },
                     '&::-webkit-scrollbar-thumb': {
-                      background: '#6d2323',
+                      background: accentColor,
                       borderRadius: '3px',
                     },
                   }}
@@ -989,7 +1014,7 @@ const DepartmentTable = () => {
                         sx={{
                           fontWeight: 600,
                           mb: 2,
-                          color: '#6d2323',
+                          color: textPrimaryColor,
                           display: 'flex',
                           alignItems: 'center',
                         }}
@@ -1002,7 +1027,7 @@ const DepartmentTable = () => {
                         <Grid item xs={12} sm={6}>
                           <Typography
                             variant="body2"
-                            sx={{ fontWeight: 500, mb: 1, color: '#6d2323' }}
+                            sx={{ fontWeight: 500, mb: 1, color: textPrimaryColor }}
                           >
                             Department Code
                           </Typography>
@@ -1017,13 +1042,13 @@ const DepartmentTable = () => {
                               sx={{
                                 '& .MuiOutlinedInput-root': {
                                   '& fieldset': {
-                                    borderColor: '#6d2323',
+                                    borderColor: accentColor,
                                   },
                                   '&:hover fieldset': {
-                                    borderColor: '#6d2323',
+                                    borderColor: accentColor,
                                   },
                                   '&.Mui-focused fieldset': {
-                                    borderColor: '#6d2323',
+                                    borderColor: accentColor,
                                   },
                                 },
                               }}
@@ -1033,7 +1058,7 @@ const DepartmentTable = () => {
                               variant="body2"
                               sx={{
                                 p: 1.5,
-                                bgcolor: 'rgba(254, 249, 225, 0.5)',
+                                bgcolor: alpha(primaryColor, 0.5),
                                 borderRadius: 1,
                               }}
                             >
@@ -1045,7 +1070,7 @@ const DepartmentTable = () => {
                         <Grid item xs={12} sm={6}>
                           <Typography
                             variant="body2"
-                            sx={{ fontWeight: 500, mb: 1, color: '#6d2323' }}
+                            sx={{ fontWeight: 500, mb: 1, color: textPrimaryColor }}
                           >
                             Department Description
                           </Typography>
@@ -1060,13 +1085,13 @@ const DepartmentTable = () => {
                               sx={{
                                 '& .MuiOutlinedInput-root': {
                                   '& fieldset': {
-                                    borderColor: '#6d2323',
+                                    borderColor: accentColor,
                                   },
                                   '&:hover fieldset': {
-                                    borderColor: '#6d2323',
+                                    borderColor: accentColor,
                                   },
                                   '&.Mui-focused fieldset': {
-                                    borderColor: '#6d2323',
+                                    borderColor: accentColor,
                                   },
                                 },
                               }}
@@ -1076,7 +1101,7 @@ const DepartmentTable = () => {
                               variant="body2"
                               sx={{
                                 p: 1.5,
-                                bgcolor: 'rgba(254, 249, 225, 0.5)',
+                                bgcolor: alpha(primaryColor, 0.5),
                                 borderRadius: 1,
                               }}
                             >
@@ -1118,9 +1143,9 @@ const DepartmentTable = () => {
                           variant="contained"
                           startIcon={<EditIcon />}
                           sx={{
-                            backgroundColor: '#6d2323',
-                            color: '#FEF9E1',
-                            '&:hover': { backgroundColor: '#8B3333' },
+                            backgroundColor: accentColor,
+                            color: textSecondaryColor,
+                            '&:hover': { backgroundColor: accentDark },
                           }}
                         >
                           Edit
@@ -1148,12 +1173,10 @@ const DepartmentTable = () => {
                           startIcon={<SaveIcon />}
                           disabled={!hasChanges()}
                           sx={{
-                            backgroundColor: hasChanges() ? '#6d2323' : '#ccc',
-                            color: '#FEF9E1',
+                            backgroundColor: hasChanges() ? accentColor : '#ccc',
+                            color: textSecondaryColor,
                             '&:hover': {
-                              backgroundColor: hasChanges()
-                                ? '#8B3333'
-                                : '#ccc',
+                              backgroundColor: hasChanges() ? accentDark : '#ccc',
                             },
                             '&:disabled': {
                               backgroundColor: '#ccc',

@@ -267,6 +267,18 @@ export const componentMapping = {
     componentName: 'PhilHealth',
     description: 'PhilHealth Management',
   },
+   announcement: {
+    componentPath: 'components/Announcement.jsx',
+    routePath: '/announcement',
+    componentName: 'Annoucement',
+    description: 'Announcement Management',
+  },
+   'audit-logs': {
+    componentPath: 'components/AuditLogs.jsx',
+    routePath: '/audit-logs',
+    componentName: 'AuditLogs',
+    description: 'Audit Trail',
+  },
 };
 
 /**

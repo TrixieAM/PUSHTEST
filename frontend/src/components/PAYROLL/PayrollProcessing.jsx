@@ -1600,7 +1600,7 @@ const PayrollProcess = () => {
       sx={{
         py: 4,
         borderRadius: '14px',
-        width: '100vw',
+        width: '100%',
         mx: 'auto',
         maxWidth: '100%',
         overflow: 'hidden',
@@ -1610,15 +1610,7 @@ const PayrollProcess = () => {
       }}
     >
       {/* Wider Container */}
-      <Box
-        sx={{
-          px: 6,
-          mx: 'auto',
-          maxWidth: '1600px',
-          width: '100%',
-          overflowX: 'auto',
-        }}
-      >
+      <Box sx={{ px: 6, mx: "auto", maxWidth: "1600px" }}>
         {/* Header */}
         <Fade in timeout={500}>
           <Box sx={{ mb: 4 }}>

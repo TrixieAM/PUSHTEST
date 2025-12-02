@@ -467,7 +467,7 @@ const SalaryGradeTable = () => {
 
         {/* Add Salary Grade Form */}
         <Fade in timeout={700}>
-          <GlassCard sx={{ mb: 4 }}>
+          <GlassCard sx={{ mb: 4, border: `1px solid ${alpha(accentColor, 0.1)}` }}>
             <Box
               sx={{
                 p: 4,
@@ -592,7 +592,7 @@ const SalaryGradeTable = () => {
 
         {/* Search Filters & Shortcut */}
         <Fade in timeout={900}>
-          <GlassCard sx={{ mb: 4 }}>
+          <GlassCard sx={{ mb: 4, border: `1px solid ${alpha(accentColor, 0.1)}` }}>
             <Box
               sx={{
                 p: 3,

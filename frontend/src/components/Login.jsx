@@ -579,7 +579,7 @@ const Login = () => {
 
 
               <Typography variant="h4" sx={{ color: darkText, fontWeight: 800, mb: 1 }}>
-                Human Resources Information System
+                Human Resource Information System
               </Typography>
               <Typography sx={{ mb: 3, color: mediumText }}>Sign in to access your account</Typography>
 
@@ -702,7 +702,7 @@ const Login = () => {
                 variant="h5"
                 sx={{ fontWeight: 600, mb: 2, color: "#FFFFFF", textShadow: "1px 1px 5px rgba(0,0,0,0.5)" }}
               >
-                Human Resources Information System
+                Human Resource Information System
               </Typography>
             </Box>
 
@@ -1000,7 +1000,7 @@ const Login = () => {
 
 
             <Typography variant="caption" sx={{ display: "block", mt: 2, color: mediumText, fontStyle: "italic" }}>
-              You can change your password later in Settings → Security
+              You can change your password later in Settings → Security → Change Password.
             </Typography>
           </Box>
         </Modal>

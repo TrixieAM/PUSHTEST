@@ -1,6 +1,6 @@
-import API_BASE_URL from '../../apiConfig';
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import API_BASE_URL from "../../apiConfig";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 import {
   Table,
   TableHead,
@@ -21,12 +21,12 @@ import {
   Select,
   MenuItem,
   InputAdornment,
-} from '@mui/material';
-import LoadingOverlay from '../LoadingOverlay';
-import SuccessfulOverlay from '../SuccessfulOverlay';
-import { useSystemSettings } from '../../hooks/useSystemSettings';
-import usePageAccess from '../../hooks/usePageAccess';
-import AccessDenied from '../AccessDenied';
+} from "@mui/material";
+import LoadingOverlay from "../LoadingOverlay";
+import SuccessfulOverlay from "../SuccessfulOverlay";
+import { useSystemSettings } from "../../hooks/useSystemSettings";
+import usePageAccess from "../../hooks/usePageAccess";
+import AccessDenied from "../AccessDenied";
 import {
   CloudUpload,
   DeleteForever,
@@ -44,7 +44,7 @@ import {
   Info,
   Warning,
   Error,
-} from '@mui/icons-material';
+} from "@mui/icons-material";
 import {
   Grid,
   Card,
@@ -61,12 +61,12 @@ import {
   Snackbar,
   Checkbox,
   Badge,
-} from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import TextField from '@mui/material/TextField';
-import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
-import PendingIcon from '@mui/icons-material/Pending';
+} from "@mui/material";
+import SearchIcon from "@mui/icons-material/Search";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import TextField from "@mui/material/TextField";
+import BusinessCenterIcon from "@mui/icons-material/BusinessCenter";
+import PendingIcon from "@mui/icons-material/Pending";
 
 // Helper function to convert hex to rgb
 const hexToRgb = (hex) => {
@@ -76,77 +76,77 @@ const hexToRgb = (hex) => {
         result[3],
         16
       )}`
-    : '109, 35, 35';
+    : "109, 35, 35";
 };
 
 // Professional styled components - colors will be applied via sx prop
 const GlassCard = styled(Card)(({ theme }) => ({
   borderRadius: 20,
-  backdropFilter: 'blur(10px)',
-  overflow: 'hidden',
-  transition: 'boxShadow 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-  position: 'relative',
+  backdropFilter: "blur(10px)",
+  overflow: "hidden",
+  transition: "boxShadow 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+  position: "relative",
 }));
 
 const ProfessionalButton = styled(Button)(
-  ({ theme, variant, color = 'primary' }) => ({
+  ({ theme, variant, color = "primary" }) => ({
     borderRadius: 12,
     fontWeight: 600,
-    padding: '12px 24px',
-    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-    textTransform: 'none',
-    fontSize: '0.95rem',
-    letterSpacing: '0.025em',
+    padding: "12px 24px",
+    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+    textTransform: "none",
+    fontSize: "0.95rem",
+    letterSpacing: "0.025em",
     boxShadow:
-      variant === 'contained' ? '0 4px 14px rgba(254, 249, 225, 0.25)' : 'none',
-    '&:hover': {
-      transform: 'translateY(-2px)',
+      variant === "contained" ? "0 4px 14px rgba(254, 249, 225, 0.25)" : "none",
+    "&:hover": {
+      transform: "translateY(-2px)",
       boxShadow:
-        variant === 'contained'
-          ? '0 6px 20px rgba(254, 249, 225, 0.35)'
-          : 'none',
+        variant === "contained"
+          ? "0 6px 20px rgba(254, 249, 225, 0.35)"
+          : "none",
     },
-    '&:active': {
-      transform: 'translateY(0)',
+    "&:active": {
+      transform: "translateY(0)",
     },
   })
 );
 
 const ModernTextField = styled(TextField)(({ theme }) => ({
-  '& .MuiOutlinedInput-root': {
+  "& .MuiOutlinedInput-root": {
     borderRadius: 12,
-    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    '&:hover': {
-      transform: 'translateY(-1px)',
-      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
+    "&:hover": {
+      transform: "translateY(-1px)",
+      backgroundColor: "rgba(255, 255, 255, 0.95)",
     },
-    '&.Mui-focused': {
-      transform: 'translateY(-1px)',
-      boxShadow: '0 4px 20px rgba(254, 249, 225, 0.25)',
-      backgroundColor: 'rgba(255, 255, 255, 1)',
+    "&.Mui-focused": {
+      transform: "translateY(-1px)",
+      boxShadow: "0 4px 20px rgba(254, 249, 225, 0.25)",
+      backgroundColor: "rgba(255, 255, 255, 1)",
     },
   },
-  '& .MuiInputLabel-root': {
+  "& .MuiInputLabel-root": {
     fontWeight: 500,
   },
 }));
 
 const PremiumTableContainer = styled(TableContainer)(({ theme }) => ({
   borderRadius: 16,
-  overflow: 'hidden',
-  boxShadow: '0 4px 24px rgba(109, 35, 35, 0.06)',
-  border: '1px solid rgba(109, 35, 35, 0.08)',
+  overflow: "hidden",
+  boxShadow: "0 4px 24px rgba(109, 35, 35, 0.06)",
+  border: "1px solid rgba(109, 35, 35, 0.08)",
 }));
 
 const PremiumTableCell = styled(TableCell)(({ theme, isHeader = false }) => ({
   fontWeight: isHeader ? 600 : 500,
-  padding: '18px 20px',
+  padding: "18px 20px",
   borderBottom: isHeader
-    ? '2px solid rgba(254, 249, 225, 0.5)'
-    : '1px solid rgba(109, 35, 35, 0.06)',
-  fontSize: '0.95rem',
-  letterSpacing: '0.025em',
+    ? "2px solid rgba(254, 249, 225, 0.5)"
+    : "1px solid rgba(109, 35, 35, 0.06)",
+  fontSize: "0.95rem",
+  letterSpacing: "0.025em",
 }));
 
 // Custom styled TableCell for Excel-like appearance
@@ -154,13 +154,13 @@ const ExcelTableCell = ({ children, header, ...props }) => (
   <TableCell
     {...props}
     sx={{
-      border: '1px solid #E0E0E0',
-      padding: '8px',
-      backgroundColor: header ? '#F5F5F5' : 'inherit',
-      fontWeight: header ? 'bold' : 'normal',
-      whiteSpace: 'nowrap',
-      '&:hover': {
-        backgroundColor: header ? '#F5F5F5' : '#F8F8F8',
+      border: "1px solid #E0E0E0",
+      padding: "8px",
+      backgroundColor: header ? "#F5F5F5" : "inherit",
+      fontWeight: header ? "bold" : "normal",
+      whiteSpace: "nowrap",
+      "&:hover": {
+        backgroundColor: header ? "#F5F5F5" : "#F8F8F8",
       },
       ...props.sx,
     }}
@@ -174,16 +174,16 @@ const PayrollProcessed = () => {
   const { settings } = useSystemSettings();
 
   // Get colors from system settings - aligned with PayrollProcessing.jsx
-  const primaryColor = settings.accentColor || '#FEF9E1'; // Cards color
-  const secondaryColor = settings.backgroundColor || '#FFF8E7'; // Background
-  const accentColor = settings.primaryColor || '#6d2323'; // Primary accent
-  const accentDark = settings.secondaryColor || '#8B3333'; // Darker accent
-  const textPrimaryColor = settings.textPrimaryColor || '#6d2323';
-  const textSecondaryColor = settings.textSecondaryColor || '#FEF9E1';
-  const hoverColor = settings.hoverColor || '#6D2323';
-  const blackColor = '#1a1a1a';
-  const whiteColor = '#FFFFFF';
-  const grayColor = '#6c757d';
+  const primaryColor = settings.accentColor || "#FEF9E1"; // Cards color
+  const secondaryColor = settings.backgroundColor || "#FFF8E7"; // Background
+  const accentColor = settings.primaryColor || "#6d2323"; // Primary accent
+  const accentDark = settings.secondaryColor || "#8B3333"; // Darker accent
+  const textPrimaryColor = settings.textPrimaryColor || "#6d2323";
+  const textSecondaryColor = settings.textSecondaryColor || "#FEF9E1";
+  const hoverColor = settings.hoverColor || "#6D2323";
+  const blackColor = "#1a1a1a";
+  const whiteColor = "#FFFFFF";
+  const grayColor = "#6c757d";
 
   //ACCESSING
   // Dynamic page access control using component identifier
@@ -192,32 +192,34 @@ const PayrollProcessed = () => {
     hasAccess,
     loading: accessLoading,
     error: accessError,
-  } = usePageAccess('payroll-processed');
+  } = usePageAccess("payroll-processed");
   // ACCESSING END
 
   const [finalizedData, setFinalizedData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [openConfirm, setOpenConfirm] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
-  const [confidentialPasswordInput, setConfidentialPasswordInput] = useState('');
-  const [openConfidentialPassword, setOpenConfidentialPassword] = useState(false);
+  const [confidentialPasswordInput, setConfidentialPasswordInput] =
+    useState("");
+  const [openConfidentialPassword, setOpenConfidentialPassword] =
+    useState(false);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [departments, setDepartments] = useState([]);
-  const [selectedDepartment, setSelectedDepartment] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedDepartment, setSelectedDepartment] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [filteredFinalizedData, setFilteredFinalizedData] = useState([]);
-  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedDate, setSelectedDate] = useState("");
   const [selectedRows, setSelectedRows] = useState([]);
   const [overlayLoading, setOverlayLoading] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
-  const [successAction, setSuccessAction] = useState('');
+  const [successAction, setSuccessAction] = useState("");
   const [openReleaseConfirm, setOpenReleaseConfirm] = useState(false);
   const [releaseLoading, setReleaseLoading] = useState(false);
   const [releasedIdSet, setReleasedIdSet] = useState(new Set());
-  const [selectedMonth, setSelectedMonth] = useState('');
-  const [selectedYear, setSelectedYear] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedYear, setSelectedYear] = useState("");
   const [summaryData, setSummaryData] = useState({
     totalEmployees: 0,
     processedEmployees: 0,
@@ -225,42 +227,42 @@ const PayrollProcessed = () => {
     totalNetSalary: 0,
   });
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarMessage, setSnackbarMessage] = useState("");
 
   // Month options for filtering
   const monthOptions = [
-    { value: '', label: 'All Months' },
-    { value: '01', label: 'January' },
-    { value: '02', label: 'February' },
-    { value: '03', label: 'March' },
-    { value: '04', label: 'April' },
-    { value: '05', label: 'May' },
-    { value: '06', label: 'June' },
-    { value: '07', label: 'July' },
-    { value: '08', label: 'August' },
-    { value: '09', label: 'September' },
-    { value: '10', label: 'October' },
-    { value: '11', label: 'November' },
-    { value: '12', label: 'December' },
+    { value: "", label: "All Months" },
+    { value: "01", label: "January" },
+    { value: "02", label: "February" },
+    { value: "03", label: "March" },
+    { value: "04", label: "April" },
+    { value: "05", label: "May" },
+    { value: "06", label: "June" },
+    { value: "07", label: "July" },
+    { value: "08", label: "August" },
+    { value: "09", label: "September" },
+    { value: "10", label: "October" },
+    { value: "11", label: "November" },
+    { value: "12", label: "December" },
   ];
 
   // Year options for filtering
   const yearOptions = [
-    { value: '', label: 'All Years' },
-    { value: '2024', label: '2024' },
-    { value: '2025', label: '2025' },
-    { value: '2026', label: '2026' },
+    { value: "", label: "All Years" },
+    { value: "2024", label: "2024" },
+    { value: "2025", label: "2025" },
+    { value: "2026", label: "2026" },
   ];
 
   // Normalize a date string to YYYY-MM-DD for reliable key comparison
   const normalizeDateString = (dateInput) => {
     try {
-      if (!dateInput) return '';
+      if (!dateInput) return "";
       const d = new Date(dateInput);
       if (Number.isNaN(d.getTime())) return String(dateInput);
       const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
       return `${year}-${month}-${day}`;
     } catch (_) {
       return String(dateInput);
@@ -269,26 +271,26 @@ const PayrollProcessed = () => {
 
   // Build a consistent composite key for a payroll record
   const getRecordKey = (record) => {
-    const emp = record?.employeeNumber ?? '';
+    const emp = record?.employeeNumber ?? "";
     const start = normalizeDateString(record?.startDate);
     const end = normalizeDateString(record?.endDate);
     return `${emp}-${start}-${end}`;
   };
 
   const getAuthHeaders = () => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     console.log(
-      'Token from localStorage:',
-      token ? 'Token exists' : 'No token found'
+      "Token from localStorage:",
+      token ? "Token exists" : "No token found"
     );
     if (token) {
-      console.log('Token length:', token.length);
-      console.log('Token starts with:', token.substring(0, 20) + '...');
+      console.log("Token length:", token.length);
+      console.log("Token starts with:", token.substring(0, 20) + "...");
     }
     return {
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     };
   };
@@ -337,7 +339,7 @@ const PayrollProcessed = () => {
         );
         setDepartments(response.data);
       } catch (err) {
-        console.error('Error fetching departments:', err);
+        console.error("Error fetching departments:", err);
       }
     };
     fetchDepartments();
@@ -352,7 +354,7 @@ const PayrollProcessed = () => {
         );
         setFinalizedData(res.data);
         setFilteredFinalizedData(res.data);
-        
+
         // Calculate summary data
         const totalNet = res.data.reduce(
           (sum, item) => sum + parseFloat(item.netSalary || 0),
@@ -365,11 +367,11 @@ const PayrollProcessed = () => {
           totalReleased: prev.totalReleased, // Will be updated by useEffect
           totalNetSalary: totalNet,
         }));
-        
+
         setLoading(false);
       } catch (err) {
-        console.error('Error fetching finalized payroll:', err);
-        setError('An error occurred while fetching the finalized payroll.');
+        console.error("Error fetching finalized payroll:", err);
+        setError("An error occurred while fetching the finalized payroll.");
         setLoading(false);
       }
     };
@@ -395,7 +397,7 @@ const PayrollProcessed = () => {
         setReleasedIdSet(releasedKeys);
       } catch (err) {
         console.error(
-          'Error fetching released payroll for disable logic:',
+          "Error fetching released payroll for disable logic:",
           err
         );
       }
@@ -483,8 +485,8 @@ const PayrollProcessed = () => {
       const lowerSearch = search.toLowerCase();
       filtered = filtered.filter(
         (record) =>
-          (record.name || '').toLowerCase().includes(lowerSearch) ||
-          (record.employeeNumber || '')
+          (record.name || "").toLowerCase().includes(lowerSearch) ||
+          (record.employeeNumber || "")
             .toString()
             .toLowerCase()
             .includes(lowerSearch)
@@ -509,13 +511,13 @@ const PayrollProcessed = () => {
     }
 
     // Apply month filter based on startDate
-    if (month && month !== '') {
+    if (month && month !== "") {
       filtered = filtered.filter((record) => {
         if (record.startDate) {
           const recordDate = new Date(record.startDate);
           const recordMonth = String(recordDate.getMonth() + 1).padStart(
             2,
-            '0'
+            "0"
           );
           return recordMonth === month;
         }
@@ -524,7 +526,7 @@ const PayrollProcessed = () => {
     }
 
     // Apply year filter based on startDate
-    if (year && year !== '') {
+    if (year && year !== "") {
       filtered = filtered.filter((record) => {
         if (record.startDate) {
           const recordDate = new Date(record.startDate);
@@ -557,12 +559,12 @@ const PayrollProcessed = () => {
       // Show loading for 2-3 seconds, then success overlay
       setTimeout(() => {
         setOverlayLoading(false);
-        setSuccessAction('delete');
+        setSuccessAction("delete");
         setSuccessOpen(true);
         setTimeout(() => setSuccessOpen(false), 2500);
       }, 2500);
     } catch (error) {
-      console.error('Error deleting payroll data:', error);
+      console.error("Error deleting payroll data:", error);
       setOverlayLoading(false);
       // If API call fails, revert the UI changes
       const res = await axios.get(
@@ -582,8 +584,8 @@ const PayrollProcessed = () => {
           const lowerSearch = searchTerm.toLowerCase();
           filtered = filtered.filter(
             (record) =>
-              (record.name || '').toLowerCase().includes(lowerSearch) ||
-              (record.employeeNumber || '')
+              (record.name || "").toLowerCase().includes(lowerSearch) ||
+              (record.employeeNumber || "")
                 .toString()
                 .toLowerCase()
                 .includes(lowerSearch)
@@ -591,7 +593,7 @@ const PayrollProcessed = () => {
         }
         return filtered;
       });
-      alert('Failed to delete record. Please try again.');
+      alert("Failed to delete record. Please try again.");
     }
   };
 
@@ -606,7 +608,7 @@ const PayrollProcessed = () => {
       });
 
       if (hasReleased) {
-        alert('Cannot delete records that are already released.');
+        alert("Cannot delete records that are already released.");
         return;
       }
       // Bulk delete mode
@@ -615,7 +617,7 @@ const PayrollProcessed = () => {
       // Single row delete - check if the record is already released
       const key = getRecordKey(rowOrIds);
       if (releasedIdSet.has(key)) {
-        alert('This record is already released and cannot be deleted.');
+        alert("This record is already released and cannot be deleted.");
         return;
       }
       setSelectedRow(rowOrIds);
@@ -630,13 +632,13 @@ const PayrollProcessed = () => {
 
   const handleConfidentialPasswordSubmit = async () => {
     if (!confidentialPasswordInput) {
-      setSnackbarMessage('Please enter the confidential password.');
+      setSnackbarMessage("Please enter the confidential password.");
       setSnackbarOpen(true);
       return;
     }
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       const response = await axios.post(
         `${API_BASE_URL}/api/confidential-password/verify`,
         { password: confidentialPasswordInput },
@@ -646,123 +648,128 @@ const PayrollProcessed = () => {
       if (response.data.verified) {
         // Password verified, proceed with deletion
         setOpenConfidentialPassword(false);
-        setConfidentialPasswordInput('');
+        setConfidentialPasswordInput("");
         setOverlayLoading(true);
-        
+
         try {
           if (selectedRow.isBulk) {
-        // Guard again in case state changed - filter out released records
-        const deletableIds = selectedRow.ids.filter((id) => {
-          const record = filteredFinalizedData.find((item) => item.id === id);
-          if (!record) return false;
-          const key = getRecordKey(record);
-          return !releasedIdSet.has(key);
-        });
+            // Guard again in case state changed - filter out released records
+            const deletableIds = selectedRow.ids.filter((id) => {
+              const record = filteredFinalizedData.find(
+                (item) => item.id === id
+              );
+              if (!record) return false;
+              const key = getRecordKey(record);
+              return !releasedIdSet.has(key);
+            });
 
-        if (deletableIds.length === 0) {
-          setOverlayLoading(false);
-          alert(
-            'All selected records are already released and cannot be deleted.'
-          );
-          return;
-        }
-        // Bulk delete
-        setFinalizedData((prev) =>
-          prev.filter((item) => !deletableIds.includes(item.id))
-        );
-        setFilteredFinalizedData((prev) =>
-          prev.filter((item) => !deletableIds.includes(item.id))
-        );
+            if (deletableIds.length === 0) {
+              setOverlayLoading(false);
+              alert(
+                "All selected records are already released and cannot be deleted."
+              );
+              return;
+            }
+            // Bulk delete
+            setFinalizedData((prev) =>
+              prev.filter((item) => !deletableIds.includes(item.id))
+            );
+            setFilteredFinalizedData((prev) =>
+              prev.filter((item) => !deletableIds.includes(item.id))
+            );
 
-        await Promise.all(
-          deletableIds.map((id) =>
-            axios.delete(
-              `${API_BASE_URL}/PayrollRoute/finalized-payroll/${id}`,
-              getAuthHeaders()
-            )
-          )
-        );
+            await Promise.all(
+              deletableIds.map((id) =>
+                axios.delete(
+                  `${API_BASE_URL}/PayrollRoute/finalized-payroll/${id}`,
+                  getAuthHeaders()
+                )
+              )
+            );
 
-        // Show loading for 2-3 seconds, then success overlay
-        setTimeout(() => {
-          setOverlayLoading(false);
-          setSuccessAction('delete');
-          setSuccessOpen(true);
-          setTimeout(() => setSuccessOpen(false), 2500);
-        }, 2500);
-        setSelectedRows([]);
-      } else {
-        // Single delete - check again if the record is released
-        const key = getRecordKey(selectedRow);
-        if (releasedIdSet.has(key)) {
-          setOverlayLoading(false);
-          alert('This record is already released and cannot be deleted.');
-          return;
-        }
+            // Show loading for 2-3 seconds, then success overlay
+            setTimeout(() => {
+              setOverlayLoading(false);
+              setSuccessAction("delete");
+              setSuccessOpen(true);
+              setTimeout(() => setSuccessOpen(false), 2500);
+            }, 2500);
+            setSelectedRows([]);
+          } else {
+            // Single delete - check again if the record is released
+            const key = getRecordKey(selectedRow);
+            if (releasedIdSet.has(key)) {
+              setOverlayLoading(false);
+              alert("This record is already released and cannot be deleted.");
+              return;
+            }
 
-        // Single delete (existing logic)
-        setFinalizedData((prev) =>
-          prev.filter((item) => item.id !== selectedRow.id)
-        );
-        setFilteredFinalizedData((prev) =>
-          prev.filter((item) => item.id !== selectedRow.id)
-        );
+            // Single delete (existing logic)
+            setFinalizedData((prev) =>
+              prev.filter((item) => item.id !== selectedRow.id)
+            );
+            setFilteredFinalizedData((prev) =>
+              prev.filter((item) => item.id !== selectedRow.id)
+            );
 
-        await axios.delete(
-          `${API_BASE_URL}/PayrollRoute/finalized-payroll/${selectedRow.id}`,
-          {
-            ...getAuthHeaders(),
-            data: {
-              employeeNumber: selectedRow.employeeNumber,
-              name: selectedRow.name,
-            },
+            await axios.delete(
+              `${API_BASE_URL}/PayrollRoute/finalized-payroll/${selectedRow.id}`,
+              {
+                ...getAuthHeaders(),
+                data: {
+                  employeeNumber: selectedRow.employeeNumber,
+                  name: selectedRow.name,
+                },
+              }
+            );
+
+            // Show loading for 2-3 seconds, then success overlay
+            setTimeout(() => {
+              setOverlayLoading(false);
+              setSuccessAction("delete");
+              setSuccessOpen(true);
+              setTimeout(() => setSuccessOpen(false), 2500);
+            }, 2500);
           }
-        );
-
-        // Show loading for 2-3 seconds, then success overlay
-        setTimeout(() => {
+        } catch (error) {
+          console.error("Error deleting record:", error);
           setOverlayLoading(false);
-          setSuccessAction('delete');
-          setSuccessOpen(true);
-          setTimeout(() => setSuccessOpen(false), 2500);
-        }, 2500);
-      }
-    } catch (error) {
-      console.error('Error deleting record:', error);
-      setOverlayLoading(false);
-      // Revert UI changes on error
-      const res = await axios.get(
-        `${API_BASE_URL}/PayrollRoute/finalized-payroll`,
-        getAuthHeaders()
-      );
-      setFinalizedData(res.data);
-      applyFilters(selectedDepartment, searchTerm, selectedDate);
-      alert('Failed to delete record(s). Please try again.');
+          // Revert UI changes on error
+          const res = await axios.get(
+            `${API_BASE_URL}/PayrollRoute/finalized-payroll`,
+            getAuthHeaders()
+          );
+          setFinalizedData(res.data);
+          applyFilters(selectedDepartment, searchTerm, selectedDate);
+          alert("Failed to delete record(s). Please try again.");
         } finally {
           setSelectedRow(null);
         }
       } else {
-        setSnackbarMessage('Password verification failed. Please try again.');
+        setSnackbarMessage("Password verification failed. Please try again.");
         setSnackbarOpen(true);
-        setConfidentialPasswordInput('');
+        setConfidentialPasswordInput("");
       }
     } catch (error) {
-      console.error('Error verifying confidential password:', error);
-      setSnackbarMessage(error.response?.data?.error || 'Failed to verify password. Please try again.');
+      console.error("Error verifying confidential password:", error);
+      setSnackbarMessage(
+        error.response?.data?.error ||
+          "Failed to verify password. Please try again."
+      );
       setSnackbarOpen(true);
-      setConfidentialPasswordInput('');
+      setConfidentialPasswordInput("");
     }
   };
 
   const handleConfidentialPasswordCancel = () => {
     setOpenConfidentialPassword(false);
-    setConfidentialPasswordInput('');
+    setConfidentialPasswordInput("");
     setSelectedRow(null);
   };
 
   const handleReleasePayroll = async () => {
     if (selectedRows.length === 0) {
-      alert('Please select payroll records to release.');
+      alert("Please select payroll records to release.");
       return;
     }
 
@@ -784,7 +791,7 @@ const PayrollProcessed = () => {
       });
 
       if (unreleasedSelectedIds.length === 0) {
-        alert('All selected records are already released.');
+        alert("All selected records are already released.");
         setOverlayLoading(false);
         return;
       }
@@ -804,7 +811,7 @@ const PayrollProcessed = () => {
         `${API_BASE_URL}/PayrollReleasedRoute/release-payroll`,
         {
           payrollIds: unreleasedSelectedIds,
-          releasedBy: localStorage.getItem('username') || 'System',
+          releasedBy: localStorage.getItem("username") || "System",
         },
         getAuthHeaders()
       );
@@ -835,26 +842,26 @@ const PayrollProcessed = () => {
         // Show loading for 2-3 seconds, then success overlay, then navigate
         setTimeout(() => {
           setOverlayLoading(false);
-          setSuccessAction('release');
+          setSuccessAction("release");
           setSuccessOpen(true);
 
           // Navigate to payroll-released after success overlay is shown
           setTimeout(() => {
             setSuccessOpen(false);
-            window.location.href = '/payroll-released';
+            window.location.href = "/payroll-released";
           }, 2500);
         }, 2500);
       }
     } catch (error) {
-      console.error('Error releasing payroll:', error);
+      console.error("Error releasing payroll:", error);
       setOverlayLoading(false);
-      alert('Failed to release payroll records. Please try again.');
+      alert("Failed to release payroll records. Please try again.");
     }
   };
 
   const initiateRelease = () => {
     if (selectedRows.length === 0) {
-      alert('Please select payroll records to release.');
+      alert("Please select payroll records to release.");
       return;
     }
     setOpenReleaseConfirm(true);
@@ -867,13 +874,13 @@ const PayrollProcessed = () => {
       <Container maxWidth="md" sx={{ py: 8 }}>
         <Box
           sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
           }}
         >
-          <CircularProgress sx={{ color: '#6d2323', mb: 2 }} />
-          <Typography variant="h6" sx={{ color: '#6d2323' }}>
+          <CircularProgress sx={{ color: "#6d2323", mb: 2 }} />
+          <Typography variant="h6" sx={{ color: "#6d2323" }}>
             Loading access information...
           </Typography>
         </Box>
@@ -897,26 +904,18 @@ const PayrollProcessed = () => {
     <Box
       sx={{
         py: 4,
-        borderRadius: '14px',
-        width: '100vw',
-        mx: 'auto',
-        maxWidth: '100%',
-        overflow: 'hidden',
-        position: 'relative',
-        left: '50%',
-        transform: 'translateX(-50%)',
+        borderRadius: "14px",
+        width: "100%",
+        mx: "auto",
+        maxWidth: "100%",
+        overflow: "hidden",
+        position: "relative",
+        left: "50%",
+        transform: "translateX(-50%)",
       }}
     >
-      {/* Wider Container */}
-      <Box
-        sx={{
-          px: 6,
-          mx: 'auto',
-          maxWidth: '1600px',
-          width: '100%',
-          overflowX: 'auto',
-        }}
-      >
+      {/* Container with fixed width */}
+      <Box sx={{ px: 6, mx: "auto", maxWidth: "1600px" }}>
         {/* Header */}
         <Fade in timeout={500}>
           <Box sx={{ mb: 4 }}>
@@ -925,7 +924,7 @@ const PayrollProcessed = () => {
                 background: `rgba(${hexToRgb(primaryColor)}, 0.95)`,
                 boxShadow: `0 8px 40px ${alpha(accentColor, 0.08)}`,
                 border: `1px solid ${alpha(accentColor, 0.1)}`,
-                '&:hover': {
+                "&:hover": {
                   boxShadow: `0 12px 48px ${alpha(accentColor, 0.15)}`,
                 },
               }}
@@ -935,31 +934,31 @@ const PayrollProcessed = () => {
                   p: 5,
                   background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
                   color: textPrimaryColor,
-                  position: 'relative',
-                  overflow: 'hidden',
+                  position: "relative",
+                  overflow: "hidden",
                 }}
               >
                 {/* Decorative elements */}
                 <Box
                   sx={{
-                    position: 'absolute',
+                    position: "absolute",
                     top: -50,
                     right: -50,
                     width: 200,
                     height: 200,
                     background:
-                      'radial-gradient(circle, rgba(109,35,35,0.1) 0%, rgba(109,35,35,0) 70%)',
+                      "radial-gradient(circle, rgba(109,35,35,0.1) 0%, rgba(109,35,35,0) 70%)",
                   }}
                 />
                 <Box
                   sx={{
-                    position: 'absolute',
+                    position: "absolute",
                     bottom: -30,
-                    left: '30%',
+                    left: "30%",
                     width: 150,
                     height: 150,
                     background:
-                      'radial-gradient(circle, rgba(109,35,35,0.08) 0%, rgba(109,35,35,0) 70%)',
+                      "radial-gradient(circle, rgba(109,35,35,0.08) 0%, rgba(109,35,35,0) 70%)",
                   }}
                 />
 
@@ -974,11 +973,11 @@ const PayrollProcessed = () => {
                   <Box display="flex" alignItems="center">
                     <Avatar
                       sx={{
-                        bgcolor: 'rgba(109,35,35,0.15)',
+                        bgcolor: "rgba(109,35,35,0.15)",
                         mr: 4,
                         width: 64,
                         height: 64,
-                        boxShadow: '0 8px 24px rgba(109,35,35,0.15)',
+                        boxShadow: "0 8px 24px rgba(109,35,35,0.15)",
                       }}
                     >
                       <Payment sx={{ color: textPrimaryColor, fontSize: 32 }} />
@@ -1016,7 +1015,7 @@ const PayrollProcessed = () => {
                         bgcolor: alpha(accentColor, 0.15),
                         color: textPrimaryColor,
                         fontWeight: 500,
-                        '& .MuiChip-label': { px: 1 },
+                        "& .MuiChip-label": { px: 1 },
                       }}
                     />
                     <Tooltip title="Refresh Data">
@@ -1024,7 +1023,7 @@ const PayrollProcessed = () => {
                         onClick={() => window.location.reload()}
                         sx={{
                           bgcolor: alpha(accentColor, 0.1),
-                          '&:hover': { bgcolor: alpha(accentColor, 0.2) },
+                          "&:hover": { bgcolor: alpha(accentColor, 0.2) },
                           color: textPrimaryColor,
                           width: 48,
                           height: 48,
@@ -1039,10 +1038,10 @@ const PayrollProcessed = () => {
                 {/* Summary Cards */}
                 <Box
                   sx={{
-                    display: 'flex',
+                    display: "flex",
                     gap: 2,
-                    flexWrap: 'wrap',
-                    position: 'relative',
+                    flexWrap: "wrap",
+                    position: "relative",
                     zIndex: 1,
                   }}
                 >
@@ -1053,14 +1052,14 @@ const PayrollProcessed = () => {
                       border: `1px solid ${alpha(accentColor, 0.1)}`,
                       background: `rgba(${hexToRgb(whiteColor)}, 0.9)`,
                       boxShadow: `0 4px 16px ${alpha(accentColor, 0.08)}`,
-                      '&:hover': {
+                      "&:hover": {
                         boxShadow: `0 6px 20px ${alpha(accentColor, 0.12)}`,
-                        transform: 'translateY(-2px)',
+                        transform: "translateY(-2px)",
                       },
-                      transition: 'all 0.3s ease',
+                      transition: "all 0.3s ease",
                     }}
                   >
-                    <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                    <CardContent sx={{ py: 1.5, "&:last-child": { pb: 1.5 } }}>
                       <Box
                         display="flex"
                         alignItems="center"
@@ -1097,14 +1096,14 @@ const PayrollProcessed = () => {
                       border: `1px solid ${alpha(accentColor, 0.1)}`,
                       background: `rgba(${hexToRgb(whiteColor)}, 0.9)`,
                       boxShadow: `0 4px 16px ${alpha(accentColor, 0.08)}`,
-                      '&:hover': {
+                      "&:hover": {
                         boxShadow: `0 6px 20px ${alpha(accentColor, 0.12)}`,
-                        transform: 'translateY(-2px)',
+                        transform: "translateY(-2px)",
                       },
-                      transition: 'all 0.3s ease',
+                      transition: "all 0.3s ease",
                     }}
                   >
-                    <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                    <CardContent sx={{ py: 1.5, "&:last-child": { pb: 1.5 } }}>
                       <Box
                         display="flex"
                         alignItems="center"
@@ -1124,13 +1123,13 @@ const PayrollProcessed = () => {
                           <Typography
                             variant="h6"
                             fontWeight="bold"
-                            sx={{ color: '#4caf50' }}
+                            sx={{ color: "#4caf50" }}
                           >
                             {summaryData.processedEmployees}
                           </Typography>
                         </Box>
                         <CheckCircleIcon
-                          sx={{ color: '#4caf50', fontSize: 32 }}
+                          sx={{ color: "#4caf50", fontSize: 32 }}
                         />
                       </Box>
                     </CardContent>
@@ -1143,14 +1142,14 @@ const PayrollProcessed = () => {
                       border: `1px solid ${alpha(accentColor, 0.1)}`,
                       background: `rgba(${hexToRgb(whiteColor)}, 0.9)`,
                       boxShadow: `0 4px 16px ${alpha(accentColor, 0.08)}`,
-                      '&:hover': {
+                      "&:hover": {
                         boxShadow: `0 6px 20px ${alpha(accentColor, 0.12)}`,
-                        transform: 'translateY(-2px)',
+                        transform: "translateY(-2px)",
                       },
-                      transition: 'all 0.3s ease',
+                      transition: "all 0.3s ease",
                     }}
                   >
-                    <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                    <CardContent sx={{ py: 1.5, "&:last-child": { pb: 1.5 } }}>
                       <Box
                         display="flex"
                         alignItems="center"
@@ -1172,7 +1171,7 @@ const PayrollProcessed = () => {
                             fontWeight="bold"
                             sx={{ color: textPrimaryColor }}
                           >
-                            {summaryData.totalReleased.toLocaleString('en-US')}
+                            {summaryData.totalReleased.toLocaleString("en-US")}
                           </Typography>
                         </Box>
                         <TrendingUpIcon
@@ -1189,14 +1188,14 @@ const PayrollProcessed = () => {
                       border: `1px solid ${alpha(accentColor, 0.1)}`,
                       background: `rgba(${hexToRgb(whiteColor)}, 0.9)`,
                       boxShadow: `0 4px 16px ${alpha(accentColor, 0.08)}`,
-                      '&:hover': {
+                      "&:hover": {
                         boxShadow: `0 6px 20px ${alpha(accentColor, 0.12)}`,
-                        transform: 'translateY(-2px)',
+                        transform: "translateY(-2px)",
                       },
-                      transition: 'all 0.3s ease',
+                      transition: "all 0.3s ease",
                     }}
                   >
-                    <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                    <CardContent sx={{ py: 1.5, "&:last-child": { pb: 1.5 } }}>
                       <Box
                         display="flex"
                         alignItems="center"
@@ -1220,7 +1219,7 @@ const PayrollProcessed = () => {
                           >
                             ₱
                             {summaryData.totalNetSalary.toLocaleString(
-                              'en-US',
+                              "en-US",
                               {
                                 minimumFractionDigits: 2,
                                 maximumFractionDigits: 2,
@@ -1248,7 +1247,7 @@ const PayrollProcessed = () => {
               background: `rgba(${hexToRgb(primaryColor)}, 0.95)`,
               boxShadow: `0 8px 40px ${alpha(accentColor, 0.08)}`,
               border: `1px solid ${alpha(accentColor, 0.1)}`,
-              '&:hover': {
+              "&:hover": {
                 boxShadow: `0 12px 48px ${alpha(accentColor, 0.15)}`,
               },
             }}
@@ -1284,13 +1283,13 @@ const PayrollProcessed = () => {
                       label="Department"
                       sx={{
                         color: textPrimaryColor,
-                        '& .MuiOutlinedInput-notchedOutline': {
+                        "& .MuiOutlinedInput-notchedOutline": {
                           borderColor: alpha(accentColor, 0.3),
                         },
-                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                        "&:hover .MuiOutlinedInput-notchedOutline": {
                           borderColor: alpha(accentColor, 0.5),
                         },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
                           borderColor: accentColor,
                         },
                       }}
@@ -1319,15 +1318,15 @@ const PayrollProcessed = () => {
                       shrink: true,
                     }}
                     sx={{
-                      '& .MuiOutlinedInput-root': {
+                      "& .MuiOutlinedInput-root": {
                         color: textPrimaryColor,
-                        '& .MuiOutlinedInput-notchedOutline': {
+                        "& .MuiOutlinedInput-notchedOutline": {
                           borderColor: alpha(accentColor, 0.3),
                         },
-                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                        "&:hover .MuiOutlinedInput-notchedOutline": {
                           borderColor: alpha(accentColor, 0.5),
                         },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
                           borderColor: accentColor,
                         },
                       },
@@ -1346,13 +1345,13 @@ const PayrollProcessed = () => {
                       label="Month"
                       sx={{
                         color: textPrimaryColor,
-                        '& .MuiOutlinedInput-notchedOutline': {
+                        "& .MuiOutlinedInput-notchedOutline": {
                           borderColor: alpha(accentColor, 0.3),
                         },
-                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                        "&:hover .MuiOutlinedInput-notchedOutline": {
                           borderColor: alpha(accentColor, 0.5),
                         },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
                           borderColor: accentColor,
                         },
                       }}
@@ -1377,13 +1376,13 @@ const PayrollProcessed = () => {
                       label="Year"
                       sx={{
                         color: textPrimaryColor,
-                        '& .MuiOutlinedInput-notchedOutline': {
+                        "& .MuiOutlinedInput-notchedOutline": {
                           borderColor: alpha(accentColor, 0.3),
                         },
-                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                        "&:hover .MuiOutlinedInput-notchedOutline": {
                           borderColor: alpha(accentColor, 0.5),
                         },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
                           borderColor: accentColor,
                         },
                       }}
@@ -1415,15 +1414,15 @@ const PayrollProcessed = () => {
                       ),
                     }}
                     sx={{
-                      '& .MuiOutlinedInput-root': {
+                      "& .MuiOutlinedInput-root": {
                         color: textPrimaryColor,
-                        '& .MuiOutlinedInput-notchedOutline': {
+                        "& .MuiOutlinedInput-notchedOutline": {
                           borderColor: alpha(accentColor, 0.3),
                         },
-                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                        "&:hover .MuiOutlinedInput-notchedOutline": {
                           borderColor: alpha(accentColor, 0.5),
                         },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
                           borderColor: accentColor,
                         },
                       },
@@ -1443,7 +1442,7 @@ const PayrollProcessed = () => {
               sx={{
                 mb: 3,
                 borderRadius: 3,
-                '& .MuiAlert-message': { fontWeight: 500 },
+                "& .MuiAlert-message": { fontWeight: 500 },
               }}
               icon={<Error />}
             >
@@ -1460,8 +1459,8 @@ const PayrollProcessed = () => {
               background: `rgba(${hexToRgb(primaryColor)}, 0.95)`,
               boxShadow: `0 8px 40px ${alpha(accentColor, 0.08)}`,
               border: `1px solid ${alpha(accentColor, 0.1)}`,
-              overflow: 'visible',
-              '&:hover': {
+              overflow: "visible",
+              "&:hover": {
                 boxShadow: `0 12px 48px ${alpha(accentColor, 0.15)}`,
               },
             }}
@@ -1473,9 +1472,9 @@ const PayrollProcessed = () => {
                 background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
                 color: textPrimaryColor,
                 borderBottom: `1px solid ${alpha(accentColor, 0.1)}`,
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
               }}
             >
               <Box>
@@ -1484,8 +1483,8 @@ const PayrollProcessed = () => {
                   sx={{
                     opacity: 0.8,
                     mb: 1,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.1em',
+                    textTransform: "uppercase",
+                    letterSpacing: "0.1em",
                     color: textPrimaryColor,
                   }}
                 >
@@ -1518,7 +1517,7 @@ const PayrollProcessed = () => {
                     sx={{
                       borderColor: accentColor,
                       color: textPrimaryColor,
-                      '&:hover': {
+                      "&:hover": {
                         borderColor: accentDark,
                         backgroundColor: alpha(accentColor, 0.1),
                       },
@@ -1537,25 +1536,27 @@ const PayrollProcessed = () => {
             ) : (
               <Box>
                 {/* Table with Fixed Actions Column */}
-                <Box sx={{ display: 'flex', width: '100%', position: 'relative' }}>
+                <Box
+                  sx={{ display: "flex", width: "100%", position: "relative" }}
+                >
                   {/* Scrollable Table Content */}
                   <Box
                     sx={{
-                      overflowX: 'auto',
-                      overflowY: 'visible',
+                      overflowX: "auto",
+                      overflowY: "visible",
                       flex: 1,
                       minWidth: 0,
-                      '&::-webkit-scrollbar': {
-                        height: '10px',
+                      "&::-webkit-scrollbar": {
+                        height: "10px",
                       },
-                      '&::-webkit-scrollbar-track': {
+                      "&::-webkit-scrollbar-track": {
                         background: alpha(accentColor, 0.1),
-                        borderRadius: '4px',
+                        borderRadius: "4px",
                       },
-                      '&::-webkit-scrollbar-thumb': {
+                      "&::-webkit-scrollbar-thumb": {
                         background: alpha(accentColor, 0.4),
-                        borderRadius: '4px',
-                        '&:hover': {
+                        borderRadius: "4px",
+                        "&:hover": {
                           background: alpha(accentColor, 0.6),
                         },
                       },
@@ -1565,13 +1566,15 @@ const PayrollProcessed = () => {
                       sx={{
                         boxShadow: `0 4px 24px ${alpha(accentColor, 0.06)}`,
                         border: `1px solid ${alpha(accentColor, 0.08)}`,
-                        overflowX: 'auto',
-                        overflowY: 'visible',
-                        width: 'max-content',
-                        minWidth: '100%',
+                        overflowX: "auto",
+                        overflowY: "visible",
+                        width: "max-content",
+                        minWidth: "100%",
                       }}
                     >
-                      <Table sx={{ minWidth: 'max-content', tableLayout: 'auto' }}>
+                      <Table
+                        sx={{ minWidth: "max-content", tableLayout: "auto" }}
+                      >
                         <TableHead sx={{ bgcolor: alpha(primaryColor, 0.7) }}>
                           <TableRow>
                             <PremiumTableCell
@@ -1581,29 +1584,31 @@ const PayrollProcessed = () => {
                             >
                               <Checkbox
                                 sx={{
-                                  color: 'white',
-                                  '&.Mui-checked': {
-                                    color: 'white',
+                                  color: "white",
+                                  "&.Mui-checked": {
+                                    color: "white",
                                   },
-                                  '&:hover': {
-                                    color: '#F5F5F5',
+                                  "&:hover": {
+                                    color: "#F5F5F5",
                                   },
-                                  '&.MuiCheckbox-indeterminate': {
-                                    color: 'white',
+                                  "&.MuiCheckbox-indeterminate": {
+                                    color: "white",
                                   },
                                 }}
                                 indeterminate={(() => {
-                                  const currentPageRows = filteredFinalizedData.slice(
-                                    page * rowsPerPage,
-                                    page * rowsPerPage + rowsPerPage
-                                  );
+                                  const currentPageRows =
+                                    filteredFinalizedData.slice(
+                                      page * rowsPerPage,
+                                      page * rowsPerPage + rowsPerPage
+                                    );
                                   const selectableIds = currentPageRows
                                     .filter(
-                                      (row) => !releasedIdSet.has(getRecordKey(row))
+                                      (row) =>
+                                        !releasedIdSet.has(getRecordKey(row))
                                     )
                                     .map((row) => row.id);
-                                  const selectedOnPage = selectedRows.filter((id) =>
-                                    selectableIds.includes(id)
+                                  const selectedOnPage = selectedRows.filter(
+                                    (id) => selectableIds.includes(id)
                                   );
                                   return (
                                     selectedOnPage.length > 0 &&
@@ -1611,13 +1616,15 @@ const PayrollProcessed = () => {
                                   );
                                 })()}
                                 checked={(() => {
-                                  const currentPageRows = filteredFinalizedData.slice(
-                                    page * rowsPerPage,
-                                    page * rowsPerPage + rowsPerPage
-                                  );
+                                  const currentPageRows =
+                                    filteredFinalizedData.slice(
+                                      page * rowsPerPage,
+                                      page * rowsPerPage + rowsPerPage
+                                    );
                                   const selectableIds = currentPageRows
                                     .filter(
-                                      (row) => !releasedIdSet.has(getRecordKey(row))
+                                      (row) =>
+                                        !releasedIdSet.has(getRecordKey(row))
                                     )
                                     .map((row) => row.id);
                                   if (selectableIds.length === 0) return false;
@@ -1626,13 +1633,15 @@ const PayrollProcessed = () => {
                                   );
                                 })()}
                                 onChange={(e) => {
-                                  const currentPageRows = filteredFinalizedData.slice(
-                                    page * rowsPerPage,
-                                    page * rowsPerPage + rowsPerPage
-                                  );
+                                  const currentPageRows =
+                                    filteredFinalizedData.slice(
+                                      page * rowsPerPage,
+                                      page * rowsPerPage + rowsPerPage
+                                    );
                                   const selectableIds = currentPageRows
                                     .filter(
-                                      (row) => !releasedIdSet.has(getRecordKey(row))
+                                      (row) =>
+                                        !releasedIdSet.has(getRecordKey(row))
                                     )
                                     .map((row) => row.id);
                                   if (e.target.checked) {
@@ -1641,7 +1650,9 @@ const PayrollProcessed = () => {
                                     ]);
                                   } else {
                                     setSelectedRows((prev) =>
-                                      prev.filter((id) => !selectableIds.includes(id))
+                                      prev.filter(
+                                        (id) => !selectableIds.includes(id)
+                                      )
                                     );
                                   }
                                 }}
@@ -1839,7 +1850,7 @@ const PayrollProcessed = () => {
                               isHeader
                               sx={{
                                 color: textPrimaryColor,
-                                borderLeft: '2px solid black',
+                                borderLeft: "2px solid black",
                               }}
                             >
                               Pay1st Compute
@@ -1854,7 +1865,7 @@ const PayrollProcessed = () => {
                               isHeader
                               sx={{
                                 color: textPrimaryColor,
-                                borderLeft: '2px solid black',
+                                borderLeft: "2px solid black",
                               }}
                             >
                               No.
@@ -2009,790 +2020,746 @@ const PayrollProcessed = () => {
                             >
                               Date Submitted
                             </PremiumTableCell>
-                    </TableRow>
-                  </TableHead>
-
-                  <TableBody>
-                    {filteredFinalizedData.length > 0 ? (
-                      filteredFinalizedData
-                        .slice(
-                          page * rowsPerPage,
-                          page * rowsPerPage + rowsPerPage
-                        )
-                        .map((row, index) => (
-                          <TableRow
-                            key={row.id}
-                            sx={{
-                              '&:nth-of-type(even)': {
-                                bgcolor: alpha(primaryColor, 0.3),
-                              },
-                              '&:hover': {
-                                backgroundColor:
-                                  alpha(accentColor, 0.05) + ' !important',
-                              },
-                              transition: 'all 0.2s ease',
-                            }}
-                          >
-                            <PremiumTableCell padding="checkbox">
-                              <Checkbox
-                                checked={selectedRows.includes(row.id)}
-                                disabled={releasedIdSet.has(getRecordKey(row))}
-                                onChange={(e) => {
-                                  e.stopPropagation();
-                                  if (releasedIdSet.has(getRecordKey(row)))
-                                    return;
-                                  if (selectedRows.includes(row.id)) {
-                                    setSelectedRows((prev) =>
-                                      prev.filter((id) => id !== row.id)
-                                    );
-                                  } else {
-                                    setSelectedRows((prev) => [
-                                      ...prev,
-                                      row.id,
-                                    ]);
-                                  }
-                                }}
-                              />
+                            <PremiumTableCell
+                              isHeader
+                              sx={{ color: textPrimaryColor }}
+                            >
+                              Actions
                             </PremiumTableCell>
-                            <ExcelTableCell>
-                              {page * rowsPerPage + index + 1}
-                            </ExcelTableCell>
-                            <ExcelTableCell>{row.department}</ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.employeeNumber}
-                            </ExcelTableCell>
-                            <ExcelTableCell>{row.startDate}</ExcelTableCell>
-                            <ExcelTableCell>{row.endDate}</ExcelTableCell>
-                            <ExcelTableCell>{row.name}</ExcelTableCell>
-                            <ExcelTableCell>{row.position}</ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.rateNbc584
-                                ? Number(row.rateNbc584).toLocaleString(
-                                    'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
-                                  )
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.nbc594
-                                ? Number(row.nbc594).toLocaleString('en-US', {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  })
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.rateNbc594
-                                ? Number(row.rateNbc594).toLocaleString(
-                                    'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
-                                  )
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.nbcDiffl597
-                                ? Number(row.nbcDiffl597).toLocaleString(
-                                    'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
-                                  )
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.increment
-                                ? Number(row.increment).toLocaleString(
-                                    'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
-                                  )
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.grossSalary
-                                ? Number(row.grossSalary).toLocaleString(
-                                    'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
-                                  )
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.rh
-                                ? (() => {
-                                    const totalHours = Number(row.rh);
-                                    const days = Math.floor(totalHours / 8);
-                                    const hours = totalHours % 8;
-                                    return `${days} days ${
-                                      hours > 0 ? `& ${hours} hrs` : ''
-                                    }`.trim();
-                                  })()
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.abs
-                                ? Number(row.abs).toLocaleString('en-US', {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  })
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>{row.h}</ExcelTableCell>
-                            <ExcelTableCell>{row.m}</ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.sss
-                                ? Number(row.sss).toLocaleString('en-US', {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  })
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.withholdingTax
-                                ? Number(row.withholdingTax).toLocaleString(
-                                    'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
-                                  )
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.totalGsisDeds
-                                ? Number(row.totalGsisDeds).toLocaleString(
-                                    'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
-                                  )
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.totalPagibigDeds
-                                ? Number(row.totalPagibigDeds).toLocaleString(
-                                    'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
-                                  )
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.PhilHealthContribution
-                                ? Number(
-                                    row.PhilHealthContribution
-                                  ).toLocaleString('en-US', {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  })
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.totalOtherDeds
-                                ? Number(row.totalOtherDeds).toLocaleString(
-                                    'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
-                                  )
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.totalDeductions
-                                ? Number(row.totalDeductions).toLocaleString(
-                                    'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
-                                  )
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell
-                              sx={{ color: 'red', fontWeight: 'bold' }}
-                            >
-                              {row.pay1st
-                                ? Number(row.pay1st).toLocaleString('en-US', {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  })
-                                : ''}{' '}
-                            </ExcelTableCell>
-                            <ExcelTableCell
-                              sx={{ color: 'red', fontWeight: 'bold' }}
-                            >
-                              {row.pay2nd
-                                ? Number(row.pay2nd).toLocaleString('en-US', {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  })
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>{index + 1}</ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.rtIns
-                                ? Number(row.rtIns).toLocaleString('en-US', {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  })
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.ec
-                                ? Number(row.ec).toLocaleString('en-US', {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  })
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.PhilHealthContribution
-                                ? Number(
-                                    row.PhilHealthContribution
-                                  ).toLocaleString('en-US', {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  })
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.pagibigFundCont
-                                ? Number(row.pagibigFundCont).toLocaleString(
-                                    'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
-                                  )
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell
-                              sx={{
-                                borderLeft: '2px solid black',
-                                color: 'red',
-                                fontWeight: 'bold',
-                              }}
-                            >
-                              {row.pay1stCompute
-                                ? Number(row.pay1stCompute).toLocaleString(
-                                    'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
-                                  )
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell
-                              sx={{ color: 'red', fontWeight: 'bold' }}
-                            >
-                              {row.pay2ndCompute
-                                ? Number(row.pay2ndCompute).toLocaleString(
-                                    'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
-                                  )
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell
-                              sx={{ borderLeft: '2px solid black' }}
-                            >
-                              {index + 1}
-                            </ExcelTableCell>
-                            <ExcelTableCell>{row.name}</ExcelTableCell>
-                            <ExcelTableCell>{row.position}</ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.withholdingTax
-                                ? Number(row.withholdingTax).toLocaleString(
-                                    'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
-                                  )
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.personalLifeRetIns
-                                ? Number(row.personalLifeRetIns).toLocaleString(
-                                    'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
-                                  )
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.gsisSalaryLoan
-                                ? Number(row.gsisSalaryLoan).toLocaleString(
-                                    'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
-                                  )
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.gsisPolicyLoan
-                                ? Number(row.gsisPolicyLoan).toLocaleString(
-                                    'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
-                                  )
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.gsisArrears
-                                ? Number(row.gsisArrears).toLocaleString(
-                                    'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
-                                  )
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.cpl
-                                ? Number(row.cpl).toLocaleString('en-US', {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  })
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.mpl
-                                ? Number(row.mpl).toLocaleString('en-US', {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  })
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.eal
-                                ? Number(row.eal).toLocaleString('en-US', {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  })
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.mplLite
-                                ? Number(row.mplLite).toLocaleString('en-US', {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  })
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.emergencyLoan
-                                ? Number(row.emergencyLoan).toLocaleString(
-                                    'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
-                                  )
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.totalGsisDeds
-                                ? Number(row.totalGsisDeds).toLocaleString(
-                                    'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
-                                  )
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.pagibigFundCont
-                                ? Number(row.pagibigFundCont).toLocaleString(
-                                    'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
-                                  )
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.pagibig2
-                                ? Number(row.pagibig2).toLocaleString('en-US', {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  })
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.multiPurpLoan
-                                ? Number(row.multiPurpLoan).toLocaleString(
-                                    'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
-                                  )
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.totalPagibigDeds
-                                ? Number(row.totalPagibigDeds).toLocaleString(
-                                    'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
-                                  )
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.PhilHealthContribution
-                                ? Number(
-                                    row.PhilHealthContribution
-                                  ).toLocaleString('en-US', {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  })
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.liquidatingCash
-                                ? Number(row.liquidatingCash).toLocaleString(
-                                    'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
-                                  )
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.landbankSalaryLoan
-                                ? Number(row.landbankSalaryLoan).toLocaleString(
-                                    'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
-                                  )
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.earistCreditCoop
-                                ? Number(row.earistCreditCoop).toLocaleString(
-                                    'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
-                                  )
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.feu
-                                ? Number(row.feu).toLocaleString('en-US', {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  })
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.totalOtherDeds
-                                ? Number(row.totalOtherDeds).toLocaleString(
-                                    'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
-                                  )
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {row.totalDeductions
-                                ? Number(row.totalDeductions).toLocaleString(
-                                    'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
-                                  )
-                                : ''}
-                            </ExcelTableCell>
-                            <ExcelTableCell>
-                              {new Date(row.dateCreated).toLocaleString()}
-                            </ExcelTableCell>
                           </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <PremiumTableCell
-                            colSpan={50}
-                            align="center"
-                            sx={{ py: 8 }}
-                          >
-                            <Box sx={{ textAlign: 'center' }}>
-                              <Info
-                                sx={{
-                                  fontSize: 80,
-                                  color: alpha(accentColor, 0.3),
-                                  mb: 3,
-                                }}
-                              />
-                              <Typography
-                                variant="h5"
-                                sx={{
-                                  color: alpha(accentColor, 0.6),
-                                  fontWeight: 600,
-                                }}
-                                gutterBottom
-                              >
-                                No Records Found
-                              </Typography>
-                              <Typography
-                                variant="body1"
-                                sx={{ color: alpha(accentColor, 0.4) }}
-                              >
-                                No finalized payroll records available. Try adjusting your
-                                filters.
-                              </Typography>
-                            </Box>
-                          </PremiumTableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </PremiumTableContainer>
-              </Box>
+                        </TableHead>
 
-                      {/* Fixed Actions Column */}
-                      <Box
-                        sx={{
-                          width: '120px',
-                          minWidth: '120px',
-                          borderLeft: `2px solid ${alpha(accentColor, 0.2)}`,
-                          backgroundColor: alpha(primaryColor, 0.3),
-                          position: 'sticky',
-                          right: 0,
-                          zIndex: 1,
-                          boxShadow: `-2px 0 5px ${alpha(accentColor, 0.1)}`,
-                        }}
-                      >
-                        <Table
-                          size="small"
-                          sx={{ tableLayout: 'fixed', width: '100%' }}
-                        >
-                          <TableHead>
-                            <TableRow>
-                              <TableCell
-                                sx={{
-                                  backgroundColor: alpha(primaryColor, 0.7),
-                                  fontWeight: 'bold',
-                                  textAlign: 'center',
-                                  borderBottom: `1px solid ${alpha(accentColor, 0.1)}`,
-                                  padding: '8px',
-                                  position: 'sticky',
-                                  paddingTop: 3.5,
-                                  paddingBottom: 3.5,
-                                  zIndex: 2,
-                                  color: textPrimaryColor,
-                                }}
-                              >
-                                Actions
-                              </TableCell>
-                              
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {filteredFinalizedData.length > 0 ? (
-                              filteredFinalizedData
-                                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                .map((row) => {
-                                  const key = getRecordKey(row);
-                                  const isRowReleased = releasedIdSet.has(key);
-                                  const isSelected = selectedRows.includes(row.id);
-                                  const shouldDisable = isSelected
-                                    ? selectedRows.some((id) => {
-                                        const selectedRecord = filteredFinalizedData.find(
+                        <TableBody>
+                          {filteredFinalizedData.length > 0 ? (
+                            filteredFinalizedData
+                              .slice(
+                                page * rowsPerPage,
+                                page * rowsPerPage + rowsPerPage
+                              )
+                              .map((row, index) => {
+                                const key = getRecordKey(row);
+                                const isRowReleased = releasedIdSet.has(key);
+                                const isSelected = selectedRows.includes(
+                                  row.id
+                                );
+                                const shouldDisable = isSelected
+                                  ? selectedRows.some((id) => {
+                                      const selectedRecord =
+                                        filteredFinalizedData.find(
                                           (item) => item.id === id
                                         );
-                                        if (!selectedRecord) return false;
-                                        const selectedKey = getRecordKey(selectedRecord);
-                                        return releasedIdSet.has(selectedKey);
-                                      })
-                                    : isRowReleased;
+                                      if (!selectedRecord) return false;
+                                      const selectedKey =
+                                        getRecordKey(selectedRecord);
+                                      return releasedIdSet.has(selectedKey);
+                                    })
+                                  : isRowReleased;
 
-                                  return (
-                                    <TableRow
-                                      key={`actions-${row.id}`}
+                                return (
+                                  <TableRow
+                                    key={row.id}
+                                    sx={{
+                                      "&:nth-of-type(even)": {
+                                        bgcolor: alpha(primaryColor, 0.3),
+                                      },
+                                      "&:hover": {
+                                        backgroundColor:
+                                          alpha(accentColor, 0.05) +
+                                          " !important",
+                                      },
+                                      transition: "all 0.2s ease",
+                                    }}
+                                  >
+                                    <PremiumTableCell padding="checkbox">
+                                      <Checkbox
+                                        checked={selectedRows.includes(row.id)}
+                                        disabled={releasedIdSet.has(
+                                          getRecordKey(row)
+                                        )}
+                                        onChange={(e) => {
+                                          e.stopPropagation();
+                                          if (
+                                            releasedIdSet.has(getRecordKey(row))
+                                          )
+                                            return;
+                                          if (selectedRows.includes(row.id)) {
+                                            setSelectedRows((prev) =>
+                                              prev.filter((id) => id !== row.id)
+                                            );
+                                          } else {
+                                            setSelectedRows((prev) => [
+                                              ...prev,
+                                              row.id,
+                                            ]);
+                                          }
+                                        }}
+                                      />
+                                    </PremiumTableCell>
+                                    <ExcelTableCell>
+                                      {page * rowsPerPage + index + 1}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.department}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.employeeNumber}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.startDate}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.endDate}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>{row.name}</ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.position}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.rateNbc584
+                                        ? Number(row.rateNbc584).toLocaleString(
+                                            "en-US",
+                                            {
+                                              minimumFractionDigits: 2,
+                                              maximumFractionDigits: 2,
+                                            }
+                                          )
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.nbc594
+                                        ? Number(row.nbc594).toLocaleString(
+                                            "en-US",
+                                            {
+                                              minimumFractionDigits: 2,
+                                              maximumFractionDigits: 2,
+                                            }
+                                          )
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.rateNbc594
+                                        ? Number(row.rateNbc594).toLocaleString(
+                                            "en-US",
+                                            {
+                                              minimumFractionDigits: 2,
+                                              maximumFractionDigits: 2,
+                                            }
+                                          )
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.nbcDiffl597
+                                        ? Number(
+                                            row.nbcDiffl597
+                                          ).toLocaleString("en-US", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                          })
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.increment
+                                        ? Number(row.increment).toLocaleString(
+                                            "en-US",
+                                            {
+                                              minimumFractionDigits: 2,
+                                              maximumFractionDigits: 2,
+                                            }
+                                          )
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.grossSalary
+                                        ? Number(
+                                            row.grossSalary
+                                          ).toLocaleString("en-US", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                          })
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.rh
+                                        ? (() => {
+                                            const totalHours = Number(row.rh);
+                                            const days = Math.floor(
+                                              totalHours / 8
+                                            );
+                                            const hours = totalHours % 8;
+                                            return `${days} days ${
+                                              hours > 0 ? `& ${hours} hrs` : ""
+                                            }`.trim();
+                                          })()
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.abs
+                                        ? Number(row.abs).toLocaleString(
+                                            "en-US",
+                                            {
+                                              minimumFractionDigits: 2,
+                                              maximumFractionDigits: 2,
+                                            }
+                                          )
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>{row.h}</ExcelTableCell>
+                                    <ExcelTableCell>{row.m}</ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.sss
+                                        ? Number(row.sss).toLocaleString(
+                                            "en-US",
+                                            {
+                                              minimumFractionDigits: 2,
+                                              maximumFractionDigits: 2,
+                                            }
+                                          )
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.withholdingTax
+                                        ? Number(
+                                            row.withholdingTax
+                                          ).toLocaleString("en-US", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                          })
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.totalGsisDeds
+                                        ? Number(
+                                            row.totalGsisDeds
+                                          ).toLocaleString("en-US", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                          })
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.totalPagibigDeds
+                                        ? Number(
+                                            row.totalPagibigDeds
+                                          ).toLocaleString("en-US", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                          })
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.PhilHealthContribution
+                                        ? Number(
+                                            row.PhilHealthContribution
+                                          ).toLocaleString("en-US", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                          })
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.totalOtherDeds
+                                        ? Number(
+                                            row.totalOtherDeds
+                                          ).toLocaleString("en-US", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                          })
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.totalDeductions
+                                        ? Number(
+                                            row.totalDeductions
+                                          ).toLocaleString("en-US", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                          })
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell
+                                      sx={{ color: "red", fontWeight: "bold" }}
+                                    >
+                                      {row.pay1st
+                                        ? Number(row.pay1st).toLocaleString(
+                                            "en-US",
+                                            {
+                                              minimumFractionDigits: 2,
+                                              maximumFractionDigits: 2,
+                                            }
+                                          )
+                                        : ""}{" "}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell
+                                      sx={{ color: "red", fontWeight: "bold" }}
+                                    >
+                                      {row.pay2nd
+                                        ? Number(row.pay2nd).toLocaleString(
+                                            "en-US",
+                                            {
+                                              minimumFractionDigits: 2,
+                                              maximumFractionDigits: 2,
+                                            }
+                                          )
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>{index + 1}</ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.rtIns
+                                        ? Number(row.rtIns).toLocaleString(
+                                            "en-US",
+                                            {
+                                              minimumFractionDigits: 2,
+                                              maximumFractionDigits: 2,
+                                            }
+                                          )
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.ec
+                                        ? Number(row.ec).toLocaleString(
+                                            "en-US",
+                                            {
+                                              minimumFractionDigits: 2,
+                                              maximumFractionDigits: 2,
+                                            }
+                                          )
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.PhilHealthContribution
+                                        ? Number(
+                                            row.PhilHealthContribution
+                                          ).toLocaleString("en-US", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                          })
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.pagibigFundCont
+                                        ? Number(
+                                            row.pagibigFundCont
+                                          ).toLocaleString("en-US", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                          })
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell
                                       sx={{
-                                        '&:nth-of-type(even)': {
-                                          bgcolor: alpha(primaryColor, 0.3),
-                                        },
-                                        '&:hover': {
-                                          backgroundColor:
-                                            alpha(accentColor, 0.05) + ' !important',
-                                        },
-                                        transition: 'all 0.2s ease',
+                                        borderLeft: "2px solid black",
+                                        color: "red",
+                                        fontWeight: "bold",
                                       }}
                                     >
-                                      <TableCell
+                                      {row.pay1stCompute
+                                        ? Number(
+                                            row.pay1stCompute
+                                          ).toLocaleString("en-US", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                          })
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell
+                                      sx={{ color: "red", fontWeight: "bold" }}
+                                    >
+                                      {row.pay2ndCompute
+                                        ? Number(
+                                            row.pay2ndCompute
+                                          ).toLocaleString("en-US", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                          })
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell
+                                      sx={{ borderLeft: "2px solid black" }}
+                                    >
+                                      {index + 1}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>{row.name}</ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.position}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.withholdingTax
+                                        ? Number(
+                                            row.withholdingTax
+                                          ).toLocaleString("en-US", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                          })
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.personalLifeRetIns
+                                        ? Number(
+                                            row.personalLifeRetIns
+                                          ).toLocaleString("en-US", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                          })
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.gsisSalaryLoan
+                                        ? Number(
+                                            row.gsisSalaryLoan
+                                          ).toLocaleString("en-US", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                          })
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.gsisPolicyLoan
+                                        ? Number(
+                                            row.gsisPolicyLoan
+                                          ).toLocaleString("en-US", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                          })
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.gsisArrears
+                                        ? Number(
+                                            row.gsisArrears
+                                          ).toLocaleString("en-US", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                          })
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.cpl
+                                        ? Number(row.cpl).toLocaleString(
+                                            "en-US",
+                                            {
+                                              minimumFractionDigits: 2,
+                                              maximumFractionDigits: 2,
+                                            }
+                                          )
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.mpl
+                                        ? Number(row.mpl).toLocaleString(
+                                            "en-US",
+                                            {
+                                              minimumFractionDigits: 2,
+                                              maximumFractionDigits: 2,
+                                            }
+                                          )
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.eal
+                                        ? Number(row.eal).toLocaleString(
+                                            "en-US",
+                                            {
+                                              minimumFractionDigits: 2,
+                                              maximumFractionDigits: 2,
+                                            }
+                                          )
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.mplLite
+                                        ? Number(row.mplLite).toLocaleString(
+                                            "en-US",
+                                            {
+                                              minimumFractionDigits: 2,
+                                              maximumFractionDigits: 2,
+                                            }
+                                          )
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.emergencyLoan
+                                        ? Number(
+                                            row.emergencyLoan
+                                          ).toLocaleString("en-US", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                          })
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.totalGsisDeds
+                                        ? Number(
+                                            row.totalGsisDeds
+                                          ).toLocaleString("en-US", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                          })
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.pagibigFundCont
+                                        ? Number(
+                                            row.pagibigFundCont
+                                          ).toLocaleString("en-US", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                          })
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.pagibig2
+                                        ? Number(row.pagibig2).toLocaleString(
+                                            "en-US",
+                                            {
+                                              minimumFractionDigits: 2,
+                                              maximumFractionDigits: 2,
+                                            }
+                                          )
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.multiPurpLoan
+                                        ? Number(
+                                            row.multiPurpLoan
+                                          ).toLocaleString("en-US", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                          })
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.totalPagibigDeds
+                                        ? Number(
+                                            row.totalPagibigDeds
+                                          ).toLocaleString("en-US", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                          })
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.PhilHealthContribution
+                                        ? Number(
+                                            row.PhilHealthContribution
+                                          ).toLocaleString("en-US", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                          })
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.liquidatingCash
+                                        ? Number(
+                                            row.liquidatingCash
+                                          ).toLocaleString("en-US", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                          })
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.landbankSalaryLoan
+                                        ? Number(
+                                            row.landbankSalaryLoan
+                                          ).toLocaleString("en-US", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                          })
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.earistCreditCoop
+                                        ? Number(
+                                            row.earistCreditCoop
+                                          ).toLocaleString("en-US", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                          })
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.feu
+                                        ? Number(row.feu).toLocaleString(
+                                            "en-US",
+                                            {
+                                              minimumFractionDigits: 2,
+                                              maximumFractionDigits: 2,
+                                            }
+                                          )
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.totalOtherDeds
+                                        ? Number(
+                                            row.totalOtherDeds
+                                          ).toLocaleString("en-US", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                          })
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {row.totalDeductions
+                                        ? Number(
+                                            row.totalDeductions
+                                          ).toLocaleString("en-US", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                          })
+                                        : ""}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      {new Date(
+                                        row.dateCreated
+                                      ).toLocaleString()}
+                                    </ExcelTableCell>
+                                    <ExcelTableCell>
+                                      <Box
                                         sx={{
-                                          padding: '8px',
-                                          textAlign: 'center',
-                                          borderBottom: `1px solid ${alpha(
-                                            accentColor,
-                                            0.06
-                                          )}`,
+                                          display: "flex",
+                                          justifyContent: "center",
+                                          gap: 0.5,
                                         }}
                                       >
-                                        <Box
-                                          sx={{
-                                            display: 'flex',
-                                            justifyContent: 'center',
-                                            gap: 0.5,
-                                            paddingTop: 2,
-                                            paddingBottom: 2,
-                                          }}
-                                        >
-                                          <Tooltip title="Delete Record">
-                                            <IconButton
-                                              size="small"
-                                              onClick={() => {
-                                                if (isSelected) {
-                                                  initiateDelete(selectedRows);
-                                                } else {
-                                                  initiateDelete(row);
-                                                }
-                                              }}
-                                              disabled={shouldDisable}
-                                              sx={{
-                                                color: shouldDisable
-                                                  ? '#ccc'
-                                                  : '#d32f2f',
+                                        <Tooltip title="Delete Record">
+                                          <IconButton
+                                            size="small"
+                                            onClick={() => {
+                                              if (isSelected) {
+                                                initiateDelete(selectedRows);
+                                              } else {
+                                                initiateDelete(row);
+                                              }
+                                            }}
+                                            disabled={shouldDisable}
+                                            sx={{
+                                              color: shouldDisable
+                                                ? "#ccc"
+                                                : "#d32f2f",
+                                              backgroundColor: shouldDisable
+                                                ? "#f5f5f5"
+                                                : "white",
+                                              border: "1px solid #d32f2f",
+                                              "&:hover": {
                                                 backgroundColor: shouldDisable
-                                                  ? '#f5f5f5'
-                                                  : 'white',
-                                                border: '1px solid #d32f2f',
-                                                '&:hover': {
-                                                  backgroundColor: shouldDisable
-                                                    ? '#f5f5f5'
-                                                    : 'rgba(211, 47, 47, 0.1)',
-                                                },
-                                                padding: '4px',
-                                              }}
-                                            >
-                                              <DeleteIcon fontSize="small" />
-                                            </IconButton>
-                                          </Tooltip>
-                                        </Box>
-                                      </TableCell>
-                                    </TableRow>
-                                  );
-                                })
-                            ) : (
-                              <TableRow>
-                                <TableCell
-                                  sx={{
-                                    textAlign: 'center',
-                                    borderBottom: `1px solid ${alpha(
-                                      accentColor,
-                                      0.06
-                                    )}`,
-                                    padding: '8px',
-                                  }}
-                                >
-                                  No actions
-                                </TableCell>
-                              </TableRow>
-                            )}
-                          </TableBody>
-                        </Table>
-                      </Box>
-                    </Box>
-
-                    {/* Table Footer */}
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        borderTop: `1px solid ${alpha(accentColor, 0.1)}`,
-                        px: 4,
-                        py: 2,
-                        bgcolor: alpha(primaryColor, 0.5),
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
-                        <Typography
-                          variant="body2"
-                          sx={{ fontWeight: 'bold', color: textPrimaryColor }}
-                        >
-                          Total Records: {filteredFinalizedData.length}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          sx={{ fontWeight: 'bold', color: textPrimaryColor }}
-                        >
-                          Selected: {selectedRows.length}
-                        </Typography>
-                      </Box>
-                      <TablePagination
-                        component="div"
-                        count={filteredFinalizedData.length}
-                        page={page}
-                        onPageChange={handleChangePage}
-                        rowsPerPage={rowsPerPage}
-                        onRowsPerPageChange={handleChangeRowsPerPage}
-                        rowsPerPageOptions={[10, 25, 50, 100]}
-                        sx={{
-                          '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows':
-                            {
-                              color: textPrimaryColor,
-                            },
-                          '& .MuiIconButton-root': {
-                            color: textPrimaryColor,
-                          },
-                        }}
-                      />
-                    </Box>
+                                                  ? "#f5f5f5"
+                                                  : "rgba(211, 47, 47, 0.1)",
+                                              },
+                                              padding: "4px",
+                                            }}
+                                          >
+                                            <DeleteIcon fontSize="small" />
+                                          </IconButton>
+                                        </Tooltip>
+                                      </Box>
+                                    </ExcelTableCell>
+                                  </TableRow>
+                                );
+                              })
+                          ) : (
+                            <TableRow>
+                              <PremiumTableCell
+                                colSpan={50}
+                                align="center"
+                                sx={{ py: 8 }}
+                              >
+                                <Box sx={{ textAlign: "center" }}>
+                                  <Info
+                                    sx={{
+                                      fontSize: 80,
+                                      color: alpha(accentColor, 0.3),
+                                      mb: 3,
+                                    }}
+                                  />
+                                  <Typography
+                                    variant="h5"
+                                    sx={{
+                                      color: alpha(accentColor, 0.6),
+                                      fontWeight: 600,
+                                    }}
+                                    gutterBottom
+                                  >
+                                    No Records Found
+                                  </Typography>
+                                  <Typography
+                                    variant="body1"
+                                    sx={{ color: alpha(accentColor, 0.4) }}
+                                  >
+                                    No finalized payroll records available. Try
+                                    adjusting your filters.
+                                  </Typography>
+                                </Box>
+                              </PremiumTableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </PremiumTableContainer>
                   </Box>
-                )}
-              </GlassCard>
-            </Fade>
+                </Box>
+
+                {/* Table Footer */}
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    borderTop: `1px solid ${alpha(accentColor, 0.1)}`,
+                    px: 4,
+                    py: 2,
+                    bgcolor: alpha(primaryColor, 0.5),
+                  }}
+                >
+                  <Box sx={{ display: "flex", gap: 3, alignItems: "center" }}>
+                    <Typography
+                      variant="body2"
+                      sx={{ fontWeight: "bold", color: textPrimaryColor }}
+                    >
+                      Total Records: {filteredFinalizedData.length}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ fontWeight: "bold", color: textPrimaryColor }}
+                    >
+                      Selected: {selectedRows.length}
+                    </Typography>
+                  </Box>
+                  <TablePagination
+                    component="div"
+                    count={filteredFinalizedData.length}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    rowsPerPage={rowsPerPage}
+                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    rowsPerPageOptions={[10, 25, 50, 100]}
+                    sx={{
+                      "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows":
+                        {
+                          color: textPrimaryColor,
+                        },
+                      "& .MuiIconButton-root": {
+                        color: textPrimaryColor,
+                      },
+                    }}
+                  />
+                </Box>
+              </Box>
+            )}
+          </GlassCard>
+        </Fade>
 
         {/* Action Buttons */}
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3 }}>
+        <Box
+          sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 3 }}
+        >
           <ProfessionalButton
             variant="outlined"
-            onClick={() => (window.location.href = '/payroll-table')}
+            onClick={() => (window.location.href = "/payroll-table")}
             size="large"
             sx={{
               borderColor: accentColor,
               color: textPrimaryColor,
-              '&:hover': {
+              "&:hover": {
                 borderColor: accentDark,
                 backgroundColor: alpha(accentColor, 0.1),
               },
@@ -2804,12 +2771,12 @@ const PayrollProcessed = () => {
 
           <ProfessionalButton
             variant="outlined"
-            onClick={() => (window.location.href = '/payroll-released')}
+            onClick={() => (window.location.href = "/payroll-released")}
             size="large"
             sx={{
               borderColor: accentColor,
               color: textPrimaryColor,
-              '&:hover': {
+              "&:hover": {
                 borderColor: accentDark,
                 backgroundColor: alpha(accentColor, 0.1),
               },
@@ -2828,8 +2795,8 @@ const PayrollProcessed = () => {
             sx={{
               backgroundColor: accentColor,
               color: textSecondaryColor,
-              '&:hover': { backgroundColor: accentDark },
-              '&:disabled': {
+              "&:hover": { backgroundColor: accentDark },
+              "&:disabled": {
                 backgroundColor: alpha(accentColor, 0.3),
                 color: alpha(textSecondaryColor, 0.5),
               },
@@ -2839,472 +2806,485 @@ const PayrollProcessed = () => {
           </ProfessionalButton>
         </Box>
 
-      <Modal
-        open={openConfirm}
-        onClose={() => setOpenConfirm(false)}
-      >
-        <Box
-          sx={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: { xs: '90%', sm: 500 },
-            maxWidth: 600,
-            bgcolor: 'white',
-            borderRadius: 3,
-            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-            overflow: 'hidden',
-            border: `2px solid ${accentColor}`,
-          }}
-        >
-          {/* Clean White Header with Accent */}
+        <Modal open={openConfirm} onClose={() => setOpenConfirm(false)}>
           <Box
             sx={{
-              p: 3,
-              bgcolor: 'white',
-              borderBottom: `3px solid ${accentColor}`,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 2,
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: { xs: "90%", sm: 500 },
+              maxWidth: 600,
+              bgcolor: "white",
+              borderRadius: 3,
+              boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+              overflow: "hidden",
+              border: `2px solid ${accentColor}`,
             }}
           >
-            <Avatar
+            {/* Clean White Header with Accent */}
+            <Box
               sx={{
-                bgcolor: alpha(accentColor, 0.1),
-                color: accentColor,
-                width: 56,
-                height: 56,
+                p: 3,
+                bgcolor: "white",
+                borderBottom: `3px solid ${accentColor}`,
+                display: "flex",
+                alignItems: "center",
+                gap: 2,
               }}
             >
-              <DeleteForever sx={{ fontSize: 28 }} />
-            </Avatar>
-            <Box>
-              <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#333' }}>
-                Delete Record Confirmation
-              </Typography>
-              <Typography variant="body2" sx={{ color: '#666' }}>
-                This action cannot be undone
-              </Typography>
-            </Box>
-          </Box>
-
-          {/* Content */}
-          <Box sx={{ p: 4, bgcolor: 'white' }}>
-            <Alert
-              severity="warning"
-              icon={<DeleteForever />}
-              sx={{
-                mb: 3,
-                borderRadius: 2,
-                bgcolor: alpha(accentColor, 0.05),
-                border: `1px solid ${alpha(accentColor, 0.2)}`,
-                '& .MuiAlert-icon': {
+              <Avatar
+                sx={{
+                  bgcolor: alpha(accentColor, 0.1),
                   color: accentColor,
-                  fontSize: 28,
-                },
-              }}
-            >
-              <Typography variant="body1" sx={{ fontWeight: 600, mb: 1, color: '#333' }}>
-                Delete {selectedRow?.isBulk
-                  ? `${selectedRow.ids.length} selected records`
-                  : 'this record'}
-              </Typography>
-              <Typography variant="body2" sx={{ color: '#666' }}>
-                Please confirm that you want to delete{' '}
-                <strong>
+                  width: 56,
+                  height: 56,
+                }}
+              >
+                <DeleteForever sx={{ fontSize: 28 }} />
+              </Avatar>
+              <Box>
+                <Typography
+                  variant="h5"
+                  sx={{ fontWeight: "bold", color: "#333" }}
+                >
+                  Delete Record Confirmation
+                </Typography>
+                <Typography variant="body2" sx={{ color: "#666" }}>
+                  This action cannot be undone
+                </Typography>
+              </Box>
+            </Box>
+
+            {/* Content */}
+            <Box sx={{ p: 4, bgcolor: "white" }}>
+              <Alert
+                severity="warning"
+                icon={<DeleteForever />}
+                sx={{
+                  mb: 3,
+                  borderRadius: 2,
+                  bgcolor: alpha(accentColor, 0.05),
+                  border: `1px solid ${alpha(accentColor, 0.2)}`,
+                  "& .MuiAlert-icon": {
+                    color: accentColor,
+                    fontSize: 28,
+                  },
+                }}
+              >
+                <Typography
+                  variant="body1"
+                  sx={{ fontWeight: 600, mb: 1, color: "#333" }}
+                >
+                  Delete{" "}
                   {selectedRow?.isBulk
                     ? `${selectedRow.ids.length} selected records`
-                    : 'this record'}
-                </strong>
-                . This action cannot be undone.
-              </Typography>
-            </Alert>
+                    : "this record"}
+                </Typography>
+                <Typography variant="body2" sx={{ color: "#666" }}>
+                  Please confirm that you want to delete{" "}
+                  <strong>
+                    {selectedRow?.isBulk
+                      ? `${selectedRow.ids.length} selected records`
+                      : "this record"}
+                  </strong>
+                  . This action cannot be undone.
+                </Typography>
+              </Alert>
 
-            {/* Action Buttons */}
-            <Box display="flex" justifyContent="flex-end" gap={2} mt={2}>
-              <Button
-                variant="outlined"
-                onClick={() => setOpenConfirm(false)}
-                sx={{
-                  color: accentColor,
-                  borderColor: accentColor,
-                  px: 3,
-                  py: 1.2,
-                  fontWeight: 600,
-                  textTransform: 'none',
-                  borderRadius: 2,
-                  '&:hover': {
-                    borderColor: accentDark,
-                    backgroundColor: alpha(accentColor, 0.08),
-                  },
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="contained"
-                onClick={handleConfirm}
-                sx={{
-                  backgroundColor: accentColor,
-                  color: 'white',
-                  px: 4,
-                  py: 1.2,
-                  fontWeight: 600,
-                  textTransform: 'none',
-                  borderRadius: 2,
-                  minWidth: 140,
-                  '&:hover': {
-                    backgroundColor: accentDark,
-                  },
-                }}
-                startIcon={<DeleteForever />}
-              >
-                Delete
-              </Button>
+              {/* Action Buttons */}
+              <Box display="flex" justifyContent="flex-end" gap={2} mt={2}>
+                <Button
+                  variant="outlined"
+                  onClick={() => setOpenConfirm(false)}
+                  sx={{
+                    color: accentColor,
+                    borderColor: accentColor,
+                    px: 3,
+                    py: 1.2,
+                    fontWeight: 600,
+                    textTransform: "none",
+                    borderRadius: 2,
+                    "&:hover": {
+                      borderColor: accentDark,
+                      backgroundColor: alpha(accentColor, 0.08),
+                    },
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={handleConfirm}
+                  sx={{
+                    backgroundColor: accentColor,
+                    color: "white",
+                    px: 4,
+                    py: 1.2,
+                    fontWeight: 600,
+                    textTransform: "none",
+                    borderRadius: 2,
+                    minWidth: 140,
+                    "&:hover": {
+                      backgroundColor: accentDark,
+                    },
+                  }}
+                  startIcon={<DeleteForever />}
+                >
+                  Delete
+                </Button>
+              </Box>
             </Box>
           </Box>
-        </Box>
-      </Modal>
+        </Modal>
 
-      {/* CONFIDENTIAL PASSWORD MODAL */}
-      <Modal
-        open={openConfidentialPassword}
-        onClose={handleConfidentialPasswordCancel}
-      >
-        <Box
-          sx={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: { xs: '90%', sm: 500 },
-            maxWidth: 600,
-            bgcolor: 'white',
-            borderRadius: 3,
-            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-            overflow: 'hidden',
-            border: `2px solid ${accentColor}`,
-          }}
+        {/* CONFIDENTIAL PASSWORD MODAL */}
+        <Modal
+          open={openConfidentialPassword}
+          onClose={handleConfidentialPasswordCancel}
         >
-          {/* Clean White Header with Accent */}
           <Box
             sx={{
-              p: 3,
-              bgcolor: 'white',
-              borderBottom: `3px solid ${accentColor}`,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 2,
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: { xs: "90%", sm: 500 },
+              maxWidth: 600,
+              bgcolor: "white",
+              borderRadius: 3,
+              boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+              overflow: "hidden",
+              border: `2px solid ${accentColor}`,
             }}
           >
-            <Avatar
+            {/* Clean White Header with Accent */}
+            <Box
               sx={{
-                bgcolor: alpha(accentColor, 0.1),
-                color: accentColor,
-                width: 56,
-                height: 56,
+                p: 3,
+                bgcolor: "white",
+                borderBottom: `3px solid ${accentColor}`,
+                display: "flex",
+                alignItems: "center",
+                gap: 2,
               }}
             >
-              <Lock sx={{ fontSize: 28 }} />
-            </Avatar>
-            <Box>
-              <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#333' }}>
-                Confidential Password Required
-              </Typography>
-              <Typography variant="body2" sx={{ color: '#666' }}>
-                Sensitive operation verification
-              </Typography>
+              <Avatar
+                sx={{
+                  bgcolor: alpha(accentColor, 0.1),
+                  color: accentColor,
+                  width: 56,
+                  height: 56,
+                }}
+              >
+                <Lock sx={{ fontSize: 28 }} />
+              </Avatar>
+              <Box>
+                <Typography
+                  variant="h5"
+                  sx={{ fontWeight: "bold", color: "#333" }}
+                >
+                  Authorization Required
+                </Typography>
+                <Typography variant="body2" sx={{ color: "#666" }}>
+                  Sensitive operation verification
+                </Typography>
+              </Box>
             </Box>
-          </Box>
 
-          {/* Content */}
-          <Box sx={{ p: 4, bgcolor: 'white' }}>
-            <Typography variant="body1" sx={{ mb: 3, color: '#666' }}>
-              This is a sensitive operation. Please enter the confidential password to proceed with the deletion.
-            </Typography>
+            {/* Content */}
+            <Box sx={{ p: 4, bgcolor: "white" }}>
+              <Typography variant="body1" sx={{ mb: 3, color: "#666" }}>
+                This is a sensitive operation. Please enter the authorized
+                password to proceed with the deletion.
+              </Typography>
 
-            <TextField
-              autoFocus
-              margin="dense"
-              label="Enter Confidential Password"
-              type="password"
-              fullWidth
-              variant="outlined"
-              value={confidentialPasswordInput}
-              onChange={(e) => setConfidentialPasswordInput(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
-                  handleConfidentialPasswordSubmit();
-                }
-              }}
-              sx={{
-                mb: 3,
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                },
-              }}
-            />
-
-            {/* Action Buttons */}
-            <Box display="flex" justifyContent="flex-end" gap={2} mt={2}>
-              <Button
-                onClick={handleConfidentialPasswordCancel}
+              <TextField
+                autoFocus
+                margin="dense"
+                label="Enter Confidential Password"
+                type="password"
+                fullWidth
                 variant="outlined"
-                sx={{
-                  color: accentColor,
-                  borderColor: accentColor,
-                  px: 3,
-                  py: 1.2,
-                  fontWeight: 600,
-                  textTransform: 'none',
-                  borderRadius: 2,
-                  '&:hover': {
-                    borderColor: accentDark,
-                    backgroundColor: alpha(accentColor, 0.08),
-                  },
+                value={confidentialPasswordInput}
+                onChange={(e) => setConfidentialPasswordInput(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === "Enter") {
+                    handleConfidentialPasswordSubmit();
+                  }
                 }}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleConfidentialPasswordSubmit}
-                variant="contained"
                 sx={{
-                  backgroundColor: accentColor,
-                  color: 'white',
-                  px: 4,
-                  py: 1.2,
-                  fontWeight: 600,
-                  textTransform: 'none',
-                  borderRadius: 2,
-                  minWidth: 140,
-                  '&:hover': {
-                    backgroundColor: accentDark,
-                  },
-                }}
-                startIcon={<Lock />}
-              >
-                Verify
-              </Button>
-            </Box>
-          </Box>
-        </Box>
-      </Modal>
-
-      {/* RELEASE PAYROLL RECORDS MODAL */}
-      <Modal
-        open={openReleaseConfirm}
-        onClose={() => setOpenReleaseConfirm(false)}
-      >
-        <Box
-          sx={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: { xs: '90%', sm: 500 },
-            maxWidth: 600,
-            bgcolor: 'white',
-            borderRadius: 3,
-            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-            overflow: 'hidden',
-            border: `2px solid ${accentColor}`,
-          }}
-        >
-          {/* Clean White Header with Accent */}
-          <Box
-            sx={{
-              p: 3,
-              bgcolor: 'white',
-              borderBottom: `3px solid ${accentColor}`,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 2,
-            }}
-          >
-            <Avatar
-              sx={{
-                bgcolor: alpha(accentColor, 0.1),
-                color: accentColor,
-                width: 56,
-                height: 56,
-              }}
-            >
-              <CloudUpload sx={{ fontSize: 28 }} />
-            </Avatar>
-            <Box>
-              <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#333' }}>
-                Release Payroll Records
-              </Typography>
-              <Typography variant="body2" sx={{ color: '#666' }}>
-                Move records to released module
-              </Typography>
-            </Box>
-          </Box>
-
-          {/* Content */}
-          <Box sx={{ p: 4, bgcolor: 'white' }}>
-            <Alert
-              severity="info"
-              icon={<CloudUpload />}
-              sx={{
-                mb: 3,
-                borderRadius: 2,
-                bgcolor: alpha(accentColor, 0.05),
-                border: `1px solid ${alpha(accentColor, 0.2)}`,
-                '& .MuiAlert-icon': {
-                  color: accentColor,
-                  fontSize: 28,
-                },
-              }}
-            >
-              <Typography variant="body1" sx={{ fontWeight: 600, mb: 1, color: '#333' }}>
-                Release {selectedRows.length} Payroll Record{selectedRows.length > 1 ? 's' : ''}
-              </Typography>
-              <Typography variant="body2" sx={{ color: '#666' }}>
-                Please confirm that you want to release{' '}
-                <strong>{selectedRows.length}</strong> selected payroll record
-                {selectedRows.length > 1 ? 's' : ''}. This action will move them to
-                the <strong>Payroll Released</strong> module, and they will no
-                longer be editable.
-              </Typography>
-            </Alert>
-
-            {/* OPTIONAL: subtle pulse line loader when releasing */}
-            {releaseLoading && (
-              <Box
-                sx={{
-                  mt: 2,
                   mb: 3,
-                  height: '4px',
-                  width: '100%',
-                  borderRadius: '2px',
-                  background: `linear-gradient(90deg, ${accentColor}, ${textPrimaryColor}, ${accentColor})`,
-                  backgroundSize: '200% 100%',
-                  animation: 'pulseLine 1.5s linear infinite',
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 2,
+                  },
                 }}
               />
-            )}
 
-            {/* Action Buttons */}
-            <Box display="flex" justifyContent="flex-end" gap={2} mt={2}>
-              <Button
-                onClick={() => setOpenReleaseConfirm(false)}
-                variant="outlined"
-                disabled={releaseLoading}
-                sx={{
-                  color: accentColor,
-                  borderColor: accentColor,
-                  px: 3,
-                  py: 1.2,
-                  fontWeight: 600,
-                  textTransform: 'none',
-                  borderRadius: 2,
-                  '&:hover': {
-                    borderColor: accentDark,
-                    backgroundColor: alpha(accentColor, 0.08),
-                  },
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleReleasePayroll}
-                variant="contained"
-                disabled={releaseLoading}
-                sx={{
-                  backgroundColor: accentColor,
-                  color: 'white',
-                  px: 4,
-                  py: 1.2,
-                  fontWeight: 600,
-                  textTransform: 'none',
-                  borderRadius: 2,
-                  minWidth: 140,
-                  '&:hover': {
-                    backgroundColor: accentDark,
-                  },
-                  '&:disabled': {
-                    backgroundColor: '#e0e0e0',
-                    color: '#9e9e9e',
-                  },
-                }}
-                startIcon={
-                  releaseLoading ? (
-                    <CircularProgress size={18} sx={{ color: 'white' }} />
-                  ) : (
-                    <CloudUpload />
-                  )
-                }
-              >
-                {releaseLoading ? 'Releasing...' : 'Release'}
-              </Button>
+              {/* Action Buttons */}
+              <Box display="flex" justifyContent="flex-end" gap={2} mt={2}>
+                <Button
+                  onClick={handleConfidentialPasswordCancel}
+                  variant="outlined"
+                  sx={{
+                    color: accentColor,
+                    borderColor: accentColor,
+                    px: 3,
+                    py: 1.2,
+                    fontWeight: 600,
+                    textTransform: "none",
+                    borderRadius: 2,
+                    "&:hover": {
+                      borderColor: accentDark,
+                      backgroundColor: alpha(accentColor, 0.08),
+                    },
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleConfidentialPasswordSubmit}
+                  variant="contained"
+                  sx={{
+                    backgroundColor: accentColor,
+                    color: "white",
+                    px: 4,
+                    py: 1.2,
+                    fontWeight: 600,
+                    textTransform: "none",
+                    borderRadius: 2,
+                    minWidth: 140,
+                    "&:hover": {
+                      backgroundColor: accentDark,
+                    },
+                  }}
+                  startIcon={<Lock />}
+                >
+                  Verify
+                </Button>
+              </Box>
             </Box>
           </Box>
-        </Box>
-      </Modal>
+        </Modal>
 
-      {/* 🔥 Add keyframes for the pulse line effect */}
-      <style>
-        {`
+        {/* RELEASE PAYROLL RECORDS MODAL */}
+        <Modal
+          open={openReleaseConfirm}
+          onClose={() => setOpenReleaseConfirm(false)}
+        >
+          <Box
+            sx={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: { xs: "90%", sm: 500 },
+              maxWidth: 600,
+              bgcolor: "white",
+              borderRadius: 3,
+              boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+              overflow: "hidden",
+              border: `2px solid ${accentColor}`,
+            }}
+          >
+            {/* Clean White Header with Accent */}
+            <Box
+              sx={{
+                p: 3,
+                bgcolor: "white",
+                borderBottom: `3px solid ${accentColor}`,
+                display: "flex",
+                alignItems: "center",
+                gap: 2,
+              }}
+            >
+              <Avatar
+                sx={{
+                  bgcolor: alpha(accentColor, 0.1),
+                  color: accentColor,
+                  width: 56,
+                  height: 56,
+                }}
+              >
+                <CloudUpload sx={{ fontSize: 28 }} />
+              </Avatar>
+              <Box>
+                <Typography
+                  variant="h5"
+                  sx={{ fontWeight: "bold", color: "#333" }}
+                >
+                  Release Payroll Records
+                </Typography>
+                <Typography variant="body2" sx={{ color: "#666" }}>
+                  Move records to released module
+                </Typography>
+              </Box>
+            </Box>
+
+            {/* Content */}
+            <Box sx={{ p: 4, bgcolor: "white" }}>
+              <Alert
+                severity="info"
+                icon={<CloudUpload />}
+                sx={{
+                  mb: 3,
+                  borderRadius: 2,
+                  bgcolor: alpha(accentColor, 0.05),
+                  border: `1px solid ${alpha(accentColor, 0.2)}`,
+                  "& .MuiAlert-icon": {
+                    color: accentColor,
+                    fontSize: 28,
+                  },
+                }}
+              >
+                <Typography
+                  variant="body1"
+                  sx={{ fontWeight: 600, mb: 1, color: "#333" }}
+                >
+                  Release {selectedRows.length} Payroll Record
+                  {selectedRows.length > 1 ? "s" : ""}
+                </Typography>
+                <Typography variant="body2" sx={{ color: "#666" }}>
+                  Please confirm that you want to release{" "}
+                  <strong>{selectedRows.length}</strong> selected payroll record
+                  {selectedRows.length > 1 ? "s" : ""}. This action will move
+                  them to the <strong>Payroll Released</strong> module, and they
+                  will no longer be editable.
+                </Typography>
+              </Alert>
+
+              {/* OPTIONAL: subtle pulse line loader when releasing */}
+              {releaseLoading && (
+                <Box
+                  sx={{
+                    mt: 2,
+                    mb: 3,
+                    height: "4px",
+                    width: "100%",
+                    borderRadius: "2px",
+                    background: `linear-gradient(90deg, ${accentColor}, ${textPrimaryColor}, ${accentColor})`,
+                    backgroundSize: "200% 100%",
+                    animation: "pulseLine 1.5s linear infinite",
+                  }}
+                />
+              )}
+
+              {/* Action Buttons */}
+              <Box display="flex" justifyContent="flex-end" gap={2} mt={2}>
+                <Button
+                  onClick={() => setOpenReleaseConfirm(false)}
+                  variant="outlined"
+                  disabled={releaseLoading}
+                  sx={{
+                    color: accentColor,
+                    borderColor: accentColor,
+                    px: 3,
+                    py: 1.2,
+                    fontWeight: 600,
+                    textTransform: "none",
+                    borderRadius: 2,
+                    "&:hover": {
+                      borderColor: accentDark,
+                      backgroundColor: alpha(accentColor, 0.08),
+                    },
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleReleasePayroll}
+                  variant="contained"
+                  disabled={releaseLoading}
+                  sx={{
+                    backgroundColor: accentColor,
+                    color: "white",
+                    px: 4,
+                    py: 1.2,
+                    fontWeight: 600,
+                    textTransform: "none",
+                    borderRadius: 2,
+                    minWidth: 140,
+                    "&:hover": {
+                      backgroundColor: accentDark,
+                    },
+                    "&:disabled": {
+                      backgroundColor: "#e0e0e0",
+                      color: "#9e9e9e",
+                    },
+                  }}
+                  startIcon={
+                    releaseLoading ? (
+                      <CircularProgress size={18} sx={{ color: "white" }} />
+                    ) : (
+                      <CloudUpload />
+                    )
+                  }
+                >
+                  {releaseLoading ? "Releasing..." : "Release"}
+                </Button>
+              </Box>
+            </Box>
+          </Box>
+        </Modal>
+
+        {/* 🔥 Add keyframes for the pulse line effect */}
+        <style>
+          {`
     @keyframes pulseLine {
       0% { background-position: 200% 0; }
       100% { background-position: -200% 0; }
     }
   `}
-      </style>
+        </style>
 
-      {/* Loading and Success Overlays */}
-      <LoadingOverlay
-        open={overlayLoading || releaseLoading}
-        message={releaseLoading ? 'Releasing...' : 'Processing...'}
-      />
-      <SuccessfulOverlay
-        open={successOpen}
-        action={successAction}
-        onClose={() => setSuccessOpen(false)}
-      />
+        {/* Loading and Success Overlays */}
+        <LoadingOverlay
+          open={overlayLoading || releaseLoading}
+          message={releaseLoading ? "Releasing..." : "Processing..."}
+        />
+        <SuccessfulOverlay
+          open={successOpen}
+          action={successAction}
+          onClose={() => setSuccessOpen(false)}
+        />
 
-      {/* Snackbar for password errors */}
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={4000}
-        onClose={() => setSnackbarOpen(false)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        sx={{
-          '& .MuiSnackbarContent-root': {
-            backgroundColor: '#d32f2f',
-            color: 'white',
-            fontWeight: 600,
-            borderRadius: 2,
-            boxShadow: '0 4px 20px rgba(211, 47, 47, 0.3)',
-          },
-        }}
-      >
-        <Alert
+        {/* Snackbar for password errors */}
+        <Snackbar
+          open={snackbarOpen}
+          autoHideDuration={4000}
           onClose={() => setSnackbarOpen(false)}
-          severity="error"
+          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
           sx={{
-            width: '100%',
-            backgroundColor: '#d32f2f',
-            color: 'white',
-            '& .MuiAlert-icon': {
-              color: 'white',
-            },
-            '& .MuiAlert-action': {
-              color: 'white',
+            "& .MuiSnackbarContent-root": {
+              backgroundColor: "#d32f2f",
+              color: "white",
+              fontWeight: 600,
+              borderRadius: 2,
+              boxShadow: "0 4px 20px rgba(211, 47, 47, 0.3)",
             },
           }}
         >
-          {snackbarMessage}
-        </Alert>
-      </Snackbar>
+          <Alert
+            onClose={() => setSnackbarOpen(false)}
+            severity="error"
+            sx={{
+              width: "100%",
+              backgroundColor: "#d32f2f",
+              color: "white",
+              "& .MuiAlert-icon": {
+                color: "white",
+              },
+              "& .MuiAlert-action": {
+                color: "white",
+              },
+            }}
+          >
+            {snackbarMessage}
+          </Alert>
+        </Snackbar>
       </Box>
     </Box>
   );
 };
 
 export default PayrollProcessed;
-
-

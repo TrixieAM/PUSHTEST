@@ -503,7 +503,7 @@ const OfficialTimeForm = () => {
           {/* Header */}
           <Fade in timeout={500}>
             <Box sx={{ mb: 4 }}>
-              <GlassCard>
+              <GlassCard sx={{border: `1px solid ${alpha(accentColor, 0.1)}`}}>
                 <Box
                   sx={{
                     p: 5,
@@ -596,7 +596,7 @@ const OfficialTimeForm = () => {
 
           {/* Controls */}
           <Fade in timeout={700}>
-            <GlassCard sx={{ mb: 4 }}>
+            <GlassCard sx={{ mb: 4, border: `1px solid ${alpha(accentColor, 0.1)}` }}>
               <CardHeader
                 title={
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -724,7 +724,7 @@ const OfficialTimeForm = () => {
           {/* Results */}
           {records.length > 0 && (
             <Fade in={!loading} timeout={500}>
-              <GlassCard sx={{ mb: 4 }}>
+              <GlassCard sx={{ mb: 4, border: `1px solid ${alpha(accentColor, 0.1)}` }}>
                 <Box sx={{ 
                   p: 4, 
                   background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`, 
@@ -735,7 +735,7 @@ const OfficialTimeForm = () => {
                 }}>
                   <Box>
                     <Typography variant="body2" sx={{ opacity: 0.8, mb: 1, textTransform: 'uppercase', letterSpacing: '0.1em', color: accentDark }}>
-                      Time Schedule for Employee
+                      Time Schedule for Employee Number
                     </Typography>
                     <Typography variant="h4" sx={{ fontWeight: 600, mb: 1, color: accentColor }}>
                       {employeeID}

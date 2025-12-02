@@ -360,7 +360,6 @@ const ForgotPassword = () => {
                   <LockOutlined sx={{ color: mediumText }} />
                 </InputAdornment>
               ),
-              
             }}
           />
 

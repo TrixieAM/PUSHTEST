@@ -2,6 +2,7 @@ import API_BASE_URL from '../../apiConfig';
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import {
+  Backdrop,
   Table,
   TableHead,
   TableBody,
@@ -722,8 +723,8 @@ const PayrollReleased = () => {
             alignItems: 'center',
           }}
         >
-          <CircularProgress sx={{ color: '#6d2323', mb: 2 }} />
-          <Typography variant="h6" sx={{ color: '#6d2323' }}>
+          <CircularProgress sx={{ color: textPrimaryColor, mb: 2 }} />
+          <Typography variant="h6" sx={{ color: textPrimaryColor }}>
             Loading access information...
           </Typography>
         </Box>
@@ -744,1020 +745,1055 @@ const PayrollReleased = () => {
   //ACCESSING END2
 
   return (
-    <Container maxWidth={false} sx={{ px: 2, py: 3 }}>
-      {/* Header with Summary */}
-      <Fade in timeout={500}>
-        <Box sx={{ mb: 4 }}>
+    <Box
+      sx={{
+        py: 4,
+        borderRadius: '14px',
+        width: '100vw', // Full viewport width
+        mx: 'auto', // Center horizontally
+        maxWidth: '100%', // Ensure it doesn't exceed viewport
+        overflow: 'hidden', // Prevent horizontal scroll
+        position: 'relative',
+        left: '50%',
+        transform: 'translateX(-50%)', // Center the element
+      }}
+    >
+      {/* Container with fixed width */}
+      <Box sx={{ px: 6, mx: 'auto', maxWidth: '1600px' }}>
+        {/* Header */}
+        <Fade in timeout={500}>
+          <Box sx={{ mb: 4 }}>
+            <GlassCard
+              sx={{
+                background: `rgba(${hexToRgb(primaryColor)}, 0.95)`,
+                boxShadow: `0 8px 40px ${alpha(accentColor, 0.08)}`,
+                border: `1px solid ${alpha(accentColor, 0.1)}`,
+                '&:hover': {
+                  boxShadow: `0 12px 48px ${alpha(accentColor, 0.15)}`,
+                },
+              }}
+            >
+              <Box
+                sx={{
+                  p: 5,
+                  background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
+                  color: textPrimaryColor,
+                  position: 'relative',
+                  overflow: 'hidden',
+                }}
+              >
+                {/* Decorative elements */}
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: -50,
+                    right: -50,
+                    width: 200,
+                    height: 200,
+                    background:
+                      'radial-gradient(circle, rgba(109,35,35,0.1) 0%, rgba(109,35,35,0) 70%)',
+                  }}
+                />
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    bottom: -30,
+                    left: '30%',
+                    width: 150,
+                    height: 150,
+                    background:
+                      'radial-gradient(circle, rgba(109,35,35,0.08) 0%, rgba(109,35,35,0) 70%)',
+                  }}
+                />
+
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="space-between"
+                  position="relative"
+                  zIndex={1}
+                  mb={3}
+                >
+                  <Box display="flex" alignItems="center">
+                    <Avatar
+                      sx={{
+                        bgcolor: 'rgba(109,35,35,0.15)',
+                        mr: 4,
+                        width: 64,
+                        height: 64,
+                        boxShadow: '0 8px 24px rgba(109,35,35,0.15)',
+                      }}
+                    >
+                      <Payment sx={{ color: textPrimaryColor, fontSize: 32 }} />
+                    </Avatar>
+                    <Box>
+                      <Typography
+                        variant="h4"
+                        component="h1"
+                        sx={{
+                          fontWeight: 700,
+                          mb: 1,
+                          lineHeight: 1.2,
+                          color: textPrimaryColor,
+                        }}
+                      >
+                        Payroll Released
+                      </Typography>
+                      <Typography
+                        variant="body1"
+                        sx={{
+                          opacity: 0.8,
+                          fontWeight: 400,
+                          color: textPrimaryColor,
+                        }}
+                      >
+                        View and manage all released payroll records
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Box display="flex" alignItems="center" gap={2}>
+                    <Chip
+                      label="Released Records"
+                      size="small"
+                      sx={{
+                        bgcolor: alpha(accentColor, 0.15),
+                        color: textPrimaryColor,
+                        fontWeight: 500,
+                        '& .MuiChip-label': { px: 1 },
+                      }}
+                    />
+                    <Tooltip title="Refresh Data">
+                      <IconButton
+                        onClick={() => window.location.reload()}
+                        sx={{
+                          bgcolor: alpha(accentColor, 0.1),
+                          '&:hover': { bgcolor: alpha(accentColor, 0.2) },
+                          color: textPrimaryColor,
+                          width: 48,
+                          height: 48,
+                        }}
+                      >
+                        <Refresh />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                </Box>
+
+                {/* Summary Cards */}
+                <Box
+                  sx={{
+                    display: 'flex',
+                    gap: 2,
+                    flexWrap: 'wrap',
+                    position: 'relative',
+                    zIndex: 1,
+                  }}
+                >
+                  <Card
+                    sx={{
+                      minWidth: 180,
+                      flex: 1,
+                      border: `1px solid ${alpha(accentColor, 0.1)}`,
+                      background: `rgba(${hexToRgb(whiteColor)}, 0.9)`,
+                      boxShadow: `0 4px 16px ${alpha(accentColor, 0.08)}`,
+                      '&:hover': {
+                        boxShadow: `0 6px 20px ${alpha(accentColor, 0.12)}`,
+                        transform: 'translateY(-2px)',
+                      },
+                      transition: 'all 0.3s ease',
+                    }}
+                  >
+                    <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                      <Box
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="space-between"
+                      >
+                        <Box>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: textPrimaryColor,
+                              opacity: 0.7,
+                              fontWeight: 500,
+                            }}
+                          >
+                            Total Released
+                          </Typography>
+                          <Typography
+                            variant="h6"
+                            fontWeight="bold"
+                            sx={{ color: textPrimaryColor }}
+                          >
+                            {summaryData.totalReleased}
+                          </Typography>
+                        </Box>
+                        <CheckCircleIcon sx={{ color: '#4caf50', fontSize: 32 }} />
+                      </Box>
+                    </CardContent>
+                  </Card>
+
+                  <Card
+                    sx={{
+                      minWidth: 180,
+                      flex: 1,
+                      border: `1px solid ${alpha(accentColor, 0.1)}`,
+                      background: `rgba(${hexToRgb(whiteColor)}, 0.9)`,
+                      boxShadow: `0 4px 16px ${alpha(accentColor, 0.08)}`,
+                      '&:hover': {
+                        boxShadow: `0 6px 20px ${alpha(accentColor, 0.12)}`,
+                        transform: 'translateY(-2px)',
+                      },
+                      transition: 'all 0.3s ease',
+                    }}
+                  >
+                    <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                      <Box
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="space-between"
+                      >
+                        <Box>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: textPrimaryColor,
+                              opacity: 0.7,
+                              fontWeight: 500,
+                            }}
+                          >
+                            Total Employees
+                          </Typography>
+                          <Typography
+                            variant="h6"
+                            fontWeight="bold"
+                            sx={{ color: '#4caf50' }}
+                          >
+                            {summaryData.totalEmployees}
+                          </Typography>
+                        </Box>
+                        <PeopleIcon sx={{ color: accentColor, fontSize: 32 }} />
+                      </Box>
+                    </CardContent>
+                  </Card>
+
+                  <Card
+                    sx={{
+                      minWidth: 180,
+                      flex: 1,
+                      border: `1px solid ${alpha(accentColor, 0.1)}`,
+                      background: `rgba(${hexToRgb(whiteColor)}, 0.9)`,
+                      boxShadow: `0 4px 16px ${alpha(accentColor, 0.08)}`,
+                      '&:hover': {
+                        boxShadow: `0 6px 20px ${alpha(accentColor, 0.12)}`,
+                        transform: 'translateY(-2px)',
+                      },
+                      transition: 'all 0.3s ease',
+                    }}
+                  >
+                    <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                      <Box
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="space-between"
+                      >
+                        <Box>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: textPrimaryColor,
+                              opacity: 0.7,
+                              fontWeight: 500,
+                            }}
+                          >
+                            Total Gross Salary
+                          </Typography>
+                          <Typography
+                            variant="h6"
+                            fontWeight="bold"
+                            sx={{ color: textPrimaryColor }}
+                          >
+                            ₱
+                            {summaryData.totalGrossSalary.toLocaleString('en-US', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </Typography>
+                        </Box>
+                        <TrendingUpIcon sx={{ color: accentColor, fontSize: 32 }} />
+                      </Box>
+                    </CardContent>
+                  </Card>
+
+                  <Card
+                    sx={{
+                      minWidth: 180,
+                      flex: 1,
+                      border: `1px solid ${alpha(accentColor, 0.1)}`,
+                      background: `rgba(${hexToRgb(whiteColor)}, 0.9)`,
+                      boxShadow: `0 4px 16px ${alpha(accentColor, 0.08)}`,
+                      '&:hover': {
+                        boxShadow: `0 6px 20px ${alpha(accentColor, 0.12)}`,
+                        transform: 'translateY(-2px)',
+                      },
+                      transition: 'all 0.3s ease',
+                    }}
+                  >
+                    <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                      <Box
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="space-between"
+                      >
+                        <Box>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: textPrimaryColor,
+                              opacity: 0.7,
+                              fontWeight: 500,
+                            }}
+                          >
+                            Total Net Salary
+                          </Typography>
+                          <Typography
+                            variant="h6"
+                            fontWeight="bold"
+                            sx={{ color: textPrimaryColor }}
+                          >
+                            ₱
+                            {summaryData.totalNetSalary.toLocaleString('en-US', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </Typography>
+                        </Box>
+                        <TrendingUpIcon sx={{ color: accentColor, fontSize: 32 }} />
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Box>
+              </Box>
+            </GlassCard>
+          </Box>
+        </Fade>
+
+        {/* Loading Backdrop */}
+        <Backdrop
+          sx={{ color: textSecondaryColor, zIndex: (theme) => theme.zIndex.drawer + 1 }}
+          open={loading}
+        >
+          <Box sx={{ textAlign: 'center' }}>
+            <CircularProgress color="inherit" size={60} thickness={4} />
+            <Typography variant="h6" sx={{ mt: 2, color: textSecondaryColor }}>
+              Processing department record...
+            </Typography>
+          </Box>
+        </Backdrop>
+
+        {/* Filters Section */}
+        <Fade in timeout={700}>
           <GlassCard
             sx={{
-              background: `linear-gradient(135deg, ${accentColor} 0%, ${accentDark} 100%)`,
-              boxShadow: `0 8px 40px ${alpha(accentColor, 0.2)}`,
+              mb: 4,
+              background: `rgba(${hexToRgb(primaryColor)}, 0.95)`,
+              boxShadow: `0 8px 40px ${alpha(accentColor, 0.08)}`,
               border: `1px solid ${alpha(accentColor, 0.1)}`,
-              position: 'relative',
-              overflow: 'visible',
+              '&:hover': {
+                boxShadow: `0 12px 48px ${alpha(accentColor, 0.15)}`,
+              },
             }}
           >
-            <Box sx={{ p: 4, position: 'relative', overflow: 'hidden' }}>
-              {/* Decorative background elements */}
-              <Box
-                sx={{
-                  position: 'absolute',
-                  top: -50,
-                  right: -50,
-                  width: 200,
-                  height: 200,
-                  background:
-                    'radial-gradient(circle, rgba(109,35,35,0.1) 0%, rgba(109,35,35,0) 70%)',
-                }}
-              />
-              <Box
-                sx={{
-                  position: 'absolute',
-                  bottom: -30,
-                  left: '30%',
-                  width: 150,
-                  height: 150,
-                  background:
-                    'radial-gradient(circle, rgba(109,35,35,0.08) 0%, rgba(109,35,35,0) 70%)',
-                }}
-              />
-
+            <CardContent sx={{ p: 4 }}>
               <Box
                 display="flex"
                 alignItems="center"
                 justifyContent="space-between"
-                position="relative"
-                zIndex={1}
                 mb={3}
               >
-                <Box display="flex" alignItems="center">
-                  <Avatar
-                    sx={{
-                      bgcolor: 'rgba(109,35,35,0.15)',
-                      mr: 4,
-                      width: 64,
-                      height: 64,
-                      boxShadow: '0 8px 24px rgba(109,35,35,0.15)',
-                    }}
+                <Box display="flex" alignItems="center" gap={1}>
+                  <FilterList sx={{ color: textPrimaryColor, fontSize: 24 }} />
+                  <Typography
+                    variant="h6"
+                    fontWeight="bold"
+                    sx={{ color: textPrimaryColor }}
                   >
-                    <Payment sx={{ color: textSecondaryColor, fontSize: 32 }} />
-                  </Avatar>
-                  <Box>
-                    <Typography
-                      variant="h4"
-                      component="h1"
-                      sx={{
-                        fontWeight: 700,
-                        mb: 1,
-                        lineHeight: 1.2,
-                        color: textSecondaryColor,
-                      }}
-                    >
-                      Payroll Released
-                    </Typography>
-                    <Typography
-                      variant="body1"
-                      sx={{
-                        opacity: 0.8,
-                        fontWeight: 400,
-                        color: textSecondaryColor,
-                      }}
-                    >
-                      View and manage all released payroll records
-                    </Typography>
-                  </Box>
+                    FILTERS
+                  </Typography>
                 </Box>
-                <Box display="flex" alignItems="center" gap={2}>
-                  <Chip
-                    label="Payroll Management"
+              </Box>
+
+              <Grid container spacing={2} alignItems="center">
+                <Grid item xs={12} sm={6} md={2}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel sx={{ color: textPrimaryColor }}>
+                      Department
+                    </InputLabel>
+                    <Select
+                      value={selectedDepartment}
+                      onChange={handleDepartmentChange}
+                      label="Department"
+                      sx={{
+                        color: textPrimaryColor,
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: alpha(accentColor, 0.3),
+                        },
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: alpha(accentColor, 0.5),
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: accentColor,
+                        },
+                      }}
+                    >
+                      <MenuItem value="">
+                        <em>All Departments</em>
+                      </MenuItem>
+                      {departments.map((dept) => (
+                        <MenuItem key={dept.id} value={dept.code}>
+                          {dept.description}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={12} sm={6} md={2}>
+                  <ModernTextField
+                    type="date"
+                    fullWidth
                     size="small"
-                    sx={{
-                      bgcolor: alpha(accentColor, 0.15),
-                      color: textSecondaryColor,
-                      fontWeight: 500,
-                      '& .MuiChip-label': { px: 1 },
+                    label="Search by Date"
+                    value={selectedDate}
+                    onChange={handleDateChange}
+                    InputLabelProps={{
+                      shrink: true,
                     }}
-                  />
-                  <Tooltip title="Refresh Data">
-                    <IconButton
-                      onClick={() => window.location.reload()}
-                      sx={{
-                        bgcolor: alpha(accentColor, 0.1),
-                        '&:hover': { bgcolor: alpha(accentColor, 0.2) },
-                        color: textSecondaryColor,
-                        width: 48,
-                        height: 48,
-                      }}
-                    >
-                      <Refresh />
-                    </IconButton>
-                  </Tooltip>
-                </Box>
-              </Box>
-
-              {/* Summary Cards */}
-              <Box
-                sx={{
-                  display: 'flex',
-                  gap: 2,
-                  flexWrap: 'wrap',
-                  position: 'relative',
-                  zIndex: 1,
-                }}
-              >
-                <Card
-                  sx={{
-                    minWidth: 180,
-                    flex: 1,
-                    border: `1px solid ${alpha(accentColor, 0.1)}`,
-                    background: `rgba(${hexToRgb(whiteColor)}, 0.9)`,
-                    boxShadow: `0 4px 16px ${alpha(accentColor, 0.08)}`,
-                    '&:hover': {
-                      boxShadow: `0 6px 20px ${alpha(accentColor, 0.12)}`,
-                      transform: 'translateY(-2px)',
-                    },
-                    transition: 'all 0.3s ease',
-                  }}
-                >
-                  <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-                    <Box
-                      display="flex"
-                      alignItems="center"
-                      justifyContent="space-between"
-                    >
-                      <Box>
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: textPrimaryColor,
-                            opacity: 0.7,
-                            fontWeight: 500,
-                          }}
-                        >
-                          Total Released
-                        </Typography>
-                        <Typography
-                          variant="h6"
-                          fontWeight="bold"
-                          sx={{ color: textPrimaryColor }}
-                        >
-                          {summaryData.totalReleased}
-                        </Typography>
-                      </Box>
-                      <CheckCircleIcon sx={{ color: '#4caf50', fontSize: 32 }} />
-                    </Box>
-                  </CardContent>
-                </Card>
-
-                <Card
-                  sx={{
-                    minWidth: 180,
-                    flex: 1,
-                    border: `1px solid ${alpha(accentColor, 0.1)}`,
-                    background: `rgba(${hexToRgb(whiteColor)}, 0.9)`,
-                    boxShadow: `0 4px 16px ${alpha(accentColor, 0.08)}`,
-                    '&:hover': {
-                      boxShadow: `0 6px 20px ${alpha(accentColor, 0.12)}`,
-                      transform: 'translateY(-2px)',
-                    },
-                    transition: 'all 0.3s ease',
-                  }}
-                >
-                  <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-                    <Box
-                      display="flex"
-                      alignItems="center"
-                      justifyContent="space-between"
-                    >
-                      <Box>
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: textPrimaryColor,
-                            opacity: 0.7,
-                            fontWeight: 500,
-                          }}
-                        >
-                          Total Employees
-                        </Typography>
-                        <Typography
-                          variant="h6"
-                          fontWeight="bold"
-                          sx={{ color: '#4caf50' }}
-                        >
-                          {summaryData.totalEmployees}
-                        </Typography>
-                      </Box>
-                      <PeopleIcon sx={{ color: accentColor, fontSize: 32 }} />
-                    </Box>
-                  </CardContent>
-                </Card>
-
-                <Card
-                  sx={{
-                    minWidth: 180,
-                    flex: 1,
-                    border: `1px solid ${alpha(accentColor, 0.1)}`,
-                    background: `rgba(${hexToRgb(whiteColor)}, 0.9)`,
-                    boxShadow: `0 4px 16px ${alpha(accentColor, 0.08)}`,
-                    '&:hover': {
-                      boxShadow: `0 6px 20px ${alpha(accentColor, 0.12)}`,
-                      transform: 'translateY(-2px)',
-                    },
-                    transition: 'all 0.3s ease',
-                  }}
-                >
-                  <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-                    <Box
-                      display="flex"
-                      alignItems="center"
-                      justifyContent="space-between"
-                    >
-                      <Box>
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: textPrimaryColor,
-                            opacity: 0.7,
-                            fontWeight: 500,
-                          }}
-                        >
-                          Total Gross Salary
-                        </Typography>
-                        <Typography
-                          variant="h6"
-                          fontWeight="bold"
-                          sx={{ color: textPrimaryColor }}
-                        >
-                          ₱
-                          {summaryData.totalGrossSalary.toLocaleString('en-US', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                        </Typography>
-                      </Box>
-                      <TrendingUpIcon sx={{ color: accentColor, fontSize: 32 }} />
-                    </Box>
-                  </CardContent>
-                </Card>
-
-                <Card
-                  sx={{
-                    minWidth: 180,
-                    flex: 1,
-                    border: `1px solid ${alpha(accentColor, 0.1)}`,
-                    background: `rgba(${hexToRgb(whiteColor)}, 0.9)`,
-                    boxShadow: `0 4px 16px ${alpha(accentColor, 0.08)}`,
-                    '&:hover': {
-                      boxShadow: `0 6px 20px ${alpha(accentColor, 0.12)}`,
-                      transform: 'translateY(-2px)',
-                    },
-                    transition: 'all 0.3s ease',
-                  }}
-                >
-                  <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-                    <Box
-                      display="flex"
-                      alignItems="center"
-                      justifyContent="space-between"
-                    >
-                      <Box>
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: textPrimaryColor,
-                            opacity: 0.7,
-                            fontWeight: 500,
-                          }}
-                        >
-                          Total Net Salary
-                        </Typography>
-                        <Typography
-                          variant="h6"
-                          fontWeight="bold"
-                          sx={{ color: textPrimaryColor }}
-                        >
-                          ₱
-                          {summaryData.totalNetSalary.toLocaleString('en-US', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                        </Typography>
-                      </Box>
-                      <TrendingUpIcon sx={{ color: accentColor, fontSize: 32 }} />
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Box>
-            </Box>
-          </GlassCard>
-        </Box>
-      </Fade>
-
-      {/* Filters Section */}
-      <Fade in timeout={700}>
-        <GlassCard
-          sx={{
-            mb: 4,
-            background: `rgba(${hexToRgb(primaryColor)}, 0.95)`,
-            boxShadow: `0 8px 40px ${alpha(accentColor, 0.08)}`,
-            border: `1px solid ${alpha(accentColor, 0.1)}`,
-            '&:hover': {
-              boxShadow: `0 12px 48px ${alpha(accentColor, 0.15)}`,
-            },
-          }}
-        >
-          <CardContent sx={{ p: 4 }}>
-            <Box
-              display="flex"
-              alignItems="center"
-              justifyContent="space-between"
-              mb={3}
-            >
-              <Box display="flex" alignItems="center" gap={1}>
-                <FilterList sx={{ color: textPrimaryColor, fontSize: 24 }} />
-                <Typography
-                  variant="h6"
-                  fontWeight="bold"
-                  sx={{ color: textPrimaryColor }}
-                >
-                  FILTERS
-                </Typography>
-              </Box>
-            </Box>
-
-            <Grid container spacing={2} alignItems="center">
-              <Grid item xs={12} sm={6} md={2.4}>
-                <FormControl fullWidth size="small">
-                  <InputLabel sx={{ color: textPrimaryColor }}>
-                    Department
-                  </InputLabel>
-                  <Select
-                    value={selectedDepartment}
-                    onChange={handleDepartmentChange}
-                    label="Department"
                     sx={{
-                      color: textPrimaryColor,
-                      '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor: alpha(accentColor, 0.3),
+                      '& .MuiOutlinedInput-root': {
+                        color: textPrimaryColor,
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: alpha(accentColor, 0.3),
+                        },
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: alpha(accentColor, 0.5),
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: accentColor,
+                        },
                       },
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: alpha(accentColor, 0.5),
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: accentColor,
-                      },
-                    }}
-                  >
-                    <MenuItem value="">
-                      <em>All Departments</em>
-                    </MenuItem>
-                    {departments.map((dept) => (
-                      <MenuItem key={dept.id} value={dept.code}>
-                        {dept.description}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-
-              <Grid item xs={12} sm={6} md={2.4}>
-                <ModernTextField
-                  type="date"
-                  fullWidth
-                  size="small"
-                  label="Search by Date"
-                  value={selectedDate}
-                  onChange={handleDateChange}
-                  InputLabelProps={{
-                    shrink: true,
-                  }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      color: textPrimaryColor,
-                      '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor: alpha(accentColor, 0.3),
-                      },
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: alpha(accentColor, 0.5),
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: accentColor,
-                      },
-                    },
-                    '& .MuiInputLabel-root': {
-                      color: textPrimaryColor,
-                    },
-                  }}
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={6} md={2.4}>
-                <FormControl fullWidth size="small">
-                  <InputLabel sx={{ color: textPrimaryColor }}>Month</InputLabel>
-                  <Select
-                    value={selectedMonth}
-                    onChange={handleMonthChange}
-                    label="Month"
-                    sx={{
-                      color: textPrimaryColor,
-                      '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor: alpha(accentColor, 0.3),
-                      },
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: alpha(accentColor, 0.5),
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: accentColor,
-                      },
-                    }}
-                  >
-                    {monthOptions.map((option) => (
-                      <MenuItem key={option.value} value={option.value}>
-                        {option.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-
-              <Grid item xs={12} sm={6} md={2.4}>
-                <FormControl fullWidth size="small">
-                  <InputLabel sx={{ color: textPrimaryColor }}>Year</InputLabel>
-                  <Select
-                    value={selectedYear}
-                    onChange={handleYearChange}
-                    label="Year"
-                    sx={{
-                      color: textPrimaryColor,
-                      '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor: alpha(accentColor, 0.3),
-                      },
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: alpha(accentColor, 0.5),
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: accentColor,
-                      },
-                    }}
-                  >
-                    {yearOptions.map((option) => (
-                      <MenuItem key={option.value} value={option.value}>
-                        {option.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-
-              <Grid item xs={12} sm={6} md={2.4}>
-                <ModernTextField
-                  fullWidth
-                  size="small"
-                  placeholder="Search employee..."
-                  value={searchTerm}
-                  onChange={handleSearchChange}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <SearchIcon
-                          sx={{ color: textPrimaryColor }}
-                          fontSize="small"
-                        />
-                      </InputAdornment>
-                    ),
-                  }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      color: textPrimaryColor,
-                      '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor: alpha(accentColor, 0.3),
-                      },
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: alpha(accentColor, 0.5),
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: accentColor,
-                      },
-                    },
-                  }}
-                />
-              </Grid>
-            </Grid>
-          </CardContent>
-        </GlassCard>
-      </Fade>
-
-      {/* Alerts */}
-      {error && (
-        <Fade in timeout={300}>
-          <Alert
-            severity="error"
-            sx={{
-              mb: 3,
-              borderRadius: 3,
-              '& .MuiAlert-message': { fontWeight: 500 },
-            }}
-            icon={<Info />}
-          >
-            {error}
-          </Alert>
-        </Fade>
-      )}
-
-      {/* Table View Section */}
-      <Fade in timeout={900}>
-        <GlassCard
-          sx={{
-            mb: 4,
-            background: `rgba(${hexToRgb(primaryColor)}, 0.95)`,
-            boxShadow: `0 8px 40px ${alpha(accentColor, 0.08)}`,
-            border: `1px solid ${alpha(accentColor, 0.1)}`,
-            overflow: 'visible',
-            '&:hover': {
-              boxShadow: `0 12px 48px ${alpha(accentColor, 0.15)}`,
-            },
-          }}
-        >
-          {/* Table Header */}
-          <Box
-            sx={{
-              p: 4,
-              background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
-              color: textPrimaryColor,
-              borderBottom: `1px solid ${alpha(accentColor, 0.1)}`,
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <Box>
-              <Typography
-                variant="body2"
-                sx={{
-                  opacity: 0.8,
-                  mb: 1,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.1em',
-                  color: textPrimaryColor,
-                }}
-              >
-                Payroll Records
-              </Typography>
-              <Typography
-                variant="h4"
-                sx={{ fontWeight: 600, color: textPrimaryColor }}
-              >
-                Released Payroll Data
-              </Typography>
-            </Box>
-            <Box display="flex" gap={1} alignItems="center">
-              <Chip
-                icon={<PeopleIcon />}
-                label={`${selectedRows.length} Selected`}
-                size="small"
-                sx={{
-                  bgcolor: alpha(accentColor, 0.15),
-                  color: textPrimaryColor,
-                  fontWeight: 500,
-                }}
-              />
-              <Badge badgeContent={selectedRows.length} color="primary">
-                <ProfessionalButton
-                  variant="outlined"
-                  size="small"
-                  startIcon={<Refresh />}
-                  onClick={() => window.location.reload()}
-                  sx={{
-                    borderColor: accentColor,
-                    color: textPrimaryColor,
-                    '&:hover': {
-                      borderColor: accentDark,
-                      backgroundColor: alpha(accentColor, 0.1),
-                    },
-                  }}
-                >
-                  Refresh
-                </ProfessionalButton>
-              </Badge>
-            </Box>
-          </Box>
-
-          {loading ? (
-            <Box display="flex" justifyContent="center" py={10}>
-              <CircularProgress />
-            </Box>
-          ) : (
-            <Box>
-              {/* Table with Fixed Actions Column */}
-              <Box sx={{ display: 'flex', width: '100%', position: 'relative' }}>
-                {/* Scrollable Table Content */}
-                <Box
-                  sx={{
-                    overflowX: 'auto',
-                    overflowY: 'visible',
-                    flex: 1,
-                    minWidth: 0,
-                    '&::-webkit-scrollbar': {
-                      height: '10px',
-                    },
-                    '&::-webkit-scrollbar-track': {
-                      background: alpha(accentColor, 0.1),
-                      borderRadius: '4px',
-                    },
-                    '&::-webkit-scrollbar-thumb': {
-                      background: alpha(accentColor, 0.4),
-                      borderRadius: '4px',
-                      '&:hover': {
-                        background: alpha(accentColor, 0.6),
-                      },
-                    },
-                  }}
-                >
-                  <PremiumTableContainer
-                    sx={{
-                      boxShadow: `0 4px 24px ${alpha(accentColor, 0.06)}`,
-                      border: `1px solid ${alpha(accentColor, 0.08)}`,
-                      overflowX: 'auto',
-                      overflowY: 'visible',
-                      width: 'max-content',
-                      minWidth: '100%',
-                    }}
-                  >
-                    <Table sx={{ minWidth: 'max-content', tableLayout: 'auto' }}>
-                      <TableHead sx={{ bgcolor: alpha(primaryColor, 0.7) }}>
-                        <TableRow>
-                          <PremiumTableCell
-                            padding="checkbox"
-                            isHeader
-                            sx={{ color: textPrimaryColor }}
-                          >
-                            <Checkbox
-                              sx={{
-                                color: 'white',
-                                '&.Mui-checked': {
-                                  color: 'white',
-                                },
-                                '&:hover': {
-                                  color: '#F5F5F5',
-                                },
-                                '&.MuiCheckbox-indeterminate': {
-                                  color: 'white',
-                                },
-                              }}
-                              indeterminate={(() => {
-                                const currentPageRows = filteredReleasedData.slice(
-                                  page * rowsPerPage,
-                                  page * rowsPerPage + rowsPerPage
-                                );
-                                const selectableIds = currentPageRows.map((row) => row.id);
-                                const selectedOnPage = selectedRows.filter((id) =>
-                                  selectableIds.includes(id)
-                                );
-                                return (
-                                  selectedOnPage.length > 0 &&
-                                  selectedOnPage.length < selectableIds.length
-                                );
-                              })()}
-                              checked={(() => {
-                                const currentPageRows = filteredReleasedData.slice(
-                                  page * rowsPerPage,
-                                  page * rowsPerPage + rowsPerPage
-                                );
-                                const selectableIds = currentPageRows.map((row) => row.id);
-                                if (selectableIds.length === 0) return false;
-                                return selectableIds.every((id) =>
-                                  selectedRows.includes(id)
-                                );
-                              })()}
-                              onChange={(e) => {
-                                const currentPageRows = filteredReleasedData.slice(
-                                  page * rowsPerPage,
-                                  page * rowsPerPage + rowsPerPage
-                                );
-                                const selectableIds = currentPageRows.map((row) => row.id);
-                                if (e.target.checked) {
-                                  setSelectedRows((prev) => [
-                                    ...new Set([...prev, ...selectableIds]),
-                                  ]);
-                                } else {
-                                  setSelectedRows((prev) =>
-                                    prev.filter((id) => !selectableIds.includes(id))
-                                  );
-                                }
-                              }}
-                            />
-                          </PremiumTableCell>
-                          <PremiumTableCell isHeader sx={{ color: textPrimaryColor }}>
-                            No.
-                          </PremiumTableCell>
-                          <PremiumTableCell isHeader sx={{ color: textPrimaryColor }}>
-                            Department
-                          </PremiumTableCell>
-                          <PremiumTableCell isHeader sx={{ color: textPrimaryColor }}>
-                            Employee Number
-                          </PremiumTableCell>
-                          <PremiumTableCell isHeader sx={{ color: textPrimaryColor }}>
-                            Start Date
-                          </PremiumTableCell>
-                          <PremiumTableCell isHeader sx={{ color: textPrimaryColor }}>
-                            End Date
-                          </PremiumTableCell>
-                          <PremiumTableCell isHeader sx={{ color: textPrimaryColor }}>
-                            Name
-                          </PremiumTableCell>
-                          <PremiumTableCell isHeader sx={{ color: textPrimaryColor }}>
-                            Position
-                          </PremiumTableCell>
-                          <PremiumTableCell isHeader sx={{ color: textPrimaryColor }}>
-                            Gross Salary
-                          </PremiumTableCell>
-                          <PremiumTableCell isHeader sx={{ color: textPrimaryColor }}>
-                            Net Salary
-                          </PremiumTableCell>
-                          <PremiumTableCell isHeader sx={{ color: textPrimaryColor }}>
-                            1st Pay
-                          </PremiumTableCell>
-                          <PremiumTableCell isHeader sx={{ color: textPrimaryColor }}>
-                            2nd Pay
-                          </PremiumTableCell>
-                          <PremiumTableCell isHeader sx={{ color: textPrimaryColor }}>
-                            Date Released
-                          </PremiumTableCell>
-                        </TableRow>
-                      </TableHead>
-
-                      <TableBody>
-                        {filteredReleasedData.length > 0 ? (
-                          filteredReleasedData
-                            .slice(
-                              page * rowsPerPage,
-                              page * rowsPerPage + rowsPerPage
-                            )
-                            .map((row, index) => (
-                              <TableRow
-                                key={row.id}
-                                sx={{
-                                  '&:nth-of-type(even)': {
-                                    bgcolor: alpha(primaryColor, 0.3),
-                                  },
-                                  '&:hover': {
-                                    backgroundColor:
-                                      alpha(accentColor, 0.05) + ' !important',
-                                  },
-                                  transition: 'all 0.2s ease',
-                                }}
-                              >
-                                <PremiumTableCell padding="checkbox">
-                                  <Checkbox
-                                    checked={selectedRows.includes(row.id)}
-                                    onChange={(e) => {
-                                      e.stopPropagation();
-                                      if (selectedRows.includes(row.id)) {
-                                        setSelectedRows((prev) =>
-                                          prev.filter((id) => id !== row.id)
-                                        );
-                                      } else {
-                                        setSelectedRows((prev) => [
-                                          ...prev,
-                                          row.id,
-                                        ]);
-                                      }
-                                    }}
-                                  />
-                                </PremiumTableCell>
-                                <PremiumTableCell>
-                                  {page * rowsPerPage + index + 1}
-                                </PremiumTableCell>
-                                <PremiumTableCell>{row.department}</PremiumTableCell>
-                                <PremiumTableCell>
-                                  {row.employeeNumber}
-                                </PremiumTableCell>
-                                <PremiumTableCell>
-                                  {row.startDate ? row.startDate.split('T')[0] : ''}
-                                </PremiumTableCell>
-                                <PremiumTableCell>
-                                  {row.endDate ? row.endDate.split('T')[0] : ''}
-                                </PremiumTableCell>
-                                <PremiumTableCell>{row.name}</PremiumTableCell>
-                                <PremiumTableCell>{row.position}</PremiumTableCell>
-                                <PremiumTableCell>
-                                  {row.grossSalary
-                                    ? Number(row.grossSalary).toLocaleString(
-                                        'en-US',
-                                        {
-                                          minimumFractionDigits: 2,
-                                          maximumFractionDigits: 2,
-                                        }
-                                      )
-                                    : ''}
-                                </PremiumTableCell>
-                                <PremiumTableCell>
-                                  {row.netSalary
-                                    ? Number(row.netSalary).toLocaleString(
-                                        'en-US',
-                                        {
-                                          minimumFractionDigits: 2,
-                                          maximumFractionDigits: 2,
-                                        }
-                                      )
-                                    : ''}
-                                </PremiumTableCell>
-                                <PremiumTableCell
-                                  sx={{ color: 'red', fontWeight: 'bold' }}
-                                >
-                                  {row.pay1st
-                                    ? Number(row.pay1st).toLocaleString('en-US', {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2,
-                                      })
-                                    : ''}{' '}
-                                </PremiumTableCell>
-                                <PremiumTableCell
-                                  sx={{ color: 'red', fontWeight: 'bold' }}
-                                >
-                                  {row.pay2nd
-                                    ? Number(row.pay2nd).toLocaleString('en-US', {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2,
-                                      })
-                                    : ''}
-                                </PremiumTableCell>
-                                <PremiumTableCell>
-                                  {row.dateReleased
-                                    ? new Date(
-                                        row.dateReleased
-                                      ).toLocaleDateString()
-                                    : ''}
-                                </PremiumTableCell>
-                              </TableRow>
-                            ))
-                        ) : (
-                          <TableRow>
-                            <PremiumTableCell
-                              colSpan={14}
-                              align="center"
-                              sx={{ py: 8 }}
-                            >
-                              <Box sx={{ textAlign: 'center' }}>
-                                <Info
-                                  sx={{
-                                    fontSize: 80,
-                                    color: alpha(accentColor, 0.3),
-                                    mb: 3,
-                                  }}
-                                />
-                                <Typography
-                                  variant="h5"
-                                  sx={{
-                                    color: alpha(accentColor, 0.6),
-                                    fontWeight: 600,
-                                  }}
-                                  gutterBottom
-                                >
-                                  No Records Found
-                                </Typography>
-                                <Typography
-                                  variant="body1"
-                                  sx={{ color: alpha(accentColor, 0.4) }}
-                                >
-                                  No released payroll records available. Try
-                                  adjusting your filters.
-                                </Typography>
-                              </Box>
-                            </PremiumTableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </PremiumTableContainer>
-                </Box>
-              </Box>
-
-              {/* Table Footer */}
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  borderTop: `1px solid ${alpha(accentColor, 0.1)}`,
-                  px: 4,
-                  py: 2,
-                  bgcolor: alpha(primaryColor, 0.5),
-                }}
-              >
-                <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
-                  <Typography
-                    variant="body2"
-                    sx={{ fontWeight: 'bold', color: textPrimaryColor }}
-                  >
-                    Total Records: {filteredReleasedData.length}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{ fontWeight: 'bold', color: textPrimaryColor }}
-                  >
-                    Selected: {selectedRows.length}
-                  </Typography>
-                </Box>
-                <TablePagination
-                  component="div"
-                  count={filteredReleasedData.length}
-                  page={page}
-                  onPageChange={handleChangePage}
-                  rowsPerPage={rowsPerPage}
-                  onRowsPerPageChange={handleChangeRowsPerPage}
-                  rowsPerPageOptions={[10, 25, 50, 100]}
-                  sx={{
-                    '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows':
-                      {
+                      '& .MuiInputLabel-root': {
                         color: textPrimaryColor,
                       },
-                    '& .MuiIconButton-root': {
-                      color: textPrimaryColor,
-                    },
+                    }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6} md={2}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel sx={{ color: textPrimaryColor }}>Month</InputLabel>
+                    <Select
+                      value={selectedMonth}
+                      onChange={handleMonthChange}
+                      label="Month"
+                      sx={{
+                        color: textPrimaryColor,
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: alpha(accentColor, 0.3),
+                        },
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: alpha(accentColor, 0.5),
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: accentColor,
+                        },
+                      }}
+                    >
+                      {monthOptions.map((option) => (
+                        <MenuItem key={option.value} value={option.value}>
+                          {option.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={12} sm={6} md={2}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel sx={{ color: textPrimaryColor }}>Year</InputLabel>
+                    <Select
+                      value={selectedYear}
+                      onChange={handleYearChange}
+                      label="Year"
+                      sx={{
+                        color: textPrimaryColor,
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: alpha(accentColor, 0.3),
+                        },
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: alpha(accentColor, 0.5),
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: accentColor,
+                        },
+                      }}
+                    >
+                      {yearOptions.map((option) => (
+                        <MenuItem key={option.value} value={option.value}>
+                          {option.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={12} sm={6} md={2}>
+                  <ModernTextField
+                    fullWidth
+                    size="small"
+                    placeholder="Search employee..."
+                    value={searchTerm}
+                    onChange={handleSearchChange}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon
+                            sx={{ color: textPrimaryColor }}
+                            fontSize="small"
+                          />
+                        </InputAdornment>
+                      ),
+                    }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        color: textPrimaryColor,
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: alpha(accentColor, 0.3),
+                        },
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: alpha(accentColor, 0.5),
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: accentColor,
+                        },
+                      },
+                    }}
+                  />
+                </Grid>
+              </Grid>
+            </CardContent>
+          </GlassCard>
+        </Fade>
+
+        {/* Alerts */}
+        {error && (
+          <Fade in timeout={300}>
+            <Alert
+              severity="error"
+              sx={{
+                mb: 3,
+                borderRadius: 3,
+                '& .MuiAlert-message': { fontWeight: 500 },
+              }}
+              icon={<Info />}
+            >
+              {error}
+            </Alert>
+          </Fade>
+        )}
+
+        {/* Table View Section */}
+        <Fade in timeout={900}>
+          <GlassCard
+            sx={{
+              mb: 4,
+              background: `rgba(${hexToRgb(primaryColor)}, 0.95)`,
+              boxShadow: `0 8px 40px ${alpha(accentColor, 0.08)}`,
+              border: `1px solid ${alpha(accentColor, 0.1)}`,
+              overflow: 'visible',
+              '&:hover': {
+                boxShadow: `0 12px 48px ${alpha(accentColor, 0.15)}`,
+              },
+            }}
+          >
+            {/* Table Header */}
+            <Box
+              sx={{
+                p: 4,
+                background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
+                color: textPrimaryColor,
+                borderBottom: `1px solid ${alpha(accentColor, 0.1)}`,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <Box>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    opacity: 0.8,
+                    mb: 1,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.1em',
+                    color: textPrimaryColor,
+                  }}
+                >
+                  Payroll Records
+                </Typography>
+                <Typography
+                  variant="h4"
+                  sx={{ fontWeight: 600, color: textPrimaryColor }}
+                >
+                  Released Payroll Data
+                </Typography>
+              </Box>
+              <Box display="flex" gap={1} alignItems="center">
+                <Chip
+                  icon={<PeopleIcon />}
+                  label={`${selectedRows.length} Selected`}
+                  size="small"
+                  sx={{
+                    bgcolor: alpha(accentColor, 0.15),
+                    color: textPrimaryColor,
+                    fontWeight: 500,
                   }}
                 />
+                <Badge badgeContent={selectedRows.length} color="primary">
+                  <ProfessionalButton
+                    variant="outlined"
+                    size="small"
+                    startIcon={<Refresh />}
+                    onClick={() => window.location.reload()}
+                    sx={{
+                      borderColor: accentColor,
+                      color: textPrimaryColor,
+                      '&:hover': {
+                        borderColor: accentDark,
+                        backgroundColor: alpha(accentColor, 0.1),
+                      },
+                    }}
+                  >
+                    Refresh
+                  </ProfessionalButton>
+                </Badge>
               </Box>
             </Box>
-          )}
 
-        </GlassCard>
-      </Fade>
+            {loading ? (
+              <Box display="flex" justifyContent="center" py={10}>
+                <CircularProgress />
+              </Box>
+            ) : (
+              <Box>
+                {/* Table with Fixed Actions Column */}
+                <Box sx={{ display: 'flex', width: '100%', position: 'relative' }}>
+                  {/* Scrollable Table Content */}
+                  <Box
+                    sx={{
+                      overflowX: 'auto',
+                      overflowY: 'visible',
+                      flex: 1,
+                      minWidth: 0,
+                      '&::-webkit-scrollbar': {
+                        height: '10px',
+                      },
+                      '&::-webkit-scrollbar-track': {
+                        background: alpha(accentColor, 0.1),
+                        borderRadius: '4px',
+                      },
+                      '&::-webkit-scrollbar-thumb': {
+                        background: alpha(accentColor, 0.4),
+                        borderRadius: '4px',
+                        '&:hover': {
+                          background: alpha(accentColor, 0.6),
+                        },
+                      },
+                    }}
+                  >
+                    <PremiumTableContainer
+                      sx={{
+                        boxShadow: `0 4px 24px ${alpha(accentColor, 0.06)}`,
+                        border: `1px solid ${alpha(accentColor, 0.08)}`,
+                        overflowX: 'auto',
+                        overflowY: 'visible',
+                        width: 'max-content',
+                        minWidth: '100%',
+                      }}
+                    >
+                      <Table sx={{ minWidth: 'max-content', tableLayout: 'auto' }}>
+                        <TableHead sx={{ bgcolor: alpha(primaryColor, 0.7) }}>
+                          <TableRow>
+                            <PremiumTableCell
+                              padding="checkbox"
+                              isHeader
+                              sx={{ color: textPrimaryColor }}
+                            >
+                              <Checkbox
+                                sx={{
+                                  color: 'white',
+                                  '&.Mui-checked': {
+                                    color: 'white',
+                                  },
+                                  '&:hover': {
+                                    color: '#F5F5F5',
+                                  },
+                                  '&.MuiCheckbox-indeterminate': {
+                                    color: 'white',
+                                  },
+                                }}
+                                indeterminate={(() => {
+                                  const currentPageRows = filteredReleasedData.slice(
+                                    page * rowsPerPage,
+                                    page * rowsPerPage + rowsPerPage
+                                  );
+                                  const selectableIds = currentPageRows.map((row) => row.id);
+                                  const selectedOnPage = selectedRows.filter((id) =>
+                                    selectableIds.includes(id)
+                                  );
+                                  return (
+                                    selectedOnPage.length > 0 &&
+                                    selectedOnPage.length < selectableIds.length
+                                  );
+                                })()}
+                                checked={(() => {
+                                  const currentPageRows = filteredReleasedData.slice(
+                                    page * rowsPerPage,
+                                    page * rowsPerPage + rowsPerPage
+                                  );
+                                  const selectableIds = currentPageRows.map((row) => row.id);
+                                  if (selectableIds.length === 0) return false;
+                                  return selectableIds.every((id) =>
+                                    selectedRows.includes(id)
+                                  );
+                                })()}
+                                onChange={(e) => {
+                                  const currentPageRows = filteredReleasedData.slice(
+                                    page * rowsPerPage,
+                                    page * rowsPerPage + rowsPerPage
+                                  );
+                                  const selectableIds = currentPageRows.map((row) => row.id);
+                                  if (e.target.checked) {
+                                    setSelectedRows((prev) => [
+                                      ...new Set([...prev, ...selectableIds]),
+                                    ]);
+                                  } else {
+                                    setSelectedRows((prev) =>
+                                      prev.filter((id) => !selectableIds.includes(id))
+                                    );
+                                  }
+                                }}
+                              />
+                            </PremiumTableCell>
+                            <PremiumTableCell isHeader sx={{ color: textPrimaryColor }}>
+                              No.
+                            </PremiumTableCell>
+                            <PremiumTableCell isHeader sx={{ color: textPrimaryColor }}>
+                              Department
+                            </PremiumTableCell>
+                            <PremiumTableCell isHeader sx={{ color: textPrimaryColor }}>
+                              Employee Number
+                            </PremiumTableCell>
+                            <PremiumTableCell isHeader sx={{ color: textPrimaryColor }}>
+                              Start Date
+                            </PremiumTableCell>
+                            <PremiumTableCell isHeader sx={{ color: textPrimaryColor }}>
+                              End Date
+                            </PremiumTableCell>
+                            <PremiumTableCell isHeader sx={{ color: textPrimaryColor }}>
+                              Name
+                            </PremiumTableCell>
+                            <PremiumTableCell isHeader sx={{ color: textPrimaryColor }}>
+                              Position
+                            </PremiumTableCell>
+                            <PremiumTableCell isHeader sx={{ color: textPrimaryColor }}>
+                              Gross Salary
+                            </PremiumTableCell>
+                            <PremiumTableCell isHeader sx={{ color: textPrimaryColor }}>
+                              Net Salary
+                            </PremiumTableCell>
+                            <PremiumTableCell isHeader sx={{ color: textPrimaryColor }}>
+                              1st Pay
+                            </PremiumTableCell>
+                            <PremiumTableCell isHeader sx={{ color: textPrimaryColor }}>
+                              2nd Pay
+                            </PremiumTableCell>
+                            <PremiumTableCell isHeader sx={{ color: textPrimaryColor }}>
+                              Date Released
+                            </PremiumTableCell>
+                          </TableRow>
+                        </TableHead>
 
-      {/* Action Buttons */}
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3 }}>
-        <ProfessionalButton
-          variant="outlined"
-          onClick={() => (window.location.href = '/payroll-processed')}
-          size="large"
-          sx={{
-            borderColor: accentColor,
-            color: textPrimaryColor,
-            '&:hover': {
-              borderColor: accentDark,
-              backgroundColor: alpha(accentColor, 0.1),
-            },
-          }}
-          startIcon={<BusinessCenter />}
-        >
-          View Processed Payroll
-        </ProfessionalButton>
+                        <TableBody>
+                          {filteredReleasedData.length > 0 ? (
+                            filteredReleasedData
+                              .slice(
+                                page * rowsPerPage,
+                                page * rowsPerPage + rowsPerPage
+                              )
+                              .map((row, index) => (
+                                <TableRow
+                                  key={row.id}
+                                  sx={{
+                                    '&:nth-of-type(even)': {
+                                      bgcolor: alpha(primaryColor, 0.3),
+                                    },
+                                    '&:hover': {
+                                      backgroundColor:
+                                        alpha(accentColor, 0.05) + ' !important',
+                                    },
+                                    transition: 'all 0.2s ease',
+                                  }}
+                                >
+                                  <PremiumTableCell padding="checkbox">
+                                    <Checkbox
+                                      checked={selectedRows.includes(row.id)}
+                                      onChange={(e) => {
+                                        e.stopPropagation();
+                                        if (selectedRows.includes(row.id)) {
+                                          setSelectedRows((prev) =>
+                                            prev.filter((id) => id !== row.id)
+                                          );
+                                        } else {
+                                          setSelectedRows((prev) => [
+                                            ...prev,
+                                            row.id,
+                                          ]);
+                                        }
+                                      }}
+                                    />
+                                  </PremiumTableCell>
+                                  <PremiumTableCell>
+                                    {page * rowsPerPage + index + 1}
+                                  </PremiumTableCell>
+                                  <PremiumTableCell>{row.department}</PremiumTableCell>
+                                  <PremiumTableCell>
+                                    {row.employeeNumber}
+                                  </PremiumTableCell>
+                                  <PremiumTableCell>
+                                    {row.startDate ? row.startDate.split('T')[0] : ''}
+                                  </PremiumTableCell>
+                                  <PremiumTableCell>
+                                    {row.endDate ? row.endDate.split('T')[0] : ''}
+                                  </PremiumTableCell>
+                                  <PremiumTableCell>{row.name}</PremiumTableCell>
+                                  <PremiumTableCell>{row.position}</PremiumTableCell>
+                                  <PremiumTableCell>
+                                    {row.grossSalary
+                                      ? Number(row.grossSalary).toLocaleString(
+                                          'en-US',
+                                          {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                          }
+                                        )
+                                      : ''}
+                                  </PremiumTableCell>
+                                  <PremiumTableCell>
+                                    {row.netSalary
+                                      ? Number(row.netSalary).toLocaleString(
+                                          'en-US',
+                                          {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                          }
+                                        )
+                                      : ''}
+                                  </PremiumTableCell>
+                                  <PremiumTableCell
+                                    sx={{ color: 'red', fontWeight: 'bold' }}
+                                  >
+                                    {row.pay1st
+                                      ? Number(row.pay1st).toLocaleString('en-US', {
+                                          minimumFractionDigits: 2,
+                                          maximumFractionDigits: 2,
+                                        })
+                                      : ''}{' '}
+                                  </PremiumTableCell>
+                                  <PremiumTableCell
+                                    sx={{ color: 'red', fontWeight: 'bold' }}
+                                  >
+                                    {row.pay2nd
+                                      ? Number(row.pay2nd).toLocaleString('en-US', {
+                                          minimumFractionDigits: 2,
+                                          maximumFractionDigits: 2,
+                                        })
+                                      : ''}
+                                  </PremiumTableCell>
+                                  <PremiumTableCell>
+                                    {row.dateReleased
+                                      ? new Date(
+                                          row.dateReleased
+                                        ).toLocaleDateString()
+                                      : ''}
+                                  </PremiumTableCell>
+                                </TableRow>
+                              ))
+                          ) : (
+                            <TableRow>
+                              <PremiumTableCell
+                                colSpan={14}
+                                align="center"
+                                sx={{ py: 8 }}
+                              >
+                                <Box sx={{ textAlign: 'center' }}>
+                                  <Info
+                                    sx={{
+                                      fontSize: 80,
+                                      color: alpha(accentColor, 0.3),
+                                      mb: 3,
+                                    }}
+                                  />
+                                  <Typography
+                                    variant="h5"
+                                    sx={{
+                                      color: alpha(accentColor, 0.6),
+                                      fontWeight: 600,
+                                    }}
+                                    gutterBottom
+                                  >
+                                    No Records Found
+                                  </Typography>
+                                  <Typography
+                                    variant="body1"
+                                    sx={{ color: alpha(accentColor, 0.4) }}
+                                  >
+                                    No released payroll records available. Try
+                                    adjusting your filters.
+                                  </Typography>
+                                </Box>
+                              </PremiumTableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </PremiumTableContainer>
+                  </Box>
+                </Box>
 
-        <ProfessionalButton
-          variant="outlined"
-          startIcon={<SaveIcon />}
-          onClick={handleSaveToExcel}
-          size="large"
-          sx={{
-            borderColor: accentColor,
-            color: textPrimaryColor,
-            '&:hover': {
-              borderColor: accentDark,
-              backgroundColor: alpha(accentColor, 0.1),
-            },
-          }}
-        >
-          Save to Excel
-        </ProfessionalButton>
+                {/* Table Footer */}
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    borderTop: `1px solid ${alpha(accentColor, 0.1)}`,
+                    px: 4,
+                    py: 2,
+                    bgcolor: alpha(primaryColor, 0.5),
+                  }}
+                >
+                  <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+                    <Typography
+                      variant="body2"
+                      sx={{ fontWeight: 'bold', color: textPrimaryColor }}
+                    >
+                      Total Records: {filteredReleasedData.length}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ fontWeight: 'bold', color: textPrimaryColor }}
+                    >
+                      Selected: {selectedRows.length}
+                    </Typography>
+                  </Box>
+                  <TablePagination
+                    component="div"
+                    count={filteredReleasedData.length}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    rowsPerPage={rowsPerPage}
+                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    rowsPerPageOptions={[10, 25, 50, 100]}
+                    sx={{
+                      '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows':
+                        {
+                          color: textPrimaryColor,
+                        },
+                      '& .MuiIconButton-root': {
+                        color: textPrimaryColor,
+                      },
+                    }}
+                  />
+                </Box>
+              </Box>
+            )}
+          </GlassCard>
+        </Fade>
 
-        <ProfessionalButton
-          variant="contained"
-          startIcon={<Email />}
-          onClick={() => {
-            if (selectedRows.length > 0) {
-              // Store selected employee numbers in localStorage for distribution page
-              const selectedEmployeeNumbers = filteredReleasedData
-                .filter((row) => selectedRows.includes(row.id))
-                .map((row) => row.employeeNumber);
-              localStorage.setItem('selectedEmployeeNumbers', JSON.stringify(selectedEmployeeNumbers));
-            }
-            window.location.href = '/distribution-payslip';
-          }}
-          disabled={selectedRows.length === 0}
-          size="large"
-          sx={{
-            backgroundColor: accentColor,
-            color: textSecondaryColor,
-            '&:hover': { backgroundColor: accentDark },
-            '&:disabled': {
-              backgroundColor: alpha(accentColor, 0.3),
-              color: alpha(textSecondaryColor, 0.5),
-            },
-          }}
-        >
-          Send Payslips {selectedRows.length > 0 ? `(${selectedRows.length})` : ''}
-        </ProfessionalButton>
+        {/* Action Buttons */}
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3 }}>
+          <ProfessionalButton
+            variant="outlined"
+            onClick={() => (window.location.href = '/payroll-processed')}
+            size="large"
+            sx={{
+              borderColor: accentColor,
+              color: textPrimaryColor,
+              '&:hover': {
+                borderColor: accentDark,
+                backgroundColor: alpha(accentColor, 0.1),
+              },
+            }}
+            startIcon={<BusinessCenter />}
+          >
+            View Processed Payroll
+          </ProfessionalButton>
+
+          <ProfessionalButton
+            variant="outlined"
+            startIcon={<SaveIcon />}
+            onClick={handleSaveToExcel}
+            size="large"
+            sx={{
+              borderColor: accentColor,
+              color: textPrimaryColor,
+              '&:hover': {
+                borderColor: accentDark,
+                backgroundColor: alpha(accentColor, 0.1),
+              },
+            }}
+          >
+            Save to Excel
+          </ProfessionalButton>
+
+          <ProfessionalButton
+            variant="contained"
+            startIcon={<Email />}
+            onClick={() => {
+              if (selectedRows.length > 0) {
+                // Store selected employee numbers in localStorage for distribution page
+                const selectedEmployeeNumbers = filteredReleasedData
+                  .filter((row) => selectedRows.includes(row.id))
+                  .map((row) => row.employeeNumber);
+                localStorage.setItem('selectedEmployeeNumbers', JSON.stringify(selectedEmployeeNumbers));
+              }
+              window.location.href = '/distribution-payslip';
+            }}
+            disabled={selectedRows.length === 0}
+            size="large"
+            sx={{
+              backgroundColor: accentColor,
+              color: textSecondaryColor,
+              '&:hover': { backgroundColor: accentDark },
+              '&:disabled': {
+                backgroundColor: alpha(accentColor, 0.3),
+                color: alpha(textSecondaryColor, 0.5),
+              },
+            }}
+          >
+            Send Payslips {selectedRows.length > 0 ? `(${selectedRows.length})` : ''}
+          </ProfessionalButton>
+        </Box>
+
+        <LoadingOverlay open={overlayLoading} message="Processing..." />
+        <SuccessfulOverlay
+          open={successOpen}
+          action={successAction}
+          onClose={() => setSuccessOpen(false)}
+        />
       </Box>
-
-      {/* Loading and Success Overlays */}
-      <LoadingOverlay open={overlayLoading} message="Processing..." />
-      <SuccessfulOverlay
-        open={successOpen}
-        action={successAction}
-        onClose={() => setSuccessOpen(false)}
-      />
-    </Container>
+    </Box>
   );
 };
 

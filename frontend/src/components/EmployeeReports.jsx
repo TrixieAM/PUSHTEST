@@ -38,19 +38,43 @@ import API_BASE_URL from '../apiConfig';
 import axios from 'axios';
 import { useSystemSettings } from '../contexts/SystemSettingsContext';
 
-// Professional color scheme for reports
+// Professional color scheme for reports - matching Reports.jsx
 const reportColors = {
-  primary: '#1976d2',
-  secondary: '#42a5f5',
-  accent: '#e3f2fd',
+  primary: '#6d2323',      // deep maroon
+  primaryLight: '#8a2e2e',
+  primaryDark: '#4a1818',
+  secondary: '#f5f5dc',   // cream
+  secondaryLight: '#ffffff',
+  secondaryDark: '#e6e6c7',
+  accent: '#333333',       // dark gray/black
+  accentLight: '#555555',
+  accentDark: '#000000',
+  textPrimary: '#000000',
+  textSecondary: '#555555',
+  textLight: '#ffffff',
+  neutralBg: '#f9f9f9',
+  surface: '#ffffff',
+  border: '#e0e0e0',
   success: '#4caf50',
   warning: '#ff9800',
   error: '#f44336',
-  textPrimary: '#212121',
-  textSecondary: '#757575',
-  background: '#ffffff',
-  border: '#e0e0e0',
+  info: '#2196f3',
+  background: '#ffffff',   // White
+  gradientPrimary: 'linear-gradient(135deg, #6d2323 0%, #8a2e2e 100%)',
+  gradientSecondary: 'linear-gradient(135deg, #f5f5dc 0%, #ffffff 100%)',
+  gradientAccent: 'linear-gradient(135deg, #333333 0%, #555555 100%)',
+  gradientSuccess: 'linear-gradient(135deg, #4caf50 0%, #66bb6a 100%)',
+  gradientWarning: 'linear-gradient(135deg, #ff9800 0%, #ffb74d 100%)',
+  gradientError: 'linear-gradient(135deg, #f44336 0%, #ef5350 100%)',
+  gradientInfo: 'linear-gradient(135deg, #2196f3 0%, #42a5f5 100%)'
 };
+
+// Shadow styles - matching Reports.jsx
+const shadowSoft = '0 4px 20px rgba(0, 0, 0, 0.08)';
+const shadowMedium = '0 8px 30px rgba(0, 0, 0, 0.12)';
+const shadowDeep = '0 16px 40px rgba(0, 0, 0, 0.16)';
+const shadowColored = '0 8px 30px rgba(109, 35, 35, 0.2)';
+const shadowCard = '0 6px 18px rgba(0, 0, 0, 0.1)';
 
 const EmployeeReports = () => {
   const settings = useSystemSettings();
@@ -406,18 +430,17 @@ const EmployeeReports = () => {
     <Box
       sx={{
         padding: '20px',
-        backgroundColor: settings.backgroundColor || '#f5f5f5',
         minHeight: '100vh',
-        paddingTop: '100px',
+        paddingTop: '5px',
       }}
     >
       <Box
         sx={{
           marginBottom: '30px',
-          background: `linear-gradient(135deg, ${reportColors.primary}, ${reportColors.secondary})`,
           padding: '30px',
           borderRadius: '12px',
-          boxShadow: `0 4px 15px rgba(25, 118, 210, 0.2)`,
+          border: `1px solid #6d2323`,
+          boxShadow: shadowColored,
         }}
       >
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -426,7 +449,7 @@ const EmployeeReports = () => {
               variant="h4"
               sx={{
                 margin: '0 0 5px 0',
-                color: 'white',
+                color: '#6d2323',
                 fontSize: '24px',
                 fontWeight: 'bold',
               }}
@@ -435,7 +458,7 @@ const EmployeeReports = () => {
             </Typography>
             <Typography
               variant="body1"
-              sx={{ margin: 0, color: 'rgba(255, 255, 255, 0.9)', fontSize: '16px' }}
+              sx={{ margin: 0, color: '#6d2323', fontSize: '16px' }}
             >
               {employeeName || `Employee #${employeeNumber}`} - {monthNames[period.month - 1]} {period.year}
             </Typography>
@@ -482,13 +505,13 @@ const EmployeeReports = () => {
               sx={{
                 height: '100%',
                 backgroundColor: reportColors.background,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                boxShadow: shadowCard,
                 borderRadius: '8px',
                 display: 'flex',
                 flexDirection: 'column',
                 border: `1px solid ${reportColors.border}`,
                 '&:hover': {
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                  boxShadow: shadowMedium,
                 },
               }}
             >
@@ -531,7 +554,7 @@ const EmployeeReports = () => {
                     '&:hover': {
                       backgroundColor: reportsGenerated[report.type]
                         ? reportColors.textSecondary
-                        : reportColors.secondary,
+                        : reportColors.primaryLight,
                     },
                     '&:disabled': {
                       backgroundColor: reportColors.textSecondary,
@@ -576,7 +599,7 @@ const EmployeeReports = () => {
                 color: reportColors.primary,
                 textTransform: 'none',
                 '&:hover': {
-                  borderColor: reportColors.secondary,
+                  borderColor: reportColors.primaryLight,
                   backgroundColor: `${reportColors.primary}10`,
                 },
               }}
@@ -633,7 +656,7 @@ const EmployeeReports = () => {
                 <Card
                   sx={{
                     backgroundColor: reportColors.background,
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                    boxShadow: shadowCard,
                     borderRadius: '8px',
                     border: `1px solid ${reportColors.border}`,
                     height: '100%',
@@ -713,7 +736,7 @@ const EmployeeReports = () => {
                 <Card
                   sx={{
                     backgroundColor: reportColors.background,
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                    boxShadow: shadowCard,
                     borderRadius: '8px',
                     border: `1px solid ${reportColors.border}`,
                     height: '100%',
@@ -821,7 +844,7 @@ const EmployeeReports = () => {
                     <Card
                       sx={{
                         backgroundColor: reportColors.background,
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                        boxShadow: shadowCard,
                         borderRadius: '8px',
                         border: `1px solid ${reportColors.border}`,
                         height: '100%',
@@ -922,7 +945,7 @@ const EmployeeReports = () => {
                     <Card
                       sx={{
                         backgroundColor: reportColors.background,
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                        boxShadow: shadowCard,
                         borderRadius: '8px',
                         border: `1px solid ${reportColors.border}`,
                         height: '100%',
@@ -1008,13 +1031,16 @@ const EmployeeReports = () => {
 
           {tabValue === 2 && reportsGenerated.payroll && (
             <Grid container spacing={2} sx={{ mb: 4 }}>
-              <Grid item xs={12}>
+              <Grid item xs={12} md={6}>
                 <Card
                   sx={{
                     backgroundColor: reportColors.background,
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                    boxShadow: shadowCard,
                     borderRadius: '8px',
                     border: `1px solid ${reportColors.border}`,
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
                   }}
                 >
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2, pb: 0 }}>
@@ -1055,8 +1081,8 @@ const EmployeeReports = () => {
                       Reset
                     </Button>
                   </Box>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
+                  <CardContent sx={{ flexGrow: 1 }}>
+                    <ResponsiveContainer width="100%" height={250}>
                       {payrollHistory.length > 0 ? (
                         <LineChart data={payrollHistory}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -1101,6 +1127,108 @@ const EmployeeReports = () => {
                   </CardContent>
                 </Card>
               </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Card
+                  sx={{
+                    backgroundColor: reportColors.background,
+                    boxShadow: shadowCard,
+                    borderRadius: '8px',
+                    border: `1px solid ${reportColors.border}`,
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                >
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2, pb: 0 }}>
+                    <Box>
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          fontWeight: 600,
+                          color: reportColors.textPrimary,
+                          fontSize: '16px',
+                        }}
+                      >
+                        Payroll Summary
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: reportColors.textSecondary,
+                          fontSize: '12px',
+                        }}
+                      >
+                        Your payroll statistics and insights
+                      </Typography>
+                    </Box>
+                    <Button
+                      size="small"
+                      startIcon={<RefreshIcon />}
+                      onClick={() => handleResetReport('payroll')}
+                      sx={{
+                        color: reportColors.textSecondary,
+                        textTransform: 'none',
+                        minWidth: 'auto',
+                        '&:hover': {
+                          backgroundColor: `${reportColors.primary}10`,
+                        },
+                      }}
+                    >
+                      Reset
+                    </Button>
+                  </Box>
+                  <CardContent sx={{ flexGrow: 1 }}>
+                    {payrollHistory.length > 0 ? (
+                      <Box>
+                        <Grid container spacing={2} sx={{ mb: 2 }}>
+                          <Grid item xs={6}>
+                            <Box sx={{ textAlign: 'center', p: 2, bgcolor: `${reportColors.primary}10`, borderRadius: 2 }}>
+                              <Typography variant="h4" sx={{ color: reportColors.primary, fontWeight: 700 }}>
+                                {payrollHistory.length}
+                              </Typography>
+                              <Typography variant="caption" sx={{ color: reportColors.textSecondary }}>
+                                Total Periods
+                              </Typography>
+                            </Box>
+                          </Grid>
+                          <Grid item xs={6}>
+                            <Box sx={{ textAlign: 'center', p: 2, bgcolor: `${reportColors.success}10`, borderRadius: 2 }}>
+                              <Typography variant="h4" sx={{ color: reportColors.success, fontWeight: 700 }}>
+                                ₱{payrollHistory[payrollHistory.length - 1]?.netSalary?.toLocaleString() || 0}
+                              </Typography>
+                              <Typography variant="caption" sx={{ color: reportColors.textSecondary }}>
+                                Latest Salary
+                              </Typography>
+                            </Box>
+                          </Grid>
+                        </Grid>
+                        <Box sx={{ textAlign: 'center', p: 3, bgcolor: `${reportColors.secondary}10`, borderRadius: 2 }}>
+                          <Typography variant="h3" sx={{ color: reportColors.secondary, fontWeight: 700, mb: 1 }}>
+                            ₱{payrollHistory.reduce((sum, item) => sum + (item.netSalary || 0), 0).toLocaleString()}
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: reportColors.textSecondary }}>
+                            Total Earnings
+                          </Typography>
+                        </Box>
+                      </Box>
+                    ) : (
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          height: '100%',
+                        }}
+                      >
+                        <Typography variant="body2" color="text.secondary">
+                          No payroll data available
+                        </Typography>
+                      </Box>
+                    )}
+                  </CardContent>
+                </Card>
+              </Grid>
             </Grid>
           )}
         </>
@@ -1115,16 +1243,16 @@ const EmployeeReports = () => {
             right: 20,
             backgroundColor:
               toast.type === 'success'
-                ? '#4caf50'
+                ? reportColors.success
                 : toast.type === 'error'
-                ? '#f44336'
+                ? reportColors.error
                 : toast.type === 'info'
-                ? '#1976d2'
-                : '#1976d2',
+                ? reportColors.info
+                : reportColors.primary,
             color: 'white',
             padding: '16px 20px',
             borderRadius: '8px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            boxShadow: shadowMedium,
             display: 'flex',
             alignItems: 'center',
             gap: '12px',
