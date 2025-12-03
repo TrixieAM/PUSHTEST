@@ -20,13 +20,14 @@ import {
 } from "@mui/icons-material";
 import usePageAccess from '../hooks/usePageAccess';
 import AccessDenied from './AccessDenied';
+import SuccessfulOverlay from './SuccessfulOverlay';
 
 // Get auth headers function
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
   return {
     headers: {
-      'Content-Type': 'application/json',
+      // Do NOT set Content-Type here so axios can set it correctly
       Authorization: `Bearer ${token}`,
     },
   };
@@ -94,7 +95,8 @@ const AnnouncementForm = () => {
   const [openEditModal, setOpenEditModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [successAction, setSuccessAction] = useState("");
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -199,8 +201,8 @@ const AnnouncementForm = () => {
         setRefreshing(false);
         
         if (refreshing && announcements.length > 0) {
-          setSuccessMessage('Announcements refreshed successfully');
-          setTimeout(() => setSuccessMessage(''), 3000);
+          setSuccessAction("create");
+          setSuccessOpen(true);
         }
       }, 1000);
     } catch (err) {
@@ -223,7 +225,6 @@ const AnnouncementForm = () => {
   const handleAdd = async () => {
     try {
       setError("");
-      setSuccessMessage("");
       setLoading(true);
       
       if (!newAnnouncement.title || !newAnnouncement.about || !newAnnouncement.date) {
@@ -244,8 +245,8 @@ const AnnouncementForm = () => {
 
       fetchAnnouncements();
       setNewAnnouncement({ title: "", about: "", date: "", image: null });
-      setSuccessMessage("Announcement added successfully");
-      setTimeout(() => setSuccessMessage(''), 3000);
+      setSuccessAction("create");
+      setSuccessOpen(true);
       setLoading(false);
     } catch (error) {
       console.error("Error adding announcement", error);
@@ -269,7 +270,6 @@ const AnnouncementForm = () => {
   const handleSaveEdit = async () => {
     try {
       setError("");
-      setSuccessMessage("");
       setLoading(true);
 
       if (!editingId) {
@@ -297,8 +297,8 @@ const AnnouncementForm = () => {
       setEditingId(null);
       setEditForm({});
       fetchAnnouncements();
-      setSuccessMessage("Announcement updated successfully");
-      setTimeout(() => setSuccessMessage(''), 3000);
+      setSuccessAction("edit");
+      setSuccessOpen(true);
       setLoading(false);
     } catch (err) {
       console.error("Error updating announcement:", err);
@@ -313,8 +313,8 @@ const AnnouncementForm = () => {
         setLoading(true);
         await axios.delete(`${API_BASE_URL}/api/announcements/${id}`, getAuthHeaders());
         fetchAnnouncements();
-        setSuccessMessage("Announcement deleted successfully");
-        setTimeout(() => setSuccessMessage(''), 3000);
+        setSuccessAction("delete");
+        setSuccessOpen(true);
         setLoading(false);
       } catch (error) {
         console.error("Error deleting announcement", error);
@@ -342,6 +342,29 @@ const AnnouncementForm = () => {
     } catch (error) {
       return dateString;
     }
+  };
+
+  // Helper to build correct image URL for previews
+  const getImageUrl = (image) => {
+    if (!image) return "";
+
+    // If this is a File from an <input type="file">
+    if (image instanceof File) {
+      return URL.createObjectURL(image);
+    }
+
+    if (typeof image === "string") {
+      // Absolute URL already
+      if (image.startsWith("http://") || image.startsWith("https://")) {
+        return image;
+      }
+      // Backend stores paths like `/uploads/filename`
+      if (image.startsWith("/uploads")) {
+        return `${API_BASE_URL}${image}`;
+      }
+    }
+
+    return image;
   };
 
 
@@ -517,45 +540,12 @@ const AnnouncementForm = () => {
           </Box>
         </Fade>
 
-        {/* Success Message - Center Modal Overlay */}
-        {successMessage && (
-          <Backdrop
-            open={true}
-            sx={{
-              zIndex: 9999,
-              backdropFilter: "blur(8px)",
-              backgroundColor: "rgba(0, 0, 0, 0.5)",
-            }}
-            onClick={() => setSuccessMessage("")}
-          >
-            <Fade in timeout={300}>
-              <Box
-                onClick={(e) => e.stopPropagation()}
-                sx={{
-                  position: "relative",
-                  minWidth: "400px",
-                  maxWidth: "600px",
-                }}
-              >
-                <Alert
-                  severity="success"
-                  sx={{
-                    borderRadius: 4,
-                    boxShadow: "0 12px 48px rgba(0, 0, 0, 0.4)",
-                    fontSize: "1.1rem",
-                    p: 3,
-                    "& .MuiAlert-message": { fontWeight: 500 },
-                    "& .MuiAlert-icon": { fontSize: "2rem" },
-                  }}
-                  icon={<CheckCircle />}
-                  onClose={() => setSuccessMessage("")}
-                >
-                  {successMessage}
-                </Alert>
-              </Box>
-            </Fade>
-          </Backdrop>
-        )}
+        {/* Success Overlay */}
+        <SuccessfulOverlay 
+          open={successOpen} 
+          action={successAction} 
+          onClose={() => setSuccessOpen(false)} 
+        />
 
         {/* Error Alert - Center Modal Overlay */}
         {error && (
@@ -695,9 +685,19 @@ const AnnouncementForm = () => {
                       />
                     </ProfessionalButton>
                     {newAnnouncement.image && (
-                      <Typography variant="body2" sx={{ color: settings?.textPrimaryColor || '#6D2323' }}>
-                        {newAnnouncement.image.name}
-                      </Typography>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                        <Typography
+                          variant="body2"
+                          sx={{ color: settings?.textPrimaryColor || '#6D2323' }}
+                        >
+                          {newAnnouncement.image.name}
+                        </Typography>
+                        <img
+                          src={getImageUrl(newAnnouncement.image)}
+                          alt="preview"
+                          style={{ maxWidth: 160, maxHeight: 90, borderRadius: 4 }}
+                        />
+                      </Box>
                     )}
                   </Box>
                 </Grid>
@@ -983,13 +983,13 @@ const AnnouncementForm = () => {
                 />
               </Grid>
               <Grid item xs={12}>
-                {editForm.image && typeof editForm.image === "string" && (
+                {editForm.image && (
                   <Box sx={{ mt: 1, mb: 2 }}>
                     <Typography variant="body2" sx={{ mb: 1, color: settings?.textPrimaryColor || '#6D2323' }}>
                       Current Image:
                     </Typography>
                     <img
-                      src={editForm.image}
+                      src={getImageUrl(editForm.image)}
                       alt="current"
                       style={{ maxWidth: 160, maxHeight: 90, borderRadius: 4 }}
                     />

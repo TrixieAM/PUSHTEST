@@ -26,7 +26,7 @@ import WorkIcon from '@mui/icons-material/Work';
 import SearchIcon from '@mui/icons-material/Search';
 import ReorderIcon from '@mui/icons-material/Reorder';
 import LoadingOverlay from '../LoadingOverlay';
-import SuccessfullOverlay from '../SuccessfulOverlay';
+import SuccessfulOverlay from '../SuccessfulOverlay';
 import usePageAccess from '../../hooks/usePageAccess';
 import AccessDenied from '../AccessDenied';
 
@@ -198,7 +198,7 @@ const PhilHealthTable = () => {
       <LoadingOverlay open={loading} message="Adding PhilHealth record..." />
       
       {/* Success Overlay */}
-      <SuccessfullOverlay open={successOpen} action={successAction} />
+      <SuccessfulOverlay open={successOpen} action={successAction} onClose={() => setSuccessOpen(false)} />
 
       <Box
         sx={{

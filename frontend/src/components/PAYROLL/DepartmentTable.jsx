@@ -50,7 +50,7 @@ import {
   Refresh,
 } from '@mui/icons-material';
 import LoadingOverlay from '../LoadingOverlay';
-import SuccessfullOverlay from '../SuccessfulOverlay';
+import SuccessfulOverlay from '../SuccessfulOverlay';
 import AccessDenied from '../AccessDenied';
 import { useNavigate } from 'react-router-dom';
 import usePageAccess from '../../hooks/usePageAccess';
@@ -456,16 +456,6 @@ const DepartmentTable = () => {
                     </Box>
                   </Box>
                   <Box display="flex" alignItems="center" gap={2}>
-                    <Chip
-                      label="Enterprise Grade"
-                      size="small"
-                      sx={{
-                        bgcolor: alpha(accentColor, 0.15),
-                        color: textPrimaryColor,
-                        fontWeight: 500,
-                        '& .MuiChip-label': { px: 1 },
-                      }}
-                    />
                     <Tooltip title="Refresh Data">
                       <IconButton
                         onClick={() => window.location.reload()}
@@ -1195,7 +1185,7 @@ const DepartmentTable = () => {
           </GlassCard>
         </Modal>
 
-        <SuccessfullOverlay open={successOpen} action={successAction} />
+        <SuccessfulOverlay open={successOpen} action={successAction} onClose={() => setSuccessOpen(false)} />
 
         <Snackbar
           open={snackbar.open}

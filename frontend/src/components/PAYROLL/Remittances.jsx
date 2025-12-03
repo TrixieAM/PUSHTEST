@@ -49,7 +49,7 @@ import {
 
 import ReorderIcon from '@mui/icons-material/Reorder';
 import LoadingOverlay from '../LoadingOverlay';
-import SuccessfullOverlay from '../SuccessfulOverlay';
+import SuccessfulOverlay from '../SuccessfulOverlay';
 import AccessDenied from '../AccessDenied';
 import usePageAccess from '../../hooks/usePageAccess';
 import { useNavigate } from 'react-router-dom';
@@ -964,16 +964,6 @@ const EmployeeRemittance = () => {
                     </Box>
                   </Box>
                   <Box display="flex" alignItems="center" gap={2}>
-                    <Chip
-                      label="Enterprise Grade"
-                      size="small"
-                      sx={{
-                        bgcolor: 'rgba(109,35,35,0.15)',
-                        color: accentColor,
-                        fontWeight: 500,
-                        '& .MuiChip-label': { px: 1 },
-                      }}
-                    />
                     <Tooltip title="Refresh Data">
                       <IconButton
                         onClick={() => window.location.reload()}
@@ -1851,7 +1841,7 @@ const EmployeeRemittance = () => {
           </GlassCard>
         </Modal>
 
-        <SuccessfullOverlay open={successOpen} action={successAction} />
+        <SuccessfulOverlay open={successOpen} action={successAction} onClose={() => setSuccessOpen(false)} />
 
         <Snackbar
           open={snackbar.open}

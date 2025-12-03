@@ -46,11 +46,12 @@ import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
   Refresh,
+  CalendarToday,
 } from "@mui/icons-material";
 
 import ReorderIcon from '@mui/icons-material/Reorder';
 import LoadingOverlay from '../LoadingOverlay';
-import SuccessfullOverlay from '../SuccessfulOverlay';
+import SuccessfulOverlay from '../SuccessfulOverlay';
 import AccessDenied from '../AccessDenied';
 import usePageAccess from '../../hooks/usePageAccess';
 import { useNavigate } from "react-router-dom";
@@ -685,16 +686,6 @@ const LearningAndDevelopment = () => {
                     </Box>
                   </Box>
                   <Box display="flex" alignItems="center" gap={2}>
-                    <Chip 
-                      label="Enterprise Grade" 
-                      size="small" 
-                      sx={{ 
-                        bgcolor: 'rgba(109,35,35,0.15)', 
-                        color: accentColor,
-                        fontWeight: 500,
-                        '& .MuiChip-label': { px: 1 }
-                      }} 
-                    />
                     <Tooltip title="Refresh Data">
                       <IconButton 
                         onClick={() => window.location.reload()}
@@ -1112,15 +1103,17 @@ const LearningAndDevelopment = () => {
                                 
                                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                    <Typography variant="caption" color={grayColor} fontSize="0.7rem">
+                                    <CalendarToday sx={{ fontSize: 14, color: '#000', mr: 0.5 }} />
+                                    <Typography variant="caption" color="#000" fontSize="0.75rem">
                                       {learning.dateFrom || '----'}
                                     </Typography>
                                   </Box>
-                                  <Typography variant="caption" color={grayColor} fontSize="0.7rem">
+                                  <Typography variant="caption" color="#000" fontSize="0.75rem">
                                     to
                                   </Typography>
                                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                    <Typography variant="caption" color={grayColor} fontSize="0.7rem">
+                                    <CalendarToday sx={{ fontSize: 14, color: '#000', mr: 0.5 }} />
+                                    <Typography variant="caption" color="#000" fontSize="0.75rem">
                                       {learning.dateTo || '----'}
                                     </Typography>
                                   </Box>
@@ -1587,7 +1580,7 @@ const LearningAndDevelopment = () => {
           </GlassCard>
         </Modal>
 
-        <SuccessfullOverlay open={successOpen} action={successAction} />
+        <SuccessfulOverlay open={successOpen} action={successAction} onClose={() => setSuccessOpen(false)} />
         
         <Snackbar
           open={snackbar.open}

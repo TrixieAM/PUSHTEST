@@ -1,6 +1,7 @@
 import API_BASE_URL from '../apiConfig';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import SuccessfulOverlay from './SuccessfulOverlay';
 import {
   Container,
   Paper,
@@ -42,6 +43,7 @@ import {
   FormHelperText,
   Checkbox,
   FormControlLabel,
+  Portal,
 } from '@mui/material';
 import {
   Add,
@@ -176,7 +178,8 @@ const PagesList = () => {
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [deletePageId, setDeletePageId] = useState(null);
   const [editDialog, setEditDialog] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [successAction, setSuccessAction] = useState("");
   const [errorMessage, setErrorMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [descriptionFilter, setDescriptionFilter] = useState('');
@@ -334,9 +337,11 @@ const PagesList = () => {
     setPage(0);
   }, [searchTerm, descriptionFilter, pages]);
 
-  const fetchPages = async () => {
+  const fetchPages = async (isManualRefresh = false) => {
     setLoading(true);
-    setRefreshing(true);
+    if (isManualRefresh) {
+      setRefreshing(true);
+    }
     setErrorMessage('');
 
     try {
@@ -351,10 +356,7 @@ const PagesList = () => {
         setPages(sortedPages);
         setFilteredPages(sortedPages);
 
-        if (refreshing && pages.length > 0) {
-          setSuccessMessage('Pages list refreshed successfully');
-          setTimeout(() => setSuccessMessage(''), 3000);
-        }
+        // Note: Success overlay removed from refresh - it should only show for actual CRUD operations
       } else {
         const errorData = await response.json();
         setErrorMessage(errorData.error || 'Failed to fetch pages');
@@ -372,7 +374,7 @@ const PagesList = () => {
     e.preventDefault();
     setLoading(true);
     setErrorMessage('');
-    setSuccessMessage('');
+    setSuccessOpen(false);
 
     if (!pageName.trim() || !pageDescription.trim() || pageGroups.length === 0) {
       setErrorMessage('Page name, description, and at least one access group are required');
@@ -404,17 +406,13 @@ const PagesList = () => {
       const responseData = await response.json();
 
       if (response.ok) {
-        const message = currentPageId
-          ? 'Page updated successfully!'
-          : 'Page created successfully!';
-        setSuccessMessage(message);
+        setSuccessAction(currentPageId ? "edit" : "create");
+        setSuccessOpen(true);
         await fetchPages();
         if (currentPageId) {
           setEditDialog(false);
         } else {
           setAddDialog(false);
-          // Auto-hide success message after 1.5 seconds for new pages
-          setTimeout(() => setSuccessMessage(''), 1500);
         }
         resetForm();
       } else {
@@ -443,14 +441,14 @@ const PagesList = () => {
   const cancelEdit = () => {
     resetForm();
     setEditDialog(false);
-    setSuccessMessage('');
+    setSuccessOpen(false);
     setErrorMessage('');
   };
 
   const cancelAdd = () => {
     resetForm();
     setAddDialog(false);
-    setSuccessMessage('');
+    setSuccessOpen(false);
     setErrorMessage('');
   };
 
@@ -464,7 +462,7 @@ const PagesList = () => {
     const groups = pg.page_group ? pg.page_group.split(',').map(g => g.trim()) : [];
     setPageGroups(groups);
     setEditDialog(true);
-    setSuccessMessage('');
+    setSuccessOpen(false);
     setErrorMessage('');
   };
 
@@ -483,7 +481,8 @@ const PagesList = () => {
       });
 
       if (response.ok) {
-        setSuccessMessage('Page deleted successfully!');
+        setSuccessAction("delete");
+        setSuccessOpen(true);
         await fetchPages();
       } else {
         const errorData = await response.json();
@@ -733,7 +732,7 @@ const PagesList = () => {
                     />
                     <Tooltip title="Refresh Pages">
                       <IconButton
-                        onClick={fetchPages}
+                        onClick={() => fetchPages(true)}
                         disabled={loading}
                         sx={{
                           bgcolor: alpha(settings?.primaryColor || '#894444', 0.1),
@@ -779,45 +778,14 @@ const PagesList = () => {
           </Box>
         </Fade>
 
-        {/* Success Message - Center Modal Overlay */}
-        {successMessage && (
-          <Backdrop
-            open={true}
-            sx={{
-              zIndex: 9999,
-              backdropFilter: "blur(8px)",
-              backgroundColor: "rgba(0, 0, 0, 0.5)",
-            }}
-            onClick={() => setSuccessMessage("")}
-          >
-            <Fade in timeout={300}>
-              <Box
-                onClick={(e) => e.stopPropagation()}
-                sx={{
-                  position: "relative",
-                  minWidth: "400px",
-                  maxWidth: "600px",
-                }}
-              >
-                <Alert
-                  severity="success"
-                  sx={{
-                    borderRadius: 4,
-                    boxShadow: "0 12px 48px rgba(0, 0, 0, 0.4)",
-                    fontSize: "1.1rem",
-                    p: 3,
-                    "& .MuiAlert-message": { fontWeight: 500 },
-                    "& .MuiAlert-icon": { fontSize: "2rem" },
-                  }}
-                  icon={<CheckCircle />}
-                  onClose={() => setSuccessMessage("")}
-                >
-                  {successMessage}
-                </Alert>
-              </Box>
-            </Fade>
-          </Backdrop>
-        )}
+        {/* Success Overlay - Rendered via Portal for full-screen coverage */}
+        <Portal>
+          <SuccessfulOverlay 
+            open={successOpen} 
+            action={successAction} 
+            onClose={() => setSuccessOpen(false)} 
+          />
+        </Portal>
 
         {/* Error Alert - Center Modal Overlay */}
         {errorMessage && (

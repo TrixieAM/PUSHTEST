@@ -38,6 +38,12 @@ import {
   AccordionDetails,
   Divider,
   InputAdornment,
+  Fade,
+  Backdrop,
+  styled,
+  Avatar,
+  Tooltip,
+  alpha,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -60,12 +66,19 @@ import {
   Home,
   FamilyRestroom,
   School,
+  Refresh,
 } from '@mui/icons-material';
 import LoadingOverlay from '../LoadingOverlay';
-import SuccessfullOverlay from '../SuccessfulOverlay';
+import SuccessfulOverlay from '../SuccessfulOverlay';
 import AccessDenied from '../AccessDenied';
 import { useNavigate } from 'react-router-dom';
+import { useSystemSettings } from '../../hooks/useSystemSettings';
 import usePageAccess from '../../hooks/usePageAccess';
+import {
+  createThemedCard,
+  createThemedButton,
+  createThemedTextField,
+} from '../../utils/theme';
 
 // Employee Autocomplete Component
 const EmployeeAutocomplete = ({
@@ -79,6 +92,7 @@ const EmployeeAutocomplete = ({
   selectedEmployee,
   onEmployeeSelect,
   dropdownDisabled = false,
+  settings = {},
 }) => {
   const [query, setQuery] = useState('');
   const [employees, setEmployees] = useState([]);
@@ -119,7 +133,8 @@ const EmployeeAutocomplete = ({
       const response = await axios.get(
         `${API_BASE_URL}/Remittance/employees/search?q=${encodeURIComponent(
           searchQuery
-        )}`
+        )}`,
+        getAuthHeaders()
       );
       setEmployees(response.data);
     } catch (error) {
@@ -134,7 +149,8 @@ const EmployeeAutocomplete = ({
     setIsLoading(true);
     try {
       const response = await axios.get(
-        `${API_BASE_URL}/Remittance/employees/search`
+        `${API_BASE_URL}/Remittance/employees/search`,
+        getAuthHeaders()
       );
       setEmployees(response.data);
     } catch (error) {
@@ -148,7 +164,8 @@ const EmployeeAutocomplete = ({
   const fetchEmployeeById = async (employeeNumber) => {
     try {
       const response = await axios.get(
-        `${API_BASE_URL}/Remittance/employees/${employeeNumber}`
+        `${API_BASE_URL}/Remittance/employees/${employeeNumber}`,
+        getAuthHeaders()
       );
       const employee = response.data;
       onEmployeeSelect(employee);
@@ -218,9 +235,11 @@ const EmployeeAutocomplete = ({
     }
   };
 
+  const ModernTextField = styled(TextField)(() => createThemedTextField(settings));
+
   return (
     <Box sx={{ position: 'relative', width: '100%' }} ref={dropdownRef}>
-      <TextField
+      <ModernTextField
         ref={inputRef}
         value={query}
         onChange={handleInputChange}
@@ -235,32 +254,17 @@ const EmployeeAutocomplete = ({
         autoComplete="off"
         size="small"
         InputProps={{
-          startAdornment: <PersonIcon sx={{ color: '#6D2323', mr: 1 }} />,
+          startAdornment: <PersonIcon sx={{ color: settings.textPrimaryColor || settings.primaryColor || '#6D2323', mr: 1 }} />,
           endAdornment: (
             <IconButton
               onClick={dropdownDisabled ? undefined : handleDropdownClick}
               size="small"
               disabled={dropdownDisabled}
-              sx={{ color: '#6D2323' }}
+              sx={{ color: settings.textPrimaryColor || settings.primaryColor || '#6D2323' }}
             >
               {showDropdown ? <ExpandLessIcon /> : <ExpandMoreIcon />}
             </IconButton>
           ),
-        }}
-        sx={{
-          '& .MuiOutlinedInput-root': {
-            height: '40px',
-            '& fieldset': {
-              borderColor: error ? 'red' : '#6D2323',
-              borderWidth: '1.5px',
-            },
-            '&:hover fieldset': {
-              borderColor: error ? 'red' : '#6D2323',
-            },
-            '&.Mui-focused fieldset': {
-              borderColor: error ? 'red' : '#6D2323',
-            },
-          },
         }}
       />
 
@@ -276,6 +280,7 @@ const EmployeeAutocomplete = ({
             maxHeight: 300,
             overflow: 'auto',
             mt: 1,
+            borderRadius: 2,
           }}
         >
           {isLoading ? (
@@ -294,15 +299,15 @@ const EmployeeAutocomplete = ({
                   onClick={() => handleEmployeeSelect(employee)}
                   sx={{
                     '&:hover': {
-                      backgroundColor: '#f5f5f5',
+                      backgroundColor: alpha(settings.accentColor || settings.backgroundColor || '#FEF9E1', 0.3),
                     },
                   }}
                 >
                   <ListItemText
                     primary={employee.name}
                     secondary={`#${employee.employeeNumber}`}
-                    primaryTypographyProps={{ fontWeight: 'bold' }}
-                    secondaryTypographyProps={{ color: '#666' }}
+                    primaryTypographyProps={{ fontWeight: 'bold', color: settings.textPrimaryColor || '#6D2323' }}
+                    secondaryTypographyProps={{ color: settings.textSecondaryColor || '#666' }}
                   />
                 </ListItem>
               ))}
@@ -329,6 +334,9 @@ const EmployeeAutocomplete = ({
 };
 
 const PersonTable = () => {
+  // Get settings from context
+  const { settings } = useSystemSettings();
+  
   const [data, setData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -345,6 +353,22 @@ const PersonTable = () => {
   const navigate = useNavigate();
   const { hasAccess, loading: accessLoading, error: accessError } = usePageAccess('personalinfo');
   // ACCESSING END
+
+  // Create themed styled components using system settings
+  const GlassCard = styled(Card)(() => createThemedCard(settings));
+  
+  const ProfessionalButton = styled(Button)(({ variant = 'contained' }) => 
+    createThemedButton(settings, variant)
+  );
+
+  const ModernTextField = styled(TextField)(() => createThemedTextField(settings));
+  
+  // Color scheme from settings (for compatibility)
+  const primaryColor = settings.accentColor || '#FEF9E1';
+  const secondaryColor = settings.backgroundColor || '#FFF8E7';
+  const accentColor = settings.primaryColor || '#6d2323';
+  const accentDark = settings.secondaryColor || settings.hoverColor || '#8B3333';
+  const grayColor = settings.textSecondaryColor || '#6c757d';
 
   // Stepper state
   const [newPerson, setNewPerson] = useState({
@@ -1116,6 +1140,7 @@ const PersonTable = () => {
                 required
                 error={!!hasError}
                 helperText={hasError || ''}
+                settings={settings}
               />
             </Grid>
           );
@@ -1164,18 +1189,12 @@ const PersonTable = () => {
 
   // ACCESSING 2
   // Loading state
-  if (accessLoading) {
+  if (hasAccess === null) {
     return (
       <Container maxWidth="md" sx={{ py: 8 }}>
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-          }}
-        >
-          <CircularProgress sx={{ color: '#6d2323', mb: 2 }} />
-          <Typography variant="h6" sx={{ color: '#6d2323' }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <CircularProgress sx={{ color: accentColor, mb: 2 }} />
+          <Typography variant="h6" sx={{ color: accentColor }}>
             Loading access information...
           </Typography>
         </Box>
@@ -1187,7 +1206,7 @@ const PersonTable = () => {
     return (
       <AccessDenied
         title="Access Denied"
-        message="You do not have permission to access View Attendance Records. Contact your administrator to request access."
+        message="You do not have permission to access Personal Information Management. Contact your administrator to request access."
         returnPath="/admin-home"
         returnButtonText="Return to Home"
       />
@@ -1196,87 +1215,139 @@ const PersonTable = () => {
   //ACCESSING END2
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        pt: 2,
-        mt: -5,
-      }}
-    >
-      {/* Loading Overlay */}
-      <LoadingOverlay open={loading} message="Adding person record..." />
-
-      {/* Success Overlay */}
-      <SuccessfullOverlay open={successOpen} action={successAction} />
-
-      <Box sx={{ textAlign: 'center', mb: 3, px: 2 }}>
-        <Typography
-          variant="h4"
-          sx={{ color: '#6D2323', fontWeight: 'bold', mb: 0.5 }}
-        >
-          Personal Information Management
-        </Typography>
-        <Typography variant="body2" sx={{ color: '#666' }}>
-          Add and manage personal information records
-        </Typography>
-      </Box>
-
-      <Container
-        maxWidth="xl"
-        sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}
-      >
-        <Grid container spacing={3} sx={{ flexGrow: 1 }}>
-          <Grid
-            item
-            xs={12}
-            lg={6}
-            sx={{ display: 'flex', flexDirection: 'column' }}
-          >
-            <Paper
-              elevation={4}
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                borderRadius: 2,
-                overflow: 'hidden',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                border: '1px solid rgba(109, 35, 35, 0.1)',
-                height: { xs: 'auto', lg: 'calc(100vh - 200px)' },
-                maxHeight: { xs: 'none', lg: 'calc(100vh - 200px)' },
-              }}
-            >
+    <Box sx={{ 
+      py: 4,
+      mt: -5,
+      width: '1600px',
+      mx: 'auto',
+      overflow: 'hidden',
+    }}>
+      <Box sx={{ px: 6 }}>
+        {/* Header */}
+        <Fade in timeout={500}>
+          <Box sx={{ mb: 4 }}>
+            <GlassCard>
               <Box
                 sx={{
-                  backgroundColor: '#6D2323',
-                  color: '#ffffff',
-                  p: 2,
-                  display: 'flex',
-                  alignItems: 'center',
-                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                  p: 5,
+                  background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
+                  color: accentColor,
+                  position: 'relative',
+                  overflow: 'hidden',
                 }}
               >
-                <PersonIcon sx={{ fontSize: '1.8rem', mr: 2 }} />
-                <Box>
-                  <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                    Add New Personal Information
-                  </Typography>
-                  <Typography variant="caption" sx={{ opacity: 0.9 }}>
-                    Fill in the personal information details
-                  </Typography>
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: -50,
+                    right: -50,
+                    width: 200,
+                    height: 200,
+                    background: 'radial-gradient(circle, rgba(109,35,35,0.1) 0%, rgba(109,35,35,0) 70%)',
+                  }}
+                />
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    bottom: -30,
+                    left: '30%',
+                    width: 150,
+                    height: 150,
+                    background: 'radial-gradient(circle, rgba(109,35,35,0.08) 0%, rgba(109,35,35,0) 70%)',
+                  }}
+                />
+                
+                <Box display="flex" alignItems="center" justifyContent="space-between" position="relative" zIndex={1}>
+                  <Box display="flex" alignItems="center">
+                    <Avatar 
+                      sx={{ 
+                        bgcolor: 'rgba(109,35,35,0.15)', 
+                        mr: 4, 
+                        width: 64,
+                        height: 64,
+                        boxShadow: '0 8px 24px rgba(109,35,35,0.15)'
+                      }}
+                    >
+                      <PersonIcon sx={{color: accentColor, fontSize: 32 }} />
+                    </Avatar>
+                    <Box>
+                      <Typography variant="h4" component="h1" sx={{ fontWeight: 700, mb: 1, lineHeight: 1.2, color: accentColor }}>
+                        Personal Information Management
+                      </Typography>
+                      <Typography variant="body1" sx={{ opacity: 0.8, fontWeight: 400, color: accentDark }}>
+                        Add and manage personal information records
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Box display="flex" alignItems="center" gap={2}>
+                    <Tooltip title="Refresh Data">
+                      <IconButton 
+                        onClick={() => window.location.reload()}
+                        sx={{ 
+                          bgcolor: 'rgba(109,35,35,0.1)', 
+                          '&:hover': { bgcolor: 'rgba(109,35,35,0.2)' },
+                          color: accentColor,
+                          width: 48,
+                          height: 48,
+                        }}
+                      >
+                        <Refresh sx={{ fontSize: 24 }} />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
                 </Box>
               </Box>
+            </GlassCard>
+          </Box>
+        </Fade>
 
-              <Box
-                sx={{
-                  p: 3,
-                  flexGrow: 1,
-                  display: 'flex',
+        {/* Loading Backdrop */}
+        <Backdrop
+          sx={{ color: primaryColor, zIndex: (theme) => theme.zIndex.drawer + 1 }}
+          open={loading}
+        >
+          <Box sx={{ textAlign: 'center' }}>
+            <CircularProgress color="inherit" size={60} thickness={4} />
+            <Typography variant="h6" sx={{ mt: 2, color: primaryColor }}>
+              Processing personal information record...
+            </Typography>
+          </Box>
+        </Backdrop>
+
+        {/* Main Content */}
+        <Grid container spacing={4}>
+          {/* Add New Person Section */}
+          <Grid item xs={12} lg={6}>
+            <Fade in timeout={700}>
+              <GlassCard sx={{ height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
+                <Box
+                  sx={{
+                    p: 4,
+                    background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
+                    color: accentColor,
+                    display: "flex",
+                    alignItems: "center",
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                  }}
+                >
+                  <PersonIcon sx={{ fontSize: "1.8rem", mr: 2 }} />
+                  <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                      Add New Personal Information
+                    </Typography>
+                    <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                      Fill in the personal information details
+                    </Typography>
+                  </Box>
+                </Box>
+
+                <Box sx={{ 
+                  p: 4, 
+                  flexGrow: 1, 
+                  display: 'flex', 
                   flexDirection: 'column',
-                  overflowY: 'auto',
-                }}
-              >
+                  overflowY: 'auto'
+                }}>
                 <Stepper activeStep={activeStep} orientation="vertical">
                   {steps.map((step, index) => (
                     <Step key={step.label}>
@@ -1300,47 +1371,48 @@ const PersonTable = () => {
                         <Box sx={{ mb: 2, mt: 3 }}>
                           <div>
                             {index === steps.length - 1 ? (
-                              <Button
+                              <ProfessionalButton
                                 variant="contained"
                                 onClick={handleAdd}
                                 startIcon={<AddIcon />}
                                 sx={{
                                   mr: 1,
-                                  backgroundColor: '#6D2323',
-                                  color: '#FEF9E1',
-                                  '&:hover': { backgroundColor: '#a31d1d' },
+                                  backgroundColor: accentColor,
+                                  color: primaryColor,
+                                  '&:hover': { backgroundColor: accentDark },
                                   width: '80%',
                                 }}
                               >
                                 Add Person
-                              </Button>
+                              </ProfessionalButton>
                             ) : (
-                              <Button
+                              <ProfessionalButton
                                 variant="contained"
                                 onClick={handleNext}
                                 sx={{
                                   mr: 1,
-                                  backgroundColor: '#6D2323',
-                                  color: '#FEF9E1',
-                                  '&:hover': { backgroundColor: '#a31d1d' },
+                                  backgroundColor: accentColor,
+                                  color: primaryColor,
+                                  '&:hover': { backgroundColor: accentDark },
                                 }}
                                 endIcon={<NextIcon />}
                               >
                                 Next
-                              </Button>
+                              </ProfessionalButton>
                             )}
-                            <Button
+                            <ProfessionalButton
+                              variant="outlined"
                               disabled={index === 0}
                               onClick={handleBack}
                               sx={{
                                 mr: 1,
-                                border: '1px solid #6d2323',
-                                color: '#6d2323',
+                                borderColor: accentColor,
+                                color: accentColor,
                               }}
                               startIcon={<PrevIcon />}
                             >
                               Back
-                            </Button>
+                            </ProfessionalButton>
                           </div>
                         </Box>
                       </StepContent>
@@ -1348,41 +1420,27 @@ const PersonTable = () => {
                   ))}
                 </Stepper>
               </Box>
-            </Paper>
-          </Grid>
+            </GlassCard>
+          </Fade>
+        </Grid>
 
-          <Grid
-            item
-            xs={12}
-            lg={6}
-            sx={{ display: 'flex', flexDirection: 'column' }}
-          >
-            <Paper
-              elevation={4}
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                borderRadius: 2,
-                overflow: 'hidden',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                border: '1px solid rgba(109, 35, 35, 0.1)',
-                height: { xs: 'auto', lg: 'calc(100vh - 200px)' },
-                maxHeight: { xs: 'none', lg: 'calc(100vh - 200px)' },
-              }}
-            >
+        {/* Personal Information Records Section */}
+        <Grid item xs={12} lg={6}>
+          <Fade in timeout={900}>
+            <GlassCard sx={{ height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
               <Box
                 sx={{
-                  backgroundColor: '#6D2323',
-                  color: '#ffffff',
-                  p: 2,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
+                  p: 4,
+                  background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
+                  color: accentColor,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
                   boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Reorder sx={{ fontSize: '1.8rem', mr: 2 }} />
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <Reorder sx={{ fontSize: "1.8rem", mr: 2 }} />
                   <Box>
                     <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
                       Personal Information Records
@@ -1392,7 +1450,7 @@ const PersonTable = () => {
                     </Typography>
                   </Box>
                 </Box>
-
+                
                 <ToggleButtonGroup
                   value={viewMode}
                   exclusive
@@ -1402,14 +1460,14 @@ const PersonTable = () => {
                   sx={{
                     backgroundColor: 'rgba(255, 255, 255, 0.2)',
                     '& .MuiToggleButton-root': {
-                      color: 'white',
-                      borderColor: 'rgba(255, 255, 255, 0.5)',
+                      color: accentColor,
+                      borderColor: alpha(settings.primaryColor || '#6d2323', 0.5),
                       padding: '4px 8px',
                       '&.Mui-selected': {
                         backgroundColor: 'rgba(255, 255, 255, 0.3)',
-                        color: 'white',
+                        color: accentColor
                       },
-                    },
+                    }
                   }}
                 >
                   <ToggleButton value="grid" aria-label="grid view">
@@ -1421,48 +1479,32 @@ const PersonTable = () => {
                 </ToggleButtonGroup>
               </Box>
 
-              <Box
-                sx={{
-                  p: 3,
-                  flexGrow: 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  overflow: 'hidden',
-                }}
-              >
-                <Box sx={{ mb: 2 }}>
-                  <TextField
+              <Box sx={{ 
+                p: 4, 
+                flexGrow: 1, 
+                display: 'flex', 
+                flexDirection: 'column',
+                overflow: 'hidden'
+              }}>
+                <Box sx={{ mb: 3 }}>
+                  <ModernTextField
                     size="small"
                     variant="outlined"
                     placeholder="Search by Employee Number or Name"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     fullWidth
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        '& fieldset': {
-                          borderColor: '#6D2323',
-                          borderWidth: '1.5px',
-                        },
-                        '&:hover fieldset': {
-                          borderColor: '#6D2323',
-                        },
-                        '&.Mui-focused fieldset': {
-                          borderColor: '#6D2323',
-                        },
-                      },
-                    }}
                     InputProps={{
                       startAdornment: (
-                        <SearchIcon sx={{ color: '#6D2323', mr: 1 }} />
+                        <SearchIcon sx={{ color: accentColor, mr: 1 }} />
                       ),
                     }}
                   />
                 </Box>
 
-                <Box
-                  sx={{
-                    flexGrow: 1,
+                <Box 
+                  sx={{ 
+                    flexGrow: 1, 
                     overflowY: 'auto',
                     pr: 1,
                     '&::-webkit-scrollbar': {
@@ -1473,97 +1515,80 @@ const PersonTable = () => {
                       borderRadius: '3px',
                     },
                     '&::-webkit-scrollbar-thumb': {
-                      background: '#6D2323',
+                      background: accentColor,
                       borderRadius: '3px',
                     },
                   }}
                 >
                   {viewMode === 'grid' ? (
-                    <Grid container spacing={1.5}>
+                    <Grid container spacing={1}>
                       {filteredData.map((person) => (
-                        <Grid item xs={12} sm={6} md={4} key={person.id}>
+                        <Grid item xs={12} sm={6} md={4} lg={3} key={person.id}>
                           <Card
                             onClick={() => handleOpenModal(person)}
                             sx={{
-                              cursor: 'pointer',
-                              border: '1px solid #ddd',
+                              cursor: "pointer",
+                              border: `1px solid ${alpha(settings.primaryColor || '#6d2323', 0.1)}`,
                               height: '100%',
+                              borderRadius: 1.5,
+                              background: 'linear-gradient(135deg, #ffffff 0%, #fff8f0 100%)',
                               display: 'flex',
                               flexDirection: 'column',
-                              '&:hover': {
-                                borderColor: '#6d2323',
+                              "&:hover": { 
+                                borderColor: accentColor,
                                 transform: 'translateY(-2px)',
                                 transition: 'all 0.2s ease',
-                                boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
+                                boxShadow: '0 4px 8px rgba(109,35,35,0.15)'
                               },
                             }}
                           >
                             <CardContent
                               sx={{
-                                p: 1.5,
+                                px: 1.5,
+                                py: 1.25,
                                 flexGrow: 1,
                                 display: 'flex',
                                 flexDirection: 'column',
+                                gap: 0.4,
                               }}
                             >
+                              {/* Top row: Employee Number only */}
                               <Box
                                 sx={{
                                   display: 'flex',
                                   alignItems: 'center',
-                                  mb: 1,
+                                  justifyContent: 'flex-start',
+                                  mb: 0.25,
                                 }}
                               >
-                                <PersonIcon
-                                  sx={{
-                                    fontSize: 18,
-                                    color: '#6d2323',
-                                    mr: 0.5,
-                                  }}
-                                />
+                                <PersonIcon sx={{ fontSize: 18, color: accentColor, mr: 0.5 }} />
                                 <Typography
                                   variant="caption"
                                   sx={{
-                                    color: '#6d2323',
+                                    color: accentColor,
                                     px: 0.5,
-                                    py: 0.2,
+                                    py: 0.15,
                                     borderRadius: 0.5,
                                     fontSize: '0.7rem',
                                     fontWeight: 'bold',
+                                    backgroundColor: alpha(accentColor, 0.06),
                                   }}
                                 >
                                   {person.agencyEmployeeNum}
                                 </Typography>
                               </Box>
 
+                              {/* Name */}
                               <Typography
                                 variant="body2"
                                 fontWeight="bold"
-                                color="#333"
-                                mb={0.5}
-                                noWrap
+                                color="#222"
+                                sx={{ lineHeight: 1.1, mt: 0.2 }}
                               >
                                 {person.firstName} {person.lastName}
                               </Typography>
 
-                              <Typography
-                                variant="body2"
-                                color="#666"
-                                sx={{ flexGrow: 1 }}
-                              >
-                                {person.civilStatus} • {person.sex}
-                              </Typography>
-
-                              <Chip
-                                label={person.citizenship || 'No Citizenship'}
-                                size="small"
-                                sx={{
-                                  backgroundColor: '#6d2323',
-                                  color: '#fff',
-                                  fontWeight: 'bold',
-                                  fontSize: '0.7rem',
-                                  alignSelf: 'flex-start',
-                                }}
-                              />
+                              {/* Only show core identity info in grid view */}
                             </CardContent>
                           </Card>
                         </Grid>
@@ -1576,63 +1601,38 @@ const PersonTable = () => {
                         onClick={() => handleOpenModal(person)}
                         sx={{
                           cursor: 'pointer',
-                          border: '1px solid #ddd',
-                          mb: 1,
+                          border: '1px solid rgba(109, 35, 35, 0.1)',
+                          mb: 0.75,
                           '&:hover': {
-                            borderColor: '#6d2323',
-                            backgroundColor: '#fafafa',
+                            borderColor: accentColor,
+                            backgroundColor: alpha(
+                              settings.accentColor || settings.backgroundColor || '#FEF9E1',
+                              0.25
+                            ),
                           },
                         }}
                       >
                         <Box sx={{ p: 1.5 }}>
-                          <Box
-                            sx={{ display: 'flex', alignItems: 'flex-start' }}
-                          >
-                            <Box sx={{ mr: 1.5, mt: 0.2 }}>
-                              <PersonIcon
-                                sx={{ fontSize: 20, color: '#6d2323' }}
-                              />
-                            </Box>
-
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <PersonIcon sx={{ fontSize: 20, color: accentColor, mr: 1 }} />
                             <Box sx={{ flexGrow: 1 }}>
-                              <Box
+                              <Typography
+                                variant="caption"
                                 sx={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  mb: 0.5,
+                                  color: accentColor,
+                                  fontSize: '0.7rem',
+                                  fontWeight: 'bold',
                                 }}
                               >
-                                <Typography
-                                  variant="caption"
-                                  sx={{
-                                    backgroundColor: '#6d2323',
-                                    color: 'white',
-                                    px: 0.5,
-                                    py: 0.2,
-                                    borderRadius: 0.5,
-                                    fontSize: '0.7rem',
-                                    fontWeight: 'bold',
-                                    mr: 1,
-                                  }}
-                                >
-                                  {person.agencyEmployeeNum}
-                                </Typography>
-                                <Typography
-                                  variant="body2"
-                                  fontWeight="bold"
-                                  color="#333"
-                                >
-                                  {person.firstName} {person.lastName}
-                                </Typography>
-                              </Box>
-
+                                {person.agencyEmployeeNum}
+                              </Typography>
                               <Typography
                                 variant="body2"
-                                color="#666"
-                                sx={{ mb: 0.5 }}
+                                fontWeight="bold"
+                                color="#333"
+                                sx={{ lineHeight: 1.2 }}
                               >
-                                {person.civilStatus} • {person.sex} •{' '}
-                                {person.citizenship}
+                                {person.firstName} {person.lastName}
                               </Typography>
                             </Box>
                           </Box>
@@ -1640,27 +1640,25 @@ const PersonTable = () => {
                       </Card>
                     ))
                   )}
-
+                  
                   {filteredData.length === 0 && (
                     <Box textAlign="center" py={4}>
-                      <Typography
-                        variant="body1"
-                        color="#555"
-                        fontWeight="bold"
-                      >
+                      <Typography variant="h6" color={accentColor} fontWeight="bold" sx={{ mb: 1 }}>
                         No Records Found
                       </Typography>
-                      <Typography variant="body2" color="#666" sx={{ mt: 0.5 }}>
+                      <Typography variant="body2" color={grayColor}>
                         Try adjusting your search criteria
                       </Typography>
                     </Box>
                   )}
                 </Box>
               </Box>
-            </Paper>
-          </Grid>
+            </GlassCard>
+          </Fade>
         </Grid>
-      </Container>
+      </Grid>
+
+      <SuccessfulOverlay open={successOpen} action={successAction} onClose={() => setSuccessOpen(false)} />
 
       {/* Edit Modal */}
       {/* Edit Modal */}
@@ -1688,7 +1686,7 @@ const PersonTable = () => {
         >
           {editPerson && (
             <>
-              {/* Modal Header with Floating Action Buttons */}
+              {/* Modal Header */}
               <Box
                 sx={{
                   backgroundColor: '#6D2323',
@@ -1717,90 +1715,12 @@ const PersonTable = () => {
                     </Typography>
                   </Box>
                 </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  {!isEditing ? (
-                    <>
-                      <Button
-                        onClick={() => handleDelete(editPerson.id)}
-                        variant="outlined"
-                        startIcon={<DeleteIcon />}
-                        sx={{
-                          color: '#ffffff',
-                          borderColor: '#ffffff',
-                          mr: 1,
-                          '&:hover': {
-                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                            borderColor: '#ffffff',
-                          },
-                        }}
-                      >
-                        Delete
-                      </Button>
-                      <Button
-                        onClick={handleStartEdit}
-                        variant="contained"
-                        startIcon={<EditIcon />}
-                        sx={{
-                          backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                          color: '#ffffff',
-                          '&:hover': {
-                            backgroundColor: 'rgba(255, 255, 255, 0.3)',
-                          },
-                        }}
-                      >
-                        Edit
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Button
-                        onClick={handleCancelEdit}
-                        variant="outlined"
-                        startIcon={<CancelIcon />}
-                        sx={{
-                          color: '#ffffff',
-                          borderColor: '#ffffff',
-                          mr: 1,
-                          '&:hover': {
-                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                            borderColor: '#ffffff',
-                          },
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        onClick={handleUpdate}
-                        variant="contained"
-                        startIcon={<SaveIcon />}
-                        disabled={!hasChanges()}
-                        sx={{
-                          backgroundColor: hasChanges()
-                            ? 'rgba(255, 255, 255, 0.2)'
-                            : 'rgba(255, 255, 255, 0.1)',
-                          color: '#ffffff',
-                          '&:hover': {
-                            backgroundColor: hasChanges()
-                              ? 'rgba(255, 255, 255, 0.3)'
-                              : 'rgba(255, 255, 255, 0.1)',
-                          },
-                          '&:disabled': {
-                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                            color: 'rgba(255, 255, 255, 0.5)',
-                          },
-                        }}
-                      >
-                        Save Changes
-                      </Button>
-                    </>
-                  )}
-                  <IconButton
-                    onClick={handleCloseModal}
-                    sx={{ color: '#fff', ml: 1 }}
-                  >
-                    <Close />
-                  </IconButton>
-                </Box>
+                <IconButton
+                  onClick={handleCloseModal}
+                  sx={{ color: '#fff', ml: 1 }}
+                >
+                  <Close />
+                </IconButton>
               </Box>
 
               {/* Scrollable Content Area */}
@@ -3588,6 +3508,100 @@ const PersonTable = () => {
                   </Accordion>
                 </Box>
               </Box>
+
+              {/* Bottom Action Bar for Edit/Delete - stays visible while scrolling */}
+              <Box
+                sx={{
+                  borderTop: '1px solid rgba(0,0,0,0.12)',
+                  backgroundColor: '#6D2323',
+                  px: 3,
+                  py: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-end',
+                  boxShadow: '0 -2px 6px rgba(0,0,0,0.12)',
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  {!isEditing ? (
+                    <>
+                      <Button
+                        onClick={() => handleDelete(editPerson.id)}
+                        variant="outlined"
+                        startIcon={<DeleteIcon />}
+                        sx={{
+                          borderColor: '#6D2323',
+                          color: '#6D2323',
+                          backgroundColor: '#FFFFFF',
+                          '&:hover': {
+                            backgroundColor: '#FDE2E2',
+                            borderColor: '#6D2323',
+                          },
+                        }}
+                      >
+                        Delete
+                      </Button>
+                      <Button
+                        onClick={handleStartEdit}
+                        variant="contained"
+                        startIcon={<EditIcon />}
+                        sx={{
+                          backgroundColor: '#FEF9E1',
+                          color: '#6D2323',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
+                          '&:hover': {
+                            backgroundColor: '#FFFFFF',
+                          },
+                        }}
+                      >
+                        Edit
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        onClick={handleCancelEdit}
+                        variant="outlined"
+                        startIcon={<CancelIcon />}
+                        sx={{
+                          borderColor: '#6D2323',
+                          color: '#6D2323',
+                          backgroundColor: '#FFFFFF',
+                          '&:hover': {
+                            backgroundColor: '#FDE2E2',
+                            borderColor: '#6D2323',
+                          },
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={handleUpdate}
+                        variant="contained"
+                        startIcon={<SaveIcon />}
+                        disabled={!hasChanges()}
+                        sx={{
+                          backgroundColor: hasChanges() ? '#FEF9E1' : '#E2CFCF',
+                          color: '#6D2323',
+                          boxShadow: hasChanges()
+                            ? '0 2px 4px rgba(0,0,0,0.15)'
+                            : 'none',
+                          '&:hover': {
+                            backgroundColor: hasChanges()
+                              ? '#FFFFFF'
+                              : '#E2CFCF',
+                          },
+                          '&:disabled': {
+                            color: '#6D2323',
+                          },
+                        }}
+                      >
+                        Save Changes
+                      </Button>
+                    </>
+                  )}
+                </Box>
+              </Box>
             </>
           )}
         </Paper>
@@ -3608,6 +3622,7 @@ const PersonTable = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
+      </Box>
     </Box>
   );
 };

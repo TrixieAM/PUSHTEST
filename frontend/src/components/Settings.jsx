@@ -2424,13 +2424,13 @@ const Settings = () => {
                             }
                           }}
                           sx={{
-                            bgcolor: aboutUsEditMode ? "transparent" : "white",
-                            color: aboutUsEditMode ? "white" : primaryColor,
+                            bgcolor: aboutUsEditMode ? "transparent" : primaryColor,
+                            color: "white",
                             borderColor: "white",
                             "&:hover": {
                               bgcolor: aboutUsEditMode
                                 ? "rgba(255,255,255,0.1)"
-                                : "rgba(255,255,255,0.9)",
+                                : secondaryColor,
                             },
                           }}
                         >
@@ -2603,10 +2603,10 @@ const Settings = () => {
                           startIcon={<Add />}
                           onClick={() => handleOpenFaqDialog()}
                           sx={{
-                            bgcolor: "white",
-                            color: primaryColor,
+                            bgcolor: primaryColor,
+                            color: "white",
                             "&:hover": {
-                              bgcolor: "rgba(255,255,255,0.9)",
+                              bgcolor: secondaryColor,
                             },
                           }}
                         >
@@ -2786,10 +2786,10 @@ const Settings = () => {
                           startIcon={<Edit />}
                           onClick={() => handleOpenPolicyDialog()}
                           sx={{
-                            bgcolor: "white",
-                            color: primaryColor,
+                            bgcolor: primaryColor,
+                            color: "white",
                             "&:hover": {
-                              bgcolor: "rgba(255,255,255,0.9)",
+                              bgcolor: secondaryColor,
                             },
                           }}
                         >

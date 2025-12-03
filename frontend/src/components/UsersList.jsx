@@ -52,6 +52,7 @@ import {
   Link,
   Modal,
   Snackbar,
+  Portal,
 } from "@mui/material";
 import {
   People,
@@ -96,6 +97,7 @@ import {
 } from "@mui/icons-material";
 import SearchIcon from "@mui/icons-material/Search";
 import axios from "axios";
+import SuccessfulOverlay from "./SuccessfulOverlay";
 
 // Get user role from token
 const getUserRole = () => {
@@ -204,7 +206,8 @@ const UsersList = () => {
   const [detailsDrawerOpen, setDetailsDrawerOpen] = useState(false);
   const [selectedUserForDetails, setSelectedUserForDetails] = useState(null);
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [successAction, setSuccessAction] = useState("");
   const [hoveredCard, setHoveredCard] = useState(null);
   const [hoveredRow, setHoveredRow] = useState(null);
   const [activeTab, setActiveTab] = useState("info");
@@ -343,9 +346,11 @@ const UsersList = () => {
     letterSpacing: "0.025em",
   })), [settings]);
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (isManualRefresh = false) => {
     setLoading(true);
-    setRefreshing(true);
+    if (isManualRefresh) {
+      setRefreshing(true);
+    }
     setError("");
 
     try {
@@ -413,10 +418,7 @@ const UsersList = () => {
       setUsers(mergedUsers);
       setFilteredUsers(mergedUsers);
 
-      if (refreshing) {
-        setSuccessMessage;
-        setTimeout(() => setSuccessMessage(""), 3000);
-      }
+      // Note: Success overlay removed from refresh - it should only show for actual CRUD operations
     } catch (err) {
       console.error("Error fetching users:", err);
       setError("Something went wrong while fetching users");
@@ -733,9 +735,8 @@ const UsersList = () => {
         )
       );
 
-      setSuccessMessage(
-      );
-      setTimeout(() => setSuccessMessage(""), 3000);
+      setSuccessAction("edit");
+      setSuccessOpen(true);
 
       setRoleChangeDialog(false);
       setPendingRoleChange(null);
@@ -1100,7 +1101,7 @@ const UsersList = () => {
                     />
                     <Tooltip title="Refresh Users">
                       <IconButton
-                        onClick={fetchUsers}
+                        onClick={() => fetchUsers(true)}
                         disabled={loading}
                         sx={{
                           bgcolor: alpha(settings?.primaryColor || '#894444', 0.1),
@@ -1178,45 +1179,14 @@ const UsersList = () => {
           </Box>
         </Fade>
 
-        {/* Success Message - Center Modal Overlay */}
-        {successMessage && (
-          <Backdrop
-            open={true}
-            sx={{
-              zIndex: 9999,
-              backdropFilter: "blur(8px)",
-              backgroundColor: "rgba(0, 0, 0, 0.5)",
-            }}
-            onClick={() => setSuccessMessage("")}
-          >
-            <Fade in timeout={300}>
-              <Box
-                onClick={(e) => e.stopPropagation()}
-                sx={{
-                  position: "relative",
-                  minWidth: "400px",
-                  maxWidth: "600px",
-                }}
-              >
-                <Alert
-                  severity="success"
-                  sx={{
-                    borderRadius: 4,
-                    boxShadow: "0 12px 48px rgba(0, 0, 0, 0.4)",
-                    fontSize: "1.1rem",
-                    p: 3,
-                    "& .MuiAlert-message": { fontWeight: 500 },
-                    "& .MuiAlert-icon": { fontSize: "2rem" },
-                  }}
-                  icon={<CheckCircle />}
-                  onClose={() => setSuccessMessage("")}
-                >
-                  {successMessage}
-                </Alert>
-              </Box>
-            </Fade>
-          </Backdrop>
-        )}
+        {/* Success Overlay - Rendered via Portal for full-screen coverage */}
+        <Portal>
+          <SuccessfulOverlay 
+            open={successOpen} 
+            action={successAction} 
+            onClose={() => setSuccessOpen(false)} 
+          />
+        </Portal>
 
         {/* Error Alert - Center Modal Overlay */}
         {error && (

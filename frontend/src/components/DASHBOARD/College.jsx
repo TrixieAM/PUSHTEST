@@ -55,7 +55,7 @@ import {
 } from "@mui/icons-material";
 
 import LoadingOverlay from '../LoadingOverlay';
-import SuccessfullOverlay from '../SuccessfulOverlay';
+import SuccessfulOverlay from '../SuccessfulOverlay';
 import AccessDenied from '../AccessDenied';
 import usePageAccess from '../../hooks/usePageAccess';
 import { useNavigate } from "react-router-dom";
@@ -820,16 +820,6 @@ const College = () => {
                     </Box>
                   </Box>
                   <Box display="flex" alignItems="center" gap={2}>
-                    <Chip 
-                      label="Enterprise Grade" 
-                      size="small" 
-                      sx={{ 
-                        bgcolor: 'rgba(109,35,35,0.15)', 
-                        color: accentColor,
-                        fontWeight: 500,
-                        '& .MuiChip-label': { px: 1 }
-                      }} 
-                    />
                     <Tooltip title="Refresh Data">
                       <IconButton 
                         onClick={() => window.location.reload()}
@@ -1256,15 +1246,15 @@ const College = () => {
                                 
                                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                    <CalendarToday sx={{ fontSize: 14, color: '#999', mr: 0.5 }} />
-                                    <Typography variant="caption" color={grayColor} fontSize="0.7rem">
+                                    <CalendarToday sx={{ fontSize: 14, color: '#000', mr: 0.5 }} />
+                                    <Typography variant="caption" color="#000" fontSize="0.75rem">
                                       {college.collegePeriodFrom || '----'}
                                     </Typography>
                                   </Box>
-                                  <ArrowForward sx={{ fontSize: 14, color: '#999' }} />
+                                  <ArrowForward sx={{ fontSize: 14, color: '#000' }} />
                                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                    <CalendarToday sx={{ fontSize: 14, color: '#999', mr: 0.5 }} />
-                                    <Typography variant="caption" color={grayColor} fontSize="0.7rem">
+                                    <CalendarToday sx={{ fontSize: 14, color: '#000', mr: 0.5 }} />
+                                    <Typography variant="caption" color="#000" fontSize="0.75rem">
                                       {college.collegePeriodTo || '----'}
                                     </Typography>
                                   </Box>
@@ -1358,29 +1348,34 @@ const College = () => {
           open={!!editCollege}
           onClose={handleCloseModal}
           sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
           <GlassCard
             sx={{
-              width: "90%",
-              maxWidth: "600px",
-              maxHeight: "90vh",
-              overflowY: 'auto',
+              width: '90%',
+              maxWidth: '600px',
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
             }}
           >
             {editCollege && (
               <>
                 <Box
                   sx={{
-                    p: 4,
+                    p: 3,
                     background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
                     color: accentColor,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    position: 'sticky',
+                    top: 0,
+                    zIndex: 10,
                   }}
                 >
                   <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
@@ -1391,7 +1386,24 @@ const College = () => {
                   </IconButton>
                 </Box>
 
-                <Box sx={{ p: 4 }}>
+                <Box
+                  sx={{
+                    p: 4,
+                    flexGrow: 1,
+                    overflowY: 'auto',
+                    '&::-webkit-scrollbar': {
+                      width: '6px',
+                    },
+                    '&::-webkit-scrollbar-track': {
+                      background: '#f1f1f1',
+                      borderRadius: '3px',
+                    },
+                    '&::-webkit-scrollbar-thumb': {
+                      background: accentColor,
+                      borderRadius: '3px',
+                    },
+                  }}
+                >
                   <Box sx={{ mb: 3 }}>
                     <Typography variant="h5" sx={{ fontWeight: 600, mb: 2, color: accentColor, display: 'flex', alignItems: 'center' }}>
                       <PersonIcon sx={{ mr: 2, fontSize: 24 }} />
@@ -1567,19 +1579,21 @@ const College = () => {
                         />
                       ) : (
                         <Box>
-                          <Typography variant="body2" sx={{ fontWeight: 500, mb: 1, color: accentColor }}>
-                            Period From
-                          </Typography>
-                          <Box sx={{ 
-                            p: 1.5, 
-                            bgcolor: 'rgba(254, 249, 225, 0.5)', 
-                            borderRadius: 1,
-                            border: '1px solid rgba(109, 35, 35, 0.2)'
-                          }}>
-                            <Typography variant="body2">
-                              {editCollege.collegePeriodTo || 'N/A'}
-                            </Typography>
-                          </Box>
+                      <Typography variant="body2" sx={{ fontWeight: 500, mb: 1, color: accentColor }}>
+                        Period From
+                      </Typography>
+                      <Box
+                        sx={{
+                              p: 1.5,
+                              bgcolor: 'rgba(109, 35, 35, 0.05)',
+                              borderRadius: 1,
+                              border: '1px solid rgba(0, 0, 0, 0.3)',
+                        }}
+                      >
+                        <Typography variant="body2">
+                          {editCollege.collegePeriodFrom || 'N/A'}
+                        </Typography>
+                      </Box>
                         </Box>
                       )}
                     </Grid>
@@ -1666,83 +1680,96 @@ const College = () => {
                       )}
                     </Grid>
                   </Grid>
+                </Box>
 
-                  <Box sx={{ display: 'flex', gap: 2, mt: 4, justifyContent: 'flex-end' }}>
-                    {!isEditing ? (
-                      <>
-                        <ProfessionalButton
-                          onClick={() => handleDelete(editCollege.id)}
-                          variant="outlined"
-                          startIcon={<DeleteIcon />}
-                          sx={{
-                            color: "#d32f2f",
-                            borderColor: "#d32f2f",
-                            "&:hover": {
-                              backgroundColor: "#d32f2f",
-                              color: "#fff"
-                            }
-                          }}
-                        >
-                          Delete
-                        </ProfessionalButton>
-                        <ProfessionalButton
-                          onClick={handleStartEdit}
-                          variant="contained"
-                          startIcon={<EditIcon />}
-                          sx={{ 
-                            backgroundColor: accentColor, 
-                            color: primaryColor,
-                            "&:hover": { backgroundColor: accentDark }
-                          }}
-                        >
-                          Edit
-                        </ProfessionalButton>
-                      </>
-                    ) : (
-                      <>
-                        <ProfessionalButton
-                          onClick={handleCancelEdit}
-                          variant="outlined"
-                          startIcon={<CancelIcon />}
-                          sx={{
-                            color: grayColor,
-                            borderColor: grayColor,
-                            "&:hover": {
-                              backgroundColor: 'rgba(108, 117, 125, 0.1)'
-                            }
-                          }}
-                        >
-                          Cancel
-                        </ProfessionalButton>
-                        <ProfessionalButton
-                          onClick={handleUpdate}
-                          variant="contained"
-                          startIcon={<SaveIcon />}
-                          disabled={!hasChanges()}
-                          sx={{ 
-                            backgroundColor: hasChanges() ? accentColor : grayColor, 
-                            color: primaryColor,
-                            "&:hover": { 
-                              backgroundColor: hasChanges() ? accentDark : grayColor
-                            },
-                            "&:disabled": {
-                              backgroundColor: grayColor,
-                              color: "#999"
-                            }
-                          }}
-                        >
-                          Save
-                        </ProfessionalButton>
-                      </>
-                    )}
-                  </Box>
+                {/* Bottom action bar */}
+                <Box
+                  sx={{
+                    borderTop: '1px solid rgba(0,0,0,0.12)',
+                    backgroundColor: accentColor,
+                    px: 3,
+                    py: 2,
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    gap: 2,
+                  }}
+                >
+                  {!isEditing ? (
+                    <>
+                      <ProfessionalButton
+                        onClick={() => handleDelete(editCollege.id)}
+                        variant="outlined"
+                        startIcon={<DeleteIcon />}
+                        sx={{
+                          borderColor: '#ffffff',
+                              color: '#000000',
+                          '&:hover': {
+                            backgroundColor: 'rgba(255,255,255,0.12)',
+                            borderColor: '#ffffff',
+                          },
+                        }}
+                      >
+                        Delete
+                      </ProfessionalButton>
+                      <ProfessionalButton
+                        onClick={handleStartEdit}
+                        variant="contained"
+                        startIcon={<EditIcon />}
+                        sx={{
+                          backgroundColor: '#FEF9E1',
+                          color: accentColor,
+                          '&:hover': {
+                            backgroundColor: '#ffffff',
+                          },
+                        }}
+                      >
+                        Edit
+                      </ProfessionalButton>
+                    </>
+                  ) : (
+                    <>
+                      <ProfessionalButton
+                        onClick={handleCancelEdit}
+                        variant="outlined"
+                        startIcon={<CancelIcon />}
+                        sx={{
+                          borderColor: '#ffffff',
+                          color: '#ffffff',
+                          '&:hover': {
+                            backgroundColor: 'rgba(255,255,255,0.12)',
+                            borderColor: '#ffffff',
+                          },
+                        }}
+                      >
+                        Cancel
+                      </ProfessionalButton>
+                      <ProfessionalButton
+                        onClick={handleUpdate}
+                        variant="contained"
+                        startIcon={<SaveIcon />}
+                        disabled={!hasChanges()}
+                        sx={{
+                          backgroundColor: hasChanges() ? '#FEF9E1' : '#E2CFCF',
+                          color: accentColor,
+                          '&:hover': {
+                            backgroundColor: hasChanges() ? '#ffffff' : '#E2CFCF',
+                          },
+                          '&:disabled': {
+                            color: accentColor,
+                          },
+                        }}
+                      >
+                        Save
+                      </ProfessionalButton>
+                    </>
+                  )}
                 </Box>
               </>
             )}
           </GlassCard>
         </Modal>
 
-        <SuccessfullOverlay open={successOpen} action={successAction} />
+        <SuccessfulOverlay open={successOpen} action={successAction} onClose={() => setSuccessOpen(false)} />
         
         <Snackbar
           open={snackbar.open}

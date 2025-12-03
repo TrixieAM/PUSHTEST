@@ -51,7 +51,7 @@ import {
 } from "@mui/icons-material";
 
 import LoadingOverlay from '../LoadingOverlay';
-import SuccessfullOverlay from '../SuccessfulOverlay';
+import SuccessfulOverlay from '../SuccessfulOverlay';
 import AccessDenied from '../AccessDenied';
 import { useNavigate } from "react-router-dom";
 import { useSystemSettings } from '../../hooks/useSystemSettings';
@@ -727,16 +727,6 @@ const Children = () => {
                     </Box>
                   </Box>
                   <Box display="flex" alignItems="center" gap={2}>
-                    <Chip 
-                      label="Enterprise Grade" 
-                      size="small" 
-                      sx={{ 
-                        bgcolor: 'rgba(109,35,35,0.15)', 
-                        color: accentColor,
-                        fontWeight: 500,
-                        '& .MuiChip-label': { px: 1 }
-                      }} 
-                    />
                     <Tooltip title="Refresh Data">
                       <IconButton 
                         onClick={() => window.location.reload()}
@@ -1097,63 +1087,78 @@ const Children = () => {
                     }}
                   >
                     {viewMode === 'grid' ? (
-                      <Grid container spacing={2}>
+                      <Grid container spacing={1.5}>
                         {filteredGroupedChildren.map((group) => (
                           <Grid item xs={12} sm={6} md={4} key={group.employeeId}>
                             <Card
-                              onClick={() => handleOpenEmployeeChildrenModal(group.employeeId, group.employeeName, group.children)}
+                              onClick={() =>
+                                handleOpenEmployeeChildrenModal(
+                                  group.employeeId,
+                                  group.employeeName,
+                                  group.children
+                                )
+                              }
                               sx={{
-                                cursor: "pointer",
-                                border: `1px solid ${alpha(settings.primaryColor || '#6d2323', 0.1)}`,
-                                height: "100%",
+                                cursor: 'pointer',
+                                border: `1px solid ${alpha(
+                                  settings.primaryColor || '#6d2323',
+                                  0.1
+                                )}`,
+                                height: '100%',
                                 display: 'flex',
                                 flexDirection: 'column',
-                                "&:hover": { 
+                                '&:hover': {
                                   borderColor: accentColor,
                                   transform: 'translateY(-2px)',
                                   transition: 'all 0.2s ease',
-                                  boxShadow: '0 4px 8px rgba(109,35,35,0.15)'
+                                  boxShadow: '0 4px 8px rgba(109,35,35,0.15)',
                                 },
                               }}
                             >
-                              <CardContent sx={{ p: 2, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                  <FamilyRestroomIcon sx={{ fontSize: 18, color: accentColor, mr: 0.5 }} />
-                                  <Typography variant="caption" sx={{ 
-                                    color: accentColor, 
-                                    px: 0.5, 
-                                    py: 0.2, 
-                                    borderRadius: 0.5,
-                                    fontSize: '0.7rem',
-                                    fontWeight: 'bold'
-                                  }}>
+                              <CardContent
+                                sx={{
+                                  p: 1.75,
+                                  flexGrow: 1,
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: 0.4,
+                                }}
+                              >
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    mb: 0.25,
+                                  }}
+                                >
+                                  <FamilyRestroomIcon
+                                    sx={{ fontSize: 18, color: accentColor, mr: 0.75 }}
+                                  />
+                                  <Typography
+                                    variant="caption"
+                                    sx={{
+                                      color: accentColor,
+                                      px: 0.5,
+                                      py: 0.15,
+                                      borderRadius: 0.5,
+                                      fontSize: '0.7rem',
+                                      fontWeight: 'bold',
+                                      backgroundColor: alpha(accentColor, 0.06),
+                                    }}
+                                  >
                                     ID: {group.employeeId}
                                   </Typography>
                                 </Box>
-                                
-                                <Typography variant="body2" fontWeight="bold" color="#333" mb={0.5} noWrap>
+
+                                <Typography
+                                  variant="body2"
+                                  fontWeight="bold"
+                                  color="#222"
+                                  sx={{ lineHeight: 1.2 }}
+                                  noWrap
+                                >
                                   {group.employeeName}
                                 </Typography>
-                                
-                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                  <GroupIcon sx={{ fontSize: 16, color: accentColor, mr: 0.5 }} />
-                                  <Typography variant="body2" color={grayColor}>
-                                    {group.children.length} {group.children.length === 1 ? 'Child' : 'Children'}
-                                  </Typography>
-                                </Box>
-                                
-                                <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
-                                  {group.children.slice(0, 2).map((child, index) => (
-                                    <Typography key={child.id} variant="caption" color={grayColor} sx={{ display: 'block', mb: 0.5 }}>
-                                      {index + 1}. {child.childrenFirstName} {child.childrenMiddleName} {child.childrenLastName}
-                                    </Typography>
-                                  ))}
-                                  {group.children.length > 2 && (
-                                    <Typography variant="caption" color={grayColor} sx={{ fontStyle: 'italic' }}>
-                                      +{group.children.length - 2} more
-                                    </Typography>
-                                  )}
-                                </Box>
                               </CardContent>
                             </Card>
                           </Grid>
@@ -1163,64 +1168,50 @@ const Children = () => {
                       filteredGroupedChildren.map((group) => (
                         <Card
                           key={group.employeeId}
-                          onClick={() => handleOpenEmployeeChildrenModal(group.employeeId, group.employeeName, group.children)}
+                          onClick={() =>
+                            handleOpenEmployeeChildrenModal(
+                              group.employeeId,
+                              group.employeeName,
+                              group.children
+                            )
+                          }
                           sx={{
-                            cursor: "pointer",
-                            border: "1px solid rgba(109, 35, 35, 0.1)",
-                            mb: 1,
-                            "&:hover": { 
+                            cursor: 'pointer',
+                            border: '1px solid rgba(109, 35, 35, 0.1)',
+                            mb: 0.75,
+                            '&:hover': {
                               borderColor: accentColor,
-                              backgroundColor: alpha(settings.accentColor || settings.backgroundColor || '#FEF9E1', 0.3)
+                              backgroundColor: alpha(
+                                settings.accentColor || settings.backgroundColor || '#FEF9E1',
+                                0.3
+                              ),
                             },
                           }}
                         >
-                          <Box sx={{ p: 2 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
-                              <Box sx={{ mr: 1.5, mt: 0.2 }}>
-                                <FamilyRestroomIcon sx={{ fontSize: 20, color: accentColor }} />
-                              </Box>
-                              
+                          <Box sx={{ p: 1.75 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                              <FamilyRestroomIcon
+                                sx={{ fontSize: 20, color: accentColor, mr: 1 }}
+                              />
                               <Box sx={{ flexGrow: 1 }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                                  <Typography variant="caption" sx={{ 
+                                <Typography
+                                  variant="caption"
+                                  sx={{
                                     color: accentColor,
                                     fontSize: '0.7rem',
                                     fontWeight: 'bold',
-                                    mr: 1
-                                  }}>
-                                    ID: {group.employeeId}
-                                  </Typography>
-                                  <Typography variant="body2" fontWeight="bold" color="#333">
-                                    {group.employeeName}
-                                  </Typography>
-                                </Box>
-                                
-                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                                  <GroupIcon sx={{ fontSize: 16, color: accentColor, mr: 0.5 }} />
-                                  <Typography variant="body2" color={grayColor}>
-                                    {group.children.length} {group.children.length === 1 ? 'Child' : 'Children'}
-                                  </Typography>
-                                </Box>
-                                
-                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                  {group.children.slice(0, 3).map((child) => (
-                                    <Chip
-                                      key={child.id}
-                                      label={`${child.childrenFirstName} ${child.childrenLastName}`}
-                                      size="small"
-                                      variant="outlined"
-                                      sx={{ fontSize: '0.7rem', height: '24px' }}
-                                    />
-                                  ))}
-                                  {group.children.length > 3 && (
-                                    <Chip
-                                      label={`+${group.children.length - 3} more`}
-                                      size="small"
-                                      variant="outlined"
-                                      sx={{ fontSize: '0.7rem', height: '24px', fontStyle: 'italic' }}
-                                    />
-                                  )}
-                                </Box>
+                                  }}
+                                >
+                                  ID: {group.employeeId}
+                                </Typography>
+                                <Typography
+                                  variant="body2"
+                                  fontWeight="bold"
+                                  color="#333"
+                                  sx={{ lineHeight: 1.2 }}
+                                >
+                                  {group.employeeName}
+                                </Typography>
                               </Box>
                             </Box>
                           </Box>
@@ -1732,7 +1723,7 @@ const Children = () => {
           </GlassCard>
         </Modal>
 
-        <SuccessfullOverlay open={successOpen} action={successAction} />
+        <SuccessfulOverlay open={successOpen} action={successAction} onClose={() => setSuccessOpen(false)} />
         
         <Snackbar
           open={snackbar.open}

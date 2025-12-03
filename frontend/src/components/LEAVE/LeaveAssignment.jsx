@@ -31,7 +31,7 @@ import {
 
 // Import your loading and success overlays if they exist
 import LoadingOverlay from '../LoadingOverlay';
-import SuccessfullOverlay from '../SuccessfulOverlay';
+import SuccessfulOverlay from '../SuccessfulOverlay';
 
 const LeaveAssignment = () => {
   const [assignments, setAssignments] = useState([]);
@@ -303,7 +303,7 @@ const LeaveAssignment = () => {
       <LoadingOverlay open={loading} message="Adding leave assignment record..." />
       
       {/* Success Overlay */}
-      <SuccessfullOverlay open={successOpen} action={successAction} />
+      <SuccessfulOverlay open={successOpen} action={successAction} onClose={() => setSuccessOpen(false)} />
 
       <Box
         sx={{

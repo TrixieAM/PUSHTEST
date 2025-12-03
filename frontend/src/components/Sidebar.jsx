@@ -332,6 +332,8 @@ const Sidebar = ({
       currentPath === "/bulk-register"
     ) {
       setSelectedItem("bulk-register");
+    } else if (currentPath === "/employee-category") {
+      setSelectedItem("employee-category");
     } else if (currentPath === "/reset-password") {
       setSelectedItem("reset-password");
     } else if (currentPath === "/personalinfo") {
@@ -1633,7 +1635,59 @@ const Sidebar = ({
                       />
                     </ListItem>
 
-                    {/* Reset Password */}
+                    {/* Employment Category */}
+                    <ListItem
+                      button
+                      component={Link}
+                      to="/employee-category"
+                      onClick={() => handleItemClick("employee-category")}
+                      sx={{
+                        bgcolor:
+                          selectedItem === "employee-category"
+                            ? settings.accentColor || "#FEF9E1"
+                            : "inherit",
+                        color:
+                          selectedItem === "employee-category"
+                            ? settings.textPrimaryColor
+                            : settings.textSecondaryColor,
+                        "& .MuiListItemIcon-root": {
+                          color:
+                            selectedItem === "employee-category"
+                              ? settings.textPrimaryColor
+                              : settings.textSecondaryColor,
+                        },
+                        "& .MuiListItemText-primary": {
+                          color:
+                            selectedItem === "employee-category"
+                              ? settings.textPrimaryColor
+                              : settings.textSecondaryColor,
+                        },
+                        "&:hover": {
+                          bgcolor: settings.hoverColor || "#6D2323",
+                          color: settings.textSecondaryColor,
+                          "& .MuiListItemIcon-root": {
+                            color: settings.textSecondaryColor,
+                          },
+                          "& .MuiListItemText-primary": {
+                            color: settings.textSecondaryColor,
+                          },
+                        },
+                        borderTopRightRadius:
+                          selectedItem === "employee-category" ? "15px" : 0,
+                        borderBottomRightRadius:
+                          selectedItem === "employee-category" ? "15px" : 0,
+                      }}
+                    >
+                      <ListItemIcon sx={{ marginRight: "-1rem" }}>
+                        <CategoryIcon />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary="Employment Category"
+                        sx={{ marginLeft: "-10px" }}
+                      />
+                    </ListItem>
+
+                    {/* Password Management */}
                     <ListItem
                       button
                       component={Link}
@@ -1681,7 +1735,7 @@ const Sidebar = ({
                         <LockOpen />
                       </ListItemIcon>
                       <ListItemText
-                        primary="Reset Password"
+                        primary="Password Management"
                         sx={{ marginLeft: "-10px" }}
                       />
                     </ListItem>

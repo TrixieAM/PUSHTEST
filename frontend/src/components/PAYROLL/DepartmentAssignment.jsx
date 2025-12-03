@@ -828,16 +828,6 @@ const DepartmentAssignment = () => {
                     </Box>
                   </Box>
                   <Box display="flex" alignItems="center" gap={2}>
-                    <Chip
-                      label="Enterprise Grade"
-                      size="small"
-                      sx={{
-                        bgcolor: alpha(accentColor, 0.15),
-                        color: textPrimaryColor,
-                        fontWeight: 500,
-                        '& .MuiChip-label': { px: 1 },
-                      }}
-                    />
                     <Tooltip title="Refresh Data">
                       <IconButton
                         onClick={() => window.location.reload()}

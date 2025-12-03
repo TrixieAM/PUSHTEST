@@ -25,7 +25,7 @@ import {
 } from "@mui/icons-material";
 
 import LoadingOverlay from '../LoadingOverlay';
-import SuccessfullOverlay from '../SuccessfulOverlay';
+import SuccessfulOverlay from '../SuccessfulOverlay';
 
 const LeaveTable = () => {
   const [leaveTypes, setLeaveTypes] = useState([]);
@@ -155,7 +155,7 @@ const LeaveTable = () => {
       <LoadingOverlay open={loading} message="Adding leave type record..." />
       
       {/* Success Overlay */}
-      <SuccessfullOverlay open={successOpen} action={successAction} />
+      <SuccessfulOverlay open={successOpen} action={successAction} onClose={() => setSuccessOpen(false)} />
 
       <Box
         sx={{

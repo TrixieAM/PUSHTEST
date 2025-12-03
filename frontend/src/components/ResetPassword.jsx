@@ -2,6 +2,7 @@ import API_BASE_URL from "../apiConfig";
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import SuccessfulOverlay from "./SuccessfulOverlay";
 import {
   Alert,
   TextField,
@@ -101,7 +102,8 @@ const ResetPassword = () => {
   const [loading, setLoading] = useState(false);
   const [resetting, setResetting] = useState({});
   const [errMessage, setErrorMessage] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [successAction, setSuccessAction] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [refreshing, setRefreshing] = useState(false);
@@ -209,7 +211,7 @@ const ResetPassword = () => {
     setLoading(true);
     setRefreshing(true);
     setErrorMessage("");
-    setSuccessMessage("");
+    setSuccessOpen(false);
 
     try {
       const authHeaders = getAuthHeaders();
@@ -231,8 +233,8 @@ const ResetPassword = () => {
       setFilteredUsers(Array.isArray(data) ? data : []);
 
       if (refreshing) {
-        setSuccessMessage("Users list refreshed successfully");
-        setTimeout(() => setSuccessMessage(""), 3000);
+        setSuccessAction("create");
+        setSuccessOpen(true);
       }
     } catch (err) {
       console.error("Error fetching users:", err);
@@ -248,7 +250,7 @@ const ResetPassword = () => {
   const handleResetPassword = async (employeeNumber) => {
     setResetting((prev) => ({ ...prev, [employeeNumber]: true }));
     setErrorMessage("");
-    setSuccessMessage("");
+    setSuccessOpen(false);
 
     try {
       const authHeaders = getAuthHeaders();
@@ -264,11 +266,8 @@ const ResetPassword = () => {
       const data = await response.json();
 
       if (response.ok) {
-        setSuccessMessage(
-          `Password reset successfully for employee ${employeeNumber}. Email notification sent.`
-        );
-        // Clear success message after 5 seconds
-        setTimeout(() => setSuccessMessage(""), 5000);
+        setSuccessAction("reset");
+        setSuccessOpen(true);
       } else {
         setErrorMessage(data.error || "Failed to reset password");
       }
@@ -315,182 +314,143 @@ const ResetPassword = () => {
   );
 
   return (
-    <Box
-      sx={{
-        py: 4,
-        borderRadius: "14px",
-        width: "100vw",
-        mx: "auto",
-        maxWidth: "100%",
-        overflow: "hidden",
-        position: "relative",
-        left: "50%",
-        transform: "translateX(-50%)",
-        minHeight: "92vh",
-      }}
-    >
-      <Box sx={{ px: 6, mx: "auto", maxWidth: "1600px" }}>
-        {/* Header */}
-        <Fade in timeout={500}>
-          <Box sx={{ mb: 4 }}>
-            <GlassCard>
-              <Box
-                sx={{
-                  p: 5,
-                  background: `linear-gradient(135deg, ${settings.accentColor} 0%, ${alpha(settings.accentColor, 0.9)} 100%)`,
-                  color: settings.primaryColor,
-                  position: "relative",
-                  overflow: "hidden",
-                }}
-              >
+    <>
+      <Box
+        sx={{
+          py: 4,
+          borderRadius: "14px",
+          width: "100vw",
+          mx: "auto",
+          maxWidth: "100%",
+          overflow: "hidden",
+          position: "relative",
+          left: "50%",
+          transform: "translateX(-50%)",
+          minHeight: "92vh",
+        }}
+      >
+        <Box sx={{ px: 6, mx: "auto", maxWidth: "1600px" }}>
+          {/* Header */}
+          <Fade in timeout={500}>
+            <Box sx={{ mb: 4 }}>
+              <GlassCard>
                 <Box
                   sx={{
-                    position: "absolute",
-                    top: -50,
-                    right: -50,
-                    width: 200,
-                    height: 200,
-                    background: `radial-gradient(circle, ${alpha(settings.primaryColor, 0.1)} 0%, ${alpha(settings.primaryColor, 0)} 70%)`,
+                    p: 5,
+                    background: `linear-gradient(135deg, ${settings.accentColor} 0%, ${alpha(settings.accentColor, 0.9)} 100%)`,
+                    color: settings.primaryColor,
+                    position: "relative",
+                    overflow: "hidden",
                   }}
-                />
-                <Box
-                  sx={{
-                    position: "absolute",
-                    bottom: -30,
-                    left: "30%",
-                    width: 150,
-                    height: 150,
-                    background: `radial-gradient(circle, ${alpha(settings.primaryColor, 0.08)} 0%, ${alpha(settings.primaryColor, 0)} 70%)`,
-                  }}
-                />
-
-                <Box
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="space-between"
-                  position="relative"
-                  zIndex={1}
                 >
-                  <Box display="flex" alignItems="center">
-                    <Avatar
-                      sx={{
-                        bgcolor: alpha(settings.primaryColor, 0.15),
-                        mr: 4,
-                        width: 64,
-                        height: 64,
-                        boxShadow: `0 8px 24px ${alpha(settings.primaryColor, 0.15)}`,
-                      }}
-                    >
-                      <LockResetIcon sx={{ fontSize: 32, color: settings.primaryColor }} />
-                    </Avatar>
-                    <Box>
-                      <Typography
-                        variant="h4"
-                        component="h1"
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      top: -50,
+                      right: -50,
+                      width: 200,
+                      height: 200,
+                      background: `radial-gradient(circle, ${alpha(settings.primaryColor, 0.1)} 0%, ${alpha(settings.primaryColor, 0)} 70%)`,
+                    }}
+                  />
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      bottom: -30,
+                      left: "30%",
+                      width: 150,
+                      height: 150,
+                      background: `radial-gradient(circle, ${alpha(settings.primaryColor, 0.08)} 0%, ${alpha(settings.primaryColor, 0)} 70%)`,
+                    }}
+                  />
+
+                  <Box
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="space-between"
+                    position="relative"
+                    zIndex={1}
+                  >
+                    <Box display="flex" alignItems="center">
+                      <Avatar
                         sx={{
-                          fontWeight: 700,
-                          mb: 1,
-                          lineHeight: 1.2,
+                          bgcolor: alpha(settings.primaryColor, 0.15),
+                          mr: 4,
+                          width: 64,
+                          height: 64,
+                          boxShadow: `0 8px 24px ${alpha(settings.primaryColor, 0.15)}`,
+                        }}
+                      >
+                        <LockResetIcon sx={{ fontSize: 32, color: settings.primaryColor }} />
+                      </Avatar>
+                      <Box>
+                        <Typography
+                          variant="h4"
+                          component="h1"
+                          sx={{
+                            fontWeight: 700,
+                            mb: 1,
+                            lineHeight: 1.2,
+                            color: settings.primaryColor,
+                          }}
+                        >
+                          Password Management
+                        </Typography>
+                        <Typography
+                          variant="body1"
+                          sx={{
+                            opacity: 0.8,
+                            fontWeight: 400,
+                            color: settings.textPrimaryColor,
+                          }}
+                        >
+                          Search for employees/users and reset their password to their surname (ALL CAPS)
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Box display="flex" alignItems="center" gap={2}>
+                      <Chip
+                        label={`${users.length} Users`}
+                        size="small"
+                        sx={{
+                          bgcolor: alpha(settings.primaryColor, 0.15),
                           color: settings.primaryColor,
+                          fontWeight: 500,
+                          "& .MuiChip-label": { px: 1 },
                         }}
-                      >
-                        Reset Password
-                      </Typography>
-                      <Typography
-                        variant="body1"
-                        sx={{
-                          opacity: 0.8,
-                          fontWeight: 400,
-                          color: settings.textPrimaryColor,
-                        }}
-                      >
-                        Search for employees/users and reset their password to their surname (ALL CAPS)
-                      </Typography>
+                      />
+                      <Tooltip title="Refresh Users">
+                        <IconButton
+                          onClick={fetchUsers}
+                          disabled={loading}
+                          sx={{
+                            bgcolor: alpha(settings.primaryColor, 0.1),
+                            "&:hover": { bgcolor: alpha(settings.primaryColor, 0.2) },
+                            color: settings.primaryColor,
+                            width: 48,
+                            height: 48,
+                            "&:disabled": {
+                              bgcolor: alpha(settings.primaryColor, 0.05),
+                              color: alpha(settings.primaryColor, 0.3),
+                            },
+                          }}
+                        >
+                          {loading ? (
+                            <CircularProgress
+                              size={24}
+                              sx={{ color: settings.primaryColor }}
+                            />
+                          ) : (
+                            <RefreshIcon />
+                          )}
+                        </IconButton>
+                      </Tooltip>
                     </Box>
                   </Box>
-                  <Box display="flex" alignItems="center" gap={2}>
-                    <Chip
-                      label={`${users.length} Users`}
-                      size="small"
-                      sx={{
-                        bgcolor: alpha(settings.primaryColor, 0.15),
-                        color: settings.primaryColor,
-                        fontWeight: 500,
-                        "& .MuiChip-label": { px: 1 },
-                      }}
-                    />
-                    <Tooltip title="Refresh Users">
-                      <IconButton
-                        onClick={fetchUsers}
-                        disabled={loading}
-                        sx={{
-                          bgcolor: alpha(settings.primaryColor, 0.1),
-                          "&:hover": { bgcolor: alpha(settings.primaryColor, 0.2) },
-                          color: settings.primaryColor,
-                          width: 48,
-                          height: 48,
-                          "&:disabled": {
-                            bgcolor: alpha(settings.primaryColor, 0.05),
-                            color: alpha(settings.primaryColor, 0.3),
-                          },
-                        }}
-                      >
-                        {loading ? (
-                          <CircularProgress
-                            size={24}
-                            sx={{ color: settings.primaryColor }}
-                          />
-                        ) : (
-                          <RefreshIcon />
-                        )}
-                      </IconButton>
-                    </Tooltip>
-                  </Box>
                 </Box>
-              </Box>
-            </GlassCard>
-          </Box>
-        </Fade>
-
-        {/* Success Message - Center Modal Overlay */}
-        {successMessage && (
-          <Backdrop
-            open={true}
-            sx={{
-              zIndex: 9999,
-              backdropFilter: "blur(8px)",
-              backgroundColor: "rgba(0, 0, 0, 0.5)",
-            }}
-            onClick={() => setSuccessMessage("")}
-          >
-            <Fade in timeout={300}>
-              <Box
-                onClick={(e) => e.stopPropagation()}
-                sx={{
-                  position: "relative",
-                  minWidth: "400px",
-                  maxWidth: "600px",
-                }}
-              >
-                <Alert
-                  severity="success"
-                  sx={{
-                    borderRadius: 4,
-                    boxShadow: "0 12px 48px rgba(0, 0, 0, 0.4)",
-                    fontSize: "1.1rem",
-                    p: 3,
-                    "& .MuiAlert-message": { fontWeight: 500 },
-                    "& .MuiAlert-icon": { fontSize: "2rem" },
-                  }}
-                  icon={<CheckCircle />}
-                  onClose={() => setSuccessMessage("")}
-                >
-                  {successMessage}
-                </Alert>
-              </Box>
-            </Fade>
-          </Backdrop>
-        )}
+              </GlassCard>
+            </Box>
+          </Fade>
 
         {/* Error Alert - Center Modal Overlay */}
         {errMessage && (
@@ -903,6 +863,14 @@ const ResetPassword = () => {
         </Fade>
       </Box>
     </Box>
+
+    {/* Success Overlay - Outside main container for fullscreen */}
+    <SuccessfulOverlay 
+      open={successOpen} 
+      action={successAction} 
+      onClose={() => setSuccessOpen(false)} 
+    />
+    </>
   );
 };
 

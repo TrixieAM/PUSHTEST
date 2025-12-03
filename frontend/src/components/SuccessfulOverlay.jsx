@@ -1,16 +1,18 @@
 import React, { useEffect } from 'react';
-import { Box, Typography } from '@mui/material';
+import { createPortal } from 'react-dom';
+import { Box, Typography, Button } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
-const SuccessfulOverlay = ({ open, action, onClose }) => {
+const SuccessfulOverlay = ({ open, action, onClose, showOkButton = false }) => {
+  // Auto-close after 2.5 seconds if OK button is not shown
   useEffect(() => {
-    if (open) {
+    if (open && !showOkButton) {
       const timer = setTimeout(() => {
         if (onClose) onClose();
       }, 2500);
       return () => clearTimeout(timer);
     }
-  }, [open, onClose]);
+  }, [open, showOkButton, onClose]);
 
   if (!open) return null;
 
@@ -22,6 +24,7 @@ const SuccessfulOverlay = ({ open, action, onClose }) => {
       case 'send': return 'Successfully Sent!';
       case 'download': return 'Successfully Downloaded!';
       case 'gmail': return 'Successfully Sent to Gmail!';
+      case 'reset': return 'Successfully Reset!';
       default: return 'Successful!';
     }
   };
@@ -51,20 +54,24 @@ const SuccessfulOverlay = ({ open, action, onClose }) => {
     });
   };
 
-  return (
+  return createPortal(
     <Box
       sx={{
         position: 'fixed',
         top: 0,
         left: 0,
+        right: 0,
+        bottom: 0,
         width: '100vw',
         height: '100vh',
         bgcolor: 'rgba(0,0,0,0.7)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 2000,
+        zIndex: 9999,
         overflow: 'hidden',
+        margin: 0,
+        padding: 0,
       }}
     >
       {/* Red/maroon molecules */}
@@ -109,10 +116,39 @@ const SuccessfulOverlay = ({ open, action, onClose }) => {
             fontWeight: 'bold',
             textAlign: 'center',
             animation: 'fadeIn 0.8s ease-in-out',
+            mb: showOkButton ? 3 : 0,
           }}
         >
           {getMessage()}
         </Typography>
+        {showOkButton && (
+          <Button
+            variant="contained"
+            onClick={onClose}
+            sx={{
+              bgcolor: '#A31D1D',
+              color: '#FFFFFF',
+              fontWeight: 'bold',
+              px: 6,
+              py: 1.5,
+              minWidth: '200px',
+              borderRadius: 2,
+              textTransform: 'none',
+              fontSize: '1.1rem',
+              boxShadow: '0 4px 14px rgba(163, 29, 29, 0.4)',
+              border: '2px solid rgba(255, 255, 255, 0.3)',
+              '&:hover': {
+                bgcolor: '#700000',
+                boxShadow: '0 6px 20px rgba(163, 29, 29, 0.6)',
+                transform: 'translateY(-2px)',
+              },
+              transition: 'all 0.3s ease',
+              animation: 'fadeIn 1s ease-in-out',
+            }}
+          >
+            OK
+          </Button>
+        )}
       </Box>
 
       <style>
@@ -140,7 +176,8 @@ const SuccessfulOverlay = ({ open, action, onClose }) => {
           @keyframes float5 { 0% { transform: translateY(0); } 100% { transform: translateY(-17px); } }
         `}
       </style>
-    </Box>
+    </Box>,
+    document.body
   );
 };
 

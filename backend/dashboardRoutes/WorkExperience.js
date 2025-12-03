@@ -15,6 +15,20 @@ router.get("/work-experience-table", (req, res) => {
   });
 });
 
+// GET work experience by person_id
+router.get('/work-experience-by-person/:person_id', (req, res) => {
+  const { person_id } = req.params;
+  const sql = `SELECT * FROM work_experience_table WHERE person_id = ?`;
+  db.query(sql, [person_id], (err, results) => {
+    if (err) {
+      console.error('Error fetching work experience by person_id:', err);
+      res.status(500).json({ error: 'Failed to fetch work experience records' });
+    } else {
+      res.json(results);
+    }
+  });
+});
+
 router.post("/work-experience-table", (req, res) => {
   const { person_id, workDateFrom, workDateTo, workPositionTitle, workCompany, workMonthlySalary, SalaryJobOrPayGrade, StatusOfAppointment, isGovtService } = req.body;
 

@@ -1,25 +1,30 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import { Box, Typography } from "@mui/material";
 import logo from "../assets/logo.PNG";
 
 const LoadingOverlay = ({ open, message }) => {
   if (!open) return null;
 
-  return (
+  return createPortal(
     <Box
       sx={{
         position: "fixed",
         top: 0,
         left: 0,
+        right: 0,
+        bottom: 0,
         width: "100vw",
         height: "100vh",
         bgcolor: "rgba(0, 0, 0, 0.6)", // dark transparent overlay
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        zIndex: 2000,
+        zIndex: 9999,
         flexDirection: "column",
         overflow: "hidden",
+        margin: 0,
+        padding: 0,
       }}
     >
       {/* Orbiting container */}
@@ -123,7 +128,8 @@ const LoadingOverlay = ({ open, message }) => {
           @keyframes orbit3 { 0% { transform: rotate(270deg) translateX(80px); } 100% { transform: rotate(630deg) translateX(80px); } }
         `}
       </style>
-    </Box>
+    </Box>,
+    document.body
   );
 };
 

@@ -20,6 +20,7 @@ import {
 } from "@mui/icons-material";
 import usePageAccess from '../../hooks/usePageAccess';
 import AccessDenied from '../AccessDenied';
+import SuccessfulOverlay from '../SuccessfulOverlay';
 
 // Get auth headers function
 const getAuthHeaders = () => {
@@ -93,7 +94,8 @@ const Holiday = () => {
   const [openEditModal, setOpenEditModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [successAction, setSuccessAction] = useState("");
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   
@@ -211,8 +213,8 @@ const Holiday = () => {
         setRefreshing(false);
         
         if (refreshing && data.length > 0) {
-          setSuccessMessage('Holiday records refreshed successfully');
-          setTimeout(() => setSuccessMessage(''), 3000);
+          setSuccessAction("create");
+          setSuccessOpen(true);
         }
       }, 1000);
     } catch (err) {
@@ -230,7 +232,7 @@ const Holiday = () => {
   const handleAdd = async () => {
     try {
       setError("");
-      setSuccessMessage("");
+      setSuccessOpen(false);
       setLoading(true);
       
       if (!newHoliday.description || !newHoliday.date || !newHoliday.status) {
@@ -242,8 +244,8 @@ const Holiday = () => {
       await axios.post(`${API_BASE_URL}/holiday`, newHoliday, getAuthHeaders());
       fetchHoliday();
       setNewHoliday({ description: "", date: "", status: "Active" });
-      setSuccessMessage("Holiday added successfully");
-      setTimeout(() => setSuccessMessage(''), 3000);
+      setSuccessAction("create");
+      setSuccessOpen(true);
       setLoading(false);
     } catch (error) {
       console.error("Error adding holiday data", error);
@@ -266,15 +268,15 @@ const Holiday = () => {
   const handleSaveEdit = async () => {
     try {
       setError("");
-      setSuccessMessage("");
+      setSuccessOpen(false);
       setLoading(true);
       
       await axios.put(`${API_BASE_URL}/holiday/${editingId}`, editForm, getAuthHeaders());
       setOpenEditModal(false);
       setEditingId(null);
       fetchHoliday();
-      setSuccessMessage("Holiday updated successfully");
-      setTimeout(() => setSuccessMessage(''), 3000);
+      setSuccessAction("edit");
+      setSuccessOpen(true);
       setLoading(false);
     } catch (error) {
       console.error("Error updating holiday record", error);
@@ -294,8 +296,8 @@ const Holiday = () => {
       setLoading(true);
       await axios.delete(`${API_BASE_URL}/holiday/${deleteItemId}`, getAuthHeaders());
       fetchHoliday();
-      setSuccessMessage("Holiday deleted successfully");
-      setTimeout(() => setSuccessMessage(''), 3000);
+      setSuccessAction("delete");
+      setSuccessOpen(true);
       setLoading(false);
       setDeleteDialogOpen(false);
       setDeleteItemId(null);
@@ -520,45 +522,12 @@ const Holiday = () => {
           </Box>
         </Fade>
 
-        {/* Success Message - Center Modal Overlay */}
-        {successMessage && (
-          <Backdrop
-            open={true}
-            sx={{
-              zIndex: 9999,
-              backdropFilter: "blur(8px)",
-              backgroundColor: "rgba(0, 0, 0, 0.5)",
-            }}
-            onClick={() => setSuccessMessage("")}
-          >
-            <Fade in timeout={300}>
-              <Box
-                onClick={(e) => e.stopPropagation()}
-                sx={{
-                  position: "relative",
-                  minWidth: "400px",
-                  maxWidth: "600px",
-                }}
-              >
-                <Alert
-                  severity="success"
-                  sx={{
-                    borderRadius: 4,
-                    boxShadow: "0 12px 48px rgba(0, 0, 0, 0.4)",
-                    fontSize: "1.1rem",
-                    p: 3,
-                    "& .MuiAlert-message": { fontWeight: 500 },
-                    "& .MuiAlert-icon": { fontSize: "2rem" },
-                  }}
-                  icon={<CheckCircle />}
-                  onClose={() => setSuccessMessage("")}
-                >
-                  {successMessage}
-                </Alert>
-              </Box>
-            </Fade>
-          </Backdrop>
-        )}
+        {/* Success Overlay */}
+        <SuccessfulOverlay 
+          open={successOpen} 
+          action={successAction} 
+          onClose={() => setSuccessOpen(false)} 
+        />
 
         {/* Error Alert - Center Modal Overlay */}
         {error && (

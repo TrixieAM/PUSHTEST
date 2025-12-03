@@ -1,15 +1,14 @@
-import API_BASE_URL from '../../apiConfig';
 import React, { useState, useEffect } from 'react';
 import Typography from '@mui/material/Typography';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import PrintIcon from '@mui/icons-material/Print';
 import Container from '@mui/material/Container';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
 import AccessDenied from '../AccessDenied';
-import { getAuthHeaders } from '../../utils/auth';
 import usePageAccess from '../../hooks/usePageAccess';
+import useProfileData from '../../hooks/useProfileData';
+import useProfileSections from '../../hooks/useProfileSections';
 
 const PDS1 = () => {
   const navigate = useNavigate();
@@ -32,13 +31,11 @@ const PDS1 = () => {
   const [childrenInfo12, setchildrenInfo12] = useState(null);
   const [graduateInfo, setGraduateInfo] = useState(null);
 
-  //ACCESSING
-  // Dynamic page access control using component identifier
-  // The identifier 'pds1' should match the component_identifier in the pages table
-  const { hasAccess, loading: accessLoading, error: accessError } = usePageAccess('pds1');
-  // ACCESSING END
+  const { person, loading: profileLoading } = useProfileData();
+  const { sections, loading: sectionsLoading } = useProfileSections();
 
-  // First useEffect: Fetch from localStorage and set the state
+  const { hasAccess, loading: accessLoading, error: accessError } = usePageAccess('pds1');
+
   useEffect(() => {
     const storedRole = localStorage.getItem('role');
     const storedEmployeeNumber = localStorage.getItem('employeeNumber');
@@ -50,170 +47,45 @@ const PDS1 = () => {
       setRole(storedRole);
       setEmployeeNumber(storedEmployeeNumber);
     } else {
-      // Navigate to login if values are missing
       navigate('/');
     }
   }, [navigate]);
 
   useEffect(() => {
-    if (employeeNumber) {
-      axios
-        .get(`${API_BASE_URL}/personalinfo/person_table/${employeeNumber}`)
-        .then((res) => {
-          console.log('Fetched person data:', res.data);
-          setPersonalInfo(res.data);
-        })
-        .catch((err) => {
-          console.error('Error loading person data:', err);
-        });
+    if (!person && !sections) return;
 
-      axios
-        .get(`${API_BASE_URL}/vocational/vocational-table/${employeeNumber}`)
-        .then((res) => {
-          console.log('Fetched vocational data:', res.data);
-          setVocationalInfo(res.data);
-        })
-        .catch((err) => {
-          console.error('Error loading vocational data:', err);
-        });
-
-      axios
-        .get(`${API_BASE_URL}/college/college-table/${employeeNumber}`)
-        .then((res) => {
-          console.log('Fetched college data:', res.data);
-          setcollegeInfo(res.data);
-        })
-        .catch((err) => {
-          console.error('Error loading college data:', err);
-        });
-
-      axios
-        .get(`${API_BASE_URL}/childrenRoute/children-table1/${employeeNumber}`)
-        .then((res) => {
-          console.log('Fetched college data:', res.data);
-          setchildrenInfo1(res.data);
-        })
-        .catch((err) => {
-          console.error('Error loading college data:', err);
-        });
-      axios
-        .get(`${API_BASE_URL}/childrenRoute/children-table2/${employeeNumber}`)
-        .then((res) => {
-          console.log('Fetched college data:', res.data);
-          setchildrenInfo2(res.data);
-        })
-        .catch((err) => {
-          console.error('Error loading college data:', err);
-        });
-      axios
-        .get(`${API_BASE_URL}/childrenRoute/children-table3/${employeeNumber}`)
-        .then((res) => {
-          console.log('Fetched children-table3 data:', res.data);
-          setchildrenInfo3(res.data);
-        })
-        .catch((err) => {
-          console.error('Error loading children-table3 data:', err);
-        });
-
-      axios
-        .get(`${API_BASE_URL}/childrenRoute/children-table4/${employeeNumber}`)
-        .then((res) => {
-          console.log('Fetched children-table4 data:', res.data);
-          setchildrenInfo4(res.data);
-        })
-        .catch((err) => {
-          console.error('Error loading children-table4 data:', err);
-        });
-
-      axios
-        .get(`${API_BASE_URL}/childrenRoute/children-table5/${employeeNumber}`)
-        .then((res) => {
-          console.log('Fetched children-table5 data:', res.data);
-          setchildrenInfo5(res.data);
-        })
-        .catch((err) => {
-          console.error('Error loading children-table5 data:', err);
-        });
-
-      axios
-        .get(`${API_BASE_URL}/childrenRoute/children-table6/${employeeNumber}`)
-        .then((res) => {
-          console.log('Fetched children-table6 data:', res.data);
-          setchildrenInfo6(res.data);
-        })
-        .catch((err) => {
-          console.error('Error loading children-table6 data:', err);
-        });
-
-      axios
-        .get(`${API_BASE_URL}/childrenRoute/children-table7/${employeeNumber}`)
-        .then((res) => {
-          console.log('Fetched children-table7 data:', res.data);
-          setchildrenInfo7(res.data);
-        })
-        .catch((err) => {
-          console.error('Error loading children-table7 data:', err);
-        });
-
-      axios
-        .get(`${API_BASE_URL}/childrenRoute/children-table8/${employeeNumber}`)
-        .then((res) => {
-          console.log('Fetched children-table8 data:', res.data);
-          setchildrenInfo8(res.data);
-        })
-        .catch((err) => {
-          console.error('Error loading children-table8 data:', err);
-        });
-
-      axios
-        .get(`${API_BASE_URL}/childrenRoute/children-table9/${employeeNumber}`)
-        .then((res) => {
-          console.log('Fetched children-table9 data:', res.data);
-          setchildrenInfo9(res.data);
-        })
-        .catch((err) => {
-          console.error('Error loading children-table9 data:', err);
-        });
-
-      axios
-        .get(`${API_BASE_URL}/childrenRoute/children-table10/${employeeNumber}`)
-        .then((res) => {
-          console.log('Fetched children-table10 data:', res.data);
-          setchildrenInfo10(res.data);
-        })
-        .catch((err) => {
-          console.error('Error loading children-table10 data:', err);
-        });
-      axios
-        .get(`${API_BASE_URL}/childrenRoute/children-table11/${employeeNumber}`)
-        .then((res) => {
-          console.log('Fetched children-table11 data:', res.data);
-          setchildrenInfo11(res.data);
-        })
-        .catch((err) => {
-          console.error('Error loading children-table11 data:', err);
-        });
-      axios
-        .get(`${API_BASE_URL}/childrenRoute/children-table12/${employeeNumber}`)
-        .then((res) => {
-          console.log('Fetched children-table12 data:', res.data);
-          setchildrenInfo12(res.data);
-        })
-        .catch((err) => {
-          console.error('Error loading children-table12 data:', err);
-        });
-
-      axios
-        .get(`${API_BASE_URL}/GraduateRoute/graduate-table/${employeeNumber}`)
-        .then((res) => {
-          console.log('Fetched Graduate data:', res.data);
-          setGraduateInfo(res.data);
-        })
-        .catch((err) => {
-          console.error('Error loading Graduate data:', err);
-        });
+    if (person) {
+      setPersonalInfo(person);
     }
-  }, [employeeNumber]);
+
+    if (sections) {
+      if (sections.vocational && sections.vocational.length > 0) {
+        setVocationalInfo(sections.vocational[0]);
+      }
+
+      if (sections.colleges && sections.colleges.length > 0) {
+        setcollegeInfo(sections.colleges[0]);
+      }
+
+      const children = sections.children || [];
+      setchildrenInfo1(children[0] || null);
+      setchildrenInfo2(children[1] || null);
+      setchildrenInfo3(children[2] || null);
+      setchildrenInfo4(children[3] || null);
+      setchildrenInfo5(children[4] || null);
+      setchildrenInfo6(children[5] || null);
+      setchildrenInfo7(children[6] || null);
+      setchildrenInfo8(children[7] || null);
+      setchildrenInfo9(children[8] || null);
+      setchildrenInfo10(children[9] || null);
+      setchildrenInfo11(children[10] || null);
+      setchildrenInfo12(children[11] || null);
+
+      if (sections.graduates && sections.graduates.length > 0) {
+        setGraduateInfo(sections.graduates[0]);
+      }
+    }
+  }, [person, sections]);
 
   const countries = [
     'Afghanistan',
@@ -420,9 +292,7 @@ const PDS1 = () => {
     if (value !== 'dual') setDualCountry('');
   };
 
-  // ACCESSING 2
-  // Loading state
-  if (accessLoading) {
+  if (accessLoading || profileLoading || sectionsLoading) {
     return (
       <Container maxWidth="md" sx={{ py: 8 }}>
         <Box

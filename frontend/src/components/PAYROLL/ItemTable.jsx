@@ -51,7 +51,7 @@ import {
 
 import ReorderIcon from '@mui/icons-material/Reorder';
 import LoadingOverlay from '../LoadingOverlay';
-import SuccessfullOverlay from '../SuccessfulOverlay';
+import SuccessfulOverlay from '../SuccessfulOverlay';
 import AccessDenied from '../AccessDenied';
 import usePageAccess from '../../hooks/usePageAccess';
 import { useNavigate } from 'react-router-dom';
@@ -417,6 +417,8 @@ const EmployeeAutocomplete = ({
 const ItemTable = () => {
   const [data, setData] = useState([]);
   const [employeeNames, setEmployeeNames] = useState({});
+  const [salaryGrades, setSalaryGrades] = useState([]); // Store fetched salary grades
+  const [salaryGradeOptions, setSalaryGradeOptions] = useState([]); // Store unique salary grade options
   const [newItem, setNewItem] = useState({
     item_description: '',
     employeeID: '',
@@ -470,7 +472,79 @@ const ItemTable = () => {
 
   useEffect(() => {
     fetchItems();
+    fetchSalaryGrades();
   }, []);
+
+  // Debug: Track salary_grade changes
+  useEffect(() => {
+    console.log('salary_grade state changed:', newItem.salary_grade, 'Type:', typeof newItem.salary_grade);
+  }, [newItem.salary_grade]);
+
+  // Fetch salary grades from the database
+  const fetchSalaryGrades = async () => {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/SalaryGradeTable/salary-grade`,
+        getAuthHeaders()
+      );
+      setSalaryGrades(response.data);
+      
+      // Extract unique salary grade numbers from the fetched data
+      const uniqueSGNumbers = [
+        ...new Set(
+          response.data
+            .map((record) => {
+              // Convert to string and handle different formats
+              const sg = String(record.sg_number || '').trim();
+              // Normalize "Job Order" variations
+              if (sg.toLowerCase().includes('job order')) {
+                if (sg.toLowerCase().includes('graduated') || sg.toLowerCase().includes('grad')) {
+                  return 'Job Order(Graduated)';
+                } else if (sg.toLowerCase().includes('undergraduate') || sg.toLowerCase().includes('undergrad')) {
+                  return 'Job Order(Undergraduate)';
+                }
+              }
+              // Normalize old format to new format
+              if (sg === 'JO GRAD') return 'Job Order(Graduated)';
+              if (sg === 'JO UNDERGRAD') return 'Job Order(Undergraduate)';
+              return sg;
+            })
+            .filter((sg) => sg !== null && sg !== undefined && sg !== '')
+        )
+      ].sort((a, b) => {
+        // Sort: numbers first, then "Job Order" entries
+        const aIsNumber = !isNaN(a) && a !== '';
+        const bIsNumber = !isNaN(b) && b !== '';
+        if (aIsNumber && bIsNumber) {
+          return parseInt(a) - parseInt(b);
+        }
+        if (aIsNumber) return -1;
+        if (bIsNumber) return 1;
+        // Job Order entries at the end
+        const aIsJO = a.toLowerCase().includes('job order');
+        const bIsJO = b.toLowerCase().includes('job order');
+        if (aIsJO && bIsJO) {
+          return a.localeCompare(b);
+        }
+        if (aIsJO) return 1;
+        if (bIsJO) return -1;
+        return a.localeCompare(b);
+      });
+      
+      setSalaryGradeOptions(uniqueSGNumbers);
+      console.log('Fetched salary grade options:', uniqueSGNumbers);
+    } catch (error) {
+      console.error('Error fetching salary grades:', error);
+      // Fallback to default options if API fails
+      const defaultOptions = [
+        ...Array.from({ length: 33 }, (_, index) => `${index + 1}`),
+        'Job Order(Graduated)',
+        'Job Order(Undergraduate)',
+      ];
+      setSalaryGradeOptions(defaultOptions);
+      console.log('Using fallback salary grade options:', defaultOptions);
+    }
+  };
 
   const fetchItems = async () => {
     try {
@@ -509,13 +583,32 @@ const ItemTable = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    const requiredFields = ['item_description', 'employeeID', 'name'];
+    
+    // Check item_description
+    if (!newItem.item_description || (typeof newItem.item_description === 'string' && newItem.item_description.trim() === '')) {
+      newErrors.item_description = 'This field is required';
+    }
+    
+    // Check employeeID - can come from newItem or selectedEmployee
+    const employeeID = newItem.employeeID || (selectedEmployee?.employeeNumber);
+    if (!employeeID || (typeof employeeID === 'string' && employeeID.trim() === '')) {
+      newErrors.employeeID = 'This field is required';
+    }
+    
+    // Check name - can come from newItem or selectedEmployee
+    const name = newItem.name || (selectedEmployee?.name);
+    if (!name || (typeof name === 'string' && name.trim() === '')) {
+      newErrors.name = 'This field is required';
+    }
 
-    requiredFields.forEach((field) => {
-      if (!newItem[field] || newItem[field].trim() === '') {
-        newErrors[field] = 'This field is required';
-      }
-    });
+    // Debug: Log validation results
+    if (Object.keys(newErrors).length > 0) {
+      console.log('Validation failed. Missing fields:', Object.keys(newErrors));
+      console.log('Current form state:', newItem);
+      console.log('Selected employee:', selectedEmployee);
+      console.log('Resolved employeeID:', employeeID);
+      console.log('Resolved name:', name);
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -523,15 +616,51 @@ const ItemTable = () => {
 
   const handleAdd = async () => {
     if (!validateForm()) {
-      showSnackbar('Please fill in all required fields', 'error');
+      const missingFields = Object.keys(errors).filter(key => errors[key]);
+      const fieldNames = {
+        item_description: 'Position',
+        employeeID: 'Employee',
+        name: 'Employee Name'
+      };
+      const missingFieldNames = missingFields.map(field => fieldNames[field] || field).join(', ');
+      showSnackbar(`Please fill in the following required fields: ${missingFieldNames}`, 'error');
       return;
     }
 
+    // Log state before creating itemData
+    console.log('=== BEFORE CREATING ITEM DATA ===');
+    console.log('newItem state:', JSON.stringify(newItem, null, 2));
+    console.log('selectedEmployee:', selectedEmployee);
+    console.log('newItem.salary_grade:', newItem.salary_grade, 'Type:', typeof newItem.salary_grade);
+    console.log('==================================');
+
     setLoading(true);
     try {
+      // Ensure all fields are properly formatted before sending
+      // Use selectedEmployee as fallback for employeeID and name
+      const itemData = {
+        item_description: newItem.item_description || '',
+        employeeID: newItem.employeeID || selectedEmployee?.employeeNumber || '',
+        name: newItem.name || selectedEmployee?.name || '',
+        item_code: newItem.item_code || '',
+        salary_grade: newItem.salary_grade || '',
+        step: newItem.step || '',
+        effectivityDate: newItem.effectivityDate || '',
+      };
+      
+      // Enhanced debug logging
+      console.log('=== SENDING ITEM DATA ===');
+      console.log('Full itemData object:', JSON.stringify(itemData, null, 2));
+      console.log('salary_grade value:', itemData.salary_grade);
+      console.log('salary_grade type:', typeof itemData.salary_grade);
+      console.log('salary_grade length:', itemData.salary_grade?.length);
+      console.log('Current newItem state:', JSON.stringify(newItem, null, 2));
+      console.log('Selected employee:', selectedEmployee);
+      console.log('========================');
+      
       await axios.post(
         `${API_BASE_URL}/api/item-table`,
-        newItem,
+        itemData,
         getAuthHeaders()
       );
       setNewItem({
@@ -602,9 +731,13 @@ const ItemTable = () => {
 
   const handleChange = (field, value, isEdit = false) => {
     if (isEdit) {
-      setEditItem({ ...editItem, [field]: value });
+      setEditItem((prev) => ({ ...prev, [field]: value }));
     } else {
-      setNewItem({ ...newItem, [field]: value });
+      setNewItem((prev) => {
+        const updated = { ...prev, [field]: value };
+        console.log(`handleChange - Field: ${field}, Value: ${value}, Updated state:`, updated);
+        return updated;
+      });
       if (errors[field]) {
         setErrors((prev) => {
           const newErrors = { ...prev };
@@ -616,15 +749,27 @@ const ItemTable = () => {
   };
 
   const handleEmployeeChange = (employeeNumber) => {
-    setNewItem({ ...newItem, employeeID });
-    // Auto-fill name when employee is selected
-    if (selectedEmployee) {
-      setNewItem({
-        ...newItem,
-        employeeID: employeeNumber,
-        name: selectedEmployee.name,
-      });
-    }
+    // Only update employeeID if it's different
+    // The name will be set by handleEmployeeSelect
+    setNewItem((prev) => ({
+      ...prev,
+      employeeID: employeeNumber || '',
+    }));
+    setErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors.employeeID;
+      return newErrors;
+    });
+  };
+
+  const handleEmployeeSelect = (employee) => {
+    setSelectedEmployee(employee);
+    // Auto-fill both employeeID and name when employee is selected
+    setNewItem((prev) => ({
+      ...prev,
+      employeeID: employee.employeeNumber || '',
+      name: employee.name || '',
+    }));
     setErrors((prev) => {
       const newErrors = { ...prev };
       delete newErrors.employeeID;
@@ -633,18 +778,8 @@ const ItemTable = () => {
     });
   };
 
-  const handleEmployeeSelect = (employee) => {
-    setSelectedEmployee(employee);
-    // Auto-fill name when employee is selected
-    setNewItem({
-      ...newItem,
-      employeeID: employee.employeeNumber,
-      name: employee.name,
-    });
-  };
-
   const handleEditEmployeeChange = (employeeNumber) => {
-    setEditItem({ ...editItem, employeeID });
+    setEditItem({ ...editItem, employeeID: employeeNumber });
     // Auto-fill name when employee is selected
     if (selectedEditEmployee) {
       setEditItem({
@@ -721,11 +856,7 @@ const ItemTable = () => {
     );
   };
 
-  const salaryGradeOptions = [
-    'JO GRAD',
-    'JO UNDERGRAD',
-    ...Array.from({ length: 33 }, (_, index) => `${index + 1}`),
-  ];
+  // salaryGradeOptions is now fetched from the database and stored in state
 
   const stepOptions = [...Array(8)].map((_, index) => `step${index + 1}`);
 
@@ -894,16 +1025,6 @@ const ItemTable = () => {
                     </Box>
                   </Box>
                   <Box display="flex" alignItems="center" gap={2}>
-                    <Chip
-                      label="Enterprise Grade"
-                      size="small"
-                      sx={{
-                        bgcolor: 'rgba(109,35,35,0.15)',
-                        color: accentColor,
-                        fontWeight: 500,
-                        '& .MuiChip-label': { px: 1 },
-                      }}
-                    />
                     <Tooltip title="Refresh Data">
                       <IconButton
                         onClick={() => window.location.reload()}
@@ -1183,25 +1304,36 @@ const ItemTable = () => {
                         <Autocomplete
                           freeSolo
                           options={salaryGradeOptions}
-                          value={newItem.salary_grade}
+                          value={newItem.salary_grade || null}
                           onChange={(event, newValue) => {
-                            handleChange('salary_grade', newValue || '');
+                            // Handle both string values and null
+                            const value = newValue !== null && newValue !== undefined ? String(newValue) : '';
+                            console.log('Salary grade onChange - newValue:', newValue, 'processed value:', value);
+                            handleChange('salary_grade', value);
                             // Auto-update effectivity date when salary grade changes
-                            if (newValue) {
+                            if (value) {
                               handleChange(
                                 'effectivityDate',
-                                getYearFromSalaryGrade(newValue)
+                                getYearFromSalaryGrade(value)
                               );
                             }
                           }}
-                          onInputChange={(event, newInputValue) => {
-                            handleChange('salary_grade', newInputValue);
-                            // Auto-update effectivity date when salary grade changes
-                            if (newInputValue) {
-                              handleChange(
-                                'effectivityDate',
-                                getYearFromSalaryGrade(newInputValue)
-                              );
+                          onInputChange={(event, newInputValue, reason) => {
+                            // Only update on input change if reason is 'input' (user typing)
+                            // Don't update on 'clear' or 'reset' to avoid overwriting selected values
+                            if (reason === 'input') {
+                              console.log('Salary grade onInputChange - newInputValue:', newInputValue, 'reason:', reason);
+                              handleChange('salary_grade', newInputValue || '');
+                              // Auto-update effectivity date when salary grade changes
+                              if (newInputValue) {
+                                handleChange(
+                                  'effectivityDate',
+                                  getYearFromSalaryGrade(newInputValue)
+                                );
+                              }
+                            } else if (reason === 'clear') {
+                              // When clearing, set to empty string
+                              handleChange('salary_grade', '');
                             }
                           }}
                           renderInput={(params) => (
@@ -1222,13 +1354,16 @@ const ItemTable = () => {
                         <Autocomplete
                           freeSolo
                           options={stepOptions}
-                          value={newItem.step}
+                          value={newItem.step || null}
                           onChange={(event, newValue) =>
                             handleChange('step', newValue || '')
                           }
-                          onInputChange={(event, newInputValue) =>
-                            handleChange('step', newInputValue)
-                          }
+                          onInputChange={(event, newInputValue, reason) => {
+                            // Only update on input change if reason is 'input' (user typing)
+                            if (reason === 'input') {
+                              handleChange('step', newInputValue);
+                            }
+                          }}
                           renderInput={(params) => (
                             <ModernTextField {...params} size="small" />
                           )}
@@ -1885,31 +2020,38 @@ const ItemTable = () => {
                           <Autocomplete
                             freeSolo
                             options={salaryGradeOptions}
-                            value={editItem.salary_grade}
+                            value={editItem.salary_grade || null}
                             onChange={(event, newValue) => {
-                              handleChange(
-                                'salary_grade',
-                                newValue || '',
-                                true
-                              );
+                              // Handle both string values and null
+                              const value = newValue !== null && newValue !== undefined ? String(newValue) : '';
+                              console.log('Edit salary grade onChange - newValue:', newValue, 'processed value:', value);
+                              handleChange('salary_grade', value, true);
                               // Auto-update effectivity date when salary grade changes
-                              if (newValue) {
+                              if (value) {
                                 handleChange(
                                   'effectivityDate',
-                                  getYearFromSalaryGrade(newValue),
+                                  getYearFromSalaryGrade(value),
                                   true
                                 );
                               }
                             }}
-                            onInputChange={(event, newInputValue) => {
-                              handleChange('salary_grade', newInputValue, true);
-                              // Auto-update effectivity date when salary grade changes
-                              if (newInputValue) {
-                                handleChange(
-                                  'effectivityDate',
-                                  getYearFromSalaryGrade(newInputValue),
-                                  true
-                                );
+                            onInputChange={(event, newInputValue, reason) => {
+                              // Only update on input change if reason is 'input' (user typing)
+                              // Don't update on 'clear' or 'reset' to avoid overwriting selected values
+                              if (reason === 'input') {
+                                console.log('Edit salary grade onInputChange - newInputValue:', newInputValue, 'reason:', reason);
+                                handleChange('salary_grade', newInputValue || '', true);
+                                // Auto-update effectivity date when salary grade changes
+                                if (newInputValue) {
+                                  handleChange(
+                                    'effectivityDate',
+                                    getYearFromSalaryGrade(newInputValue),
+                                    true
+                                  );
+                                }
+                              } else if (reason === 'clear') {
+                                // When clearing, set to empty string
+                                handleChange('salary_grade', '', true);
                               }
                             }}
                             renderInput={(params) => (
@@ -1945,13 +2087,16 @@ const ItemTable = () => {
                           <Autocomplete
                             freeSolo
                             options={stepOptions}
-                            value={editItem.step}
+                            value={editItem.step || null}
                             onChange={(event, newValue) =>
                               handleChange('step', newValue || '', true)
                             }
-                            onInputChange={(event, newInputValue) =>
-                              handleChange('step', newInputValue, true)
-                            }
+                            onInputChange={(event, newInputValue, reason) => {
+                              // Only update on input change if reason is 'input' (user typing)
+                              if (reason === 'input') {
+                                handleChange('step', newInputValue, true);
+                              }
+                            }}
                             renderInput={(params) => (
                               <ModernTextField {...params} size="small" />
                             )}
@@ -2098,7 +2243,7 @@ const ItemTable = () => {
           </GlassCard>
         </Modal>
 
-        <SuccessfullOverlay open={successOpen} action={successAction} />
+        <SuccessfulOverlay open={successOpen} action={successAction} onClose={() => setSuccessOpen(false)} />
 
         <Snackbar
           open={snackbar.open}

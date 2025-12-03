@@ -1,6 +1,10 @@
 import API_BASE_URL from '../../apiConfig';
 import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
+import useProfileData from '../../hooks/useProfileData';
+import useProfileSections from '../../hooks/useProfileSections';
+import useProfileMutations from '../../hooks/useProfileMutations';
+import { getUserInfo, getAuthHeaders } from '../../utils/auth';
 import {
   Avatar,
   Typography,
@@ -22,7 +26,6 @@ import {
   Backdrop,
   Tabs,
   Tab,
-  useMediaQuery,
   Fab,
   Snackbar,
   SnackbarContent,
@@ -31,8 +34,6 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
-  ToggleButton,
-  ToggleButtonGroup,
   List,
   ListItem,
   ListItemText as MuiListItemText,
@@ -46,6 +47,9 @@ import {
   Select,
   MenuItem as MuiMenuItem,
   InputAdornment,
+  AppBar,
+  Toolbar,
+  Stack,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import PersonIcon from '@mui/icons-material/Person';
@@ -72,8 +76,6 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import PhotoSizeSelectActualIcon from '@mui/icons-material/PhotoSizeSelectActual';
 import CropOriginalIcon from '@mui/icons-material/CropOriginal';
-import GridViewIcon from '@mui/icons-material/GridView';
-import ViewListIcon from '@mui/icons-material/ViewList';
 import { ExitToApp } from '@mui/icons-material';
 import ChildCareIcon from '@mui/icons-material/ChildCare';
 import FamilyRestroomIcon from '@mui/icons-material/FamilyRestroom';
@@ -88,24 +90,27 @@ import BookIcon from '@mui/icons-material/Book';
 import LightbulbIcon from '@mui/icons-material/Lightbulb';
 import InfoIcon from '@mui/icons-material/Info';
 import ConstructionIcon from '@mui/icons-material/Construction';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import BusinessIcon from '@mui/icons-material/Business';
+import DescriptionIcon from '@mui/icons-material/Description';
+import TimelineIcon from '@mui/icons-material/Timeline';
 
-// HR Professional Color Palette
 const colors = {
-  primary: '#6d2323',
-  primaryLight: '#8a2e2e',
+  primary: '#6D2323',
+  primaryLight: '#A31D1D',
   primaryDark: '#4a1818',
-  secondary: '#f5f5dc',
+  secondary: '#FEF9E1',
   textPrimary: '#000000',
   textSecondary: '#555555',
-  textLight: '#ffffff',
-  background: '#fafafa',
-  surface: '#ffffff',
-  border: '#e0e0e0',
+  textLight: '#FFFFFF',
+  background: '#FFFFFF',
+  surface: '#FFFFFF',
+  border: '#6D2323',
   success: '#4caf50',
   warning: '#ff9800',
   error: '#f44336',
   info: '#2196f3',
-  gradientPrimary: 'linear-gradient(135deg, #6d2323 0%, #8a2e2e 100%)',
+  gradientPrimary: 'linear-gradient(135deg, #6D2323 0%, #A31D1D 100%)',
 };
 
 const shadows = {
@@ -116,28 +121,16 @@ const shadows = {
 };
 
 const ProfileContainer = styled(Container)(({ theme }) => ({
-  maxWidth: '1400px',
+  maxWidth: '1600px',
   paddingTop: theme.spacing(4),
   paddingBottom: theme.spacing(8),
   minHeight: '100vh',
   backgroundColor: colors.background,
   position: 'relative',
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: '300px',
-    background: colors.gradientPrimary,
-    zIndex: 0,
-    borderBottomLeftRadius: '50% 20%',
-    borderBottomRightRadius: '50% 20%',
-  },
 }));
 
 const ProfileHeader = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(5),
+  padding: theme.spacing(4),
   marginBottom: theme.spacing(4),
   borderRadius: theme.spacing(3),
   boxShadow: shadows.medium,
@@ -146,20 +139,10 @@ const ProfileHeader = styled(Paper)(({ theme }) => ({
   position: 'relative',
   overflow: 'hidden',
   background: colors.surface,
-  zIndex: 1,
   [theme.breakpoints.down('md')]: {
     flexDirection: 'column',
     textAlign: 'center',
-    padding: theme.spacing(4),
-  },
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: '8px',
-    background: colors.gradientPrimary,
+    padding: theme.spacing(3),
   },
 }));
 
@@ -173,8 +156,8 @@ const ProfileAvatarContainer = styled(Box)(({ theme }) => ({
 }));
 
 const ProfileAvatar = styled(Avatar)(({ theme }) => ({
-  width: theme.spacing(24),
-  height: theme.spacing(24),
+  width: theme.spacing(20),
+  height: theme.spacing(20),
   border: `4px solid ${colors.surface}`,
   boxShadow: shadows.medium,
   cursor: 'pointer',
@@ -191,7 +174,7 @@ const ProfileInfo = styled(Box)(({ theme }) => ({
 
 const ProfileName = styled(Typography)(({ theme }) => ({
   fontWeight: 700,
-  fontSize: '2rem',
+  fontSize: '1.8rem',
   color: colors.textPrimary,
   marginBottom: theme.spacing(0.5),
   transition: 'color 0.3s ease',
@@ -203,7 +186,7 @@ const ProfileName = styled(Typography)(({ theme }) => ({
 const ProfileSubtitle = styled(Typography)(({ theme }) => ({
   color: colors.textSecondary,
   marginBottom: theme.spacing(2),
-  fontSize: '1.1rem',
+  fontSize: '1rem',
 }));
 
 const ProfileActions = styled(Box)(({ theme }) => ({
@@ -216,9 +199,19 @@ const ProfileActions = styled(Box)(({ theme }) => ({
   },
 }));
 
+const GlassCard = styled(Card)(({ theme }) => ({
+  borderRadius: 20,
+  backdropFilter: 'blur(10px)',
+  overflow: 'hidden',
+  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+  '&:hover': {
+    transform: 'translateY(-4px)',
+  },
+}));
+
 const SectionPaper = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(4),
-  marginBottom: theme.spacing(4),
+  padding: 0,
+  marginBottom: theme.spacing(3),
   borderRadius: theme.spacing(3),
   boxShadow: shadows.light,
   transition: 'box-shadow 0.3s ease, transform 0.3s ease',
@@ -226,51 +219,26 @@ const SectionPaper = styled(Paper)(({ theme }) => ({
   overflow: 'hidden',
   '&:hover': {
     boxShadow: shadows.medium,
-    transform: 'translateY(-4px)',
-  },
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '6px',
-    height: '100%',
-    background: colors.gradientPrimary,
-    opacity: 0,
-    transition: 'opacity 0.3s ease',
-  },
-  '&:hover::before': {
-    opacity: 1,
+    transform: 'translateY(-2px)',
   },
 }));
 
 const SectionTitle = styled(Typography)(({ theme }) => ({
   fontWeight: 700,
-  fontSize: '1.5rem',
+  fontSize: '1.3rem',
   color: colors.textPrimary,
-  marginBottom: theme.spacing(3),
+  marginBottom: theme.spacing(2),
   display: 'flex',
   alignItems: 'center',
-  gap: theme.spacing(1.5),
-  position: 'relative',
-  '&::after': {
-    content: '""',
-    position: 'absolute',
-    bottom: -theme.spacing(1),
-    left: 0,
-    width: '60px',
-    height: '3px',
-    background: colors.gradientPrimary,
-    borderRadius: theme.spacing(1),
-  },
+  gap: theme.spacing(1),
 }));
 
 const InfoItem = styled(Box)(({ theme }) => ({
   display: 'flex',
-  marginBottom: theme.spacing(2.5),
+  marginBottom: theme.spacing(2),
   alignItems: 'flex-start',
-  padding: theme.spacing(1.5),
-  borderRadius: theme.spacing(2),
+  padding: theme.spacing(1),
+  borderRadius: theme.spacing(1),
   transition: 'background-color 0.2s ease',
   '&:hover': {
     backgroundColor: alpha(colors.primary, 0.05),
@@ -280,7 +248,7 @@ const InfoItem = styled(Box)(({ theme }) => ({
 const InfoLabel = styled(Typography)(({ theme }) => ({
   fontWeight: 600,
   color: colors.textSecondary,
-  minWidth: '160px',
+  minWidth: '140px',
   marginRight: theme.spacing(2),
   display: 'flex',
   alignItems: 'center',
@@ -291,7 +259,7 @@ const InfoValue = styled(Typography)(({ theme }) => ({
   color: colors.textPrimary,
   flex: 1,
   fontWeight: 500,
-  fontSize: '1rem',
+  fontSize: '0.95rem',
 }));
 
 const TabContainer = styled(Box)(({ theme }) => ({
@@ -302,9 +270,9 @@ const TabContainer = styled(Box)(({ theme }) => ({
 const CustomTab = styled(Tab)(({ theme }) => ({
   textTransform: 'none',
   fontWeight: 600,
-  fontSize: '1rem',
+  fontSize: '0.9rem',
   minWidth: 'auto',
-  padding: theme.spacing(1.5, 2),
+  padding: theme.spacing(1, 2),
   borderRadius: theme.spacing(2),
   transition: 'all 0.3s ease',
   '&.Mui-selected': {
@@ -327,14 +295,14 @@ const CustomTabs = styled(Tabs)(({ theme }) => ({
   '& .MuiTabs-indicator': {
     display: 'none',
   },
-  marginBottom: theme.spacing(4),
+  marginBottom: theme.spacing(3),
 }));
 
 const ActionButton = styled(Button)(({ theme, variant = 'contained' }) => ({
   borderRadius: theme.spacing(2),
   textTransform: 'none',
   fontWeight: 600,
-  padding: theme.spacing(1.2, 2.5),
+  padding: theme.spacing(1, 2),
   transition: 'all 0.3s ease',
   boxShadow: shadows.light,
   ...(variant === 'contained' && {
@@ -375,28 +343,30 @@ const ModalContainer = styled(Box)(({ theme }) => ({
   flexDirection: 'column',
 }));
 
-const ModalHeader = styled(Box)(({ theme }) => ({
+const ModalHeader = styled(AppBar)(({ theme }) => ({
   background: colors.gradientPrimary,
-  padding: theme.spacing(3, 4),
+  padding: theme.spacing(2, 3),
   color: colors.textLight,
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
+  position: 'relative',
+  boxShadow: 'none',
 }));
 
 const ModalTitle = styled(Typography)(({ theme }) => ({
   fontWeight: 700,
-  fontSize: '1.5rem',
+  fontSize: '1.3rem',
 }));
 
 const ModalBody = styled(Box)(({ theme }) => ({
-  padding: theme.spacing(4),
+  padding: theme.spacing(3),
   overflowY: 'auto',
   flex: 1,
 }));
 
 const FormField = styled(TextField)(({ theme }) => ({
-  marginBottom: theme.spacing(2.5),
+  marginBottom: theme.spacing(2),
   '& .MuiOutlinedInput-root': {
     borderRadius: theme.spacing(2),
     transition: 'all 0.3s ease',
@@ -415,20 +385,6 @@ const FormField = styled(TextField)(({ theme }) => ({
     fontWeight: 500,
     '&.Mui-focused': {
       color: colors.primary,
-    },
-  },
-}));
-
-const ViewToggleButton = styled(ToggleButton)(({ theme }) => ({
-  borderRadius: theme.spacing(2),
-  padding: theme.spacing(1, 2),
-  textTransform: 'none',
-  fontWeight: 500,
-  '&.Mui-selected': {
-    backgroundColor: colors.primary,
-    color: colors.textLight,
-    '&:hover': {
-      backgroundColor: colors.primaryDark,
     },
   },
 }));
@@ -494,10 +450,10 @@ const EditModalPictureSection = styled(Box)(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   gap: theme.spacing(3),
-  padding: theme.spacing(3),
+  padding: theme.spacing(2),
   backgroundColor: alpha(colors.secondary, 0.3),
   borderRadius: theme.spacing(2),
-  marginBottom: theme.spacing(3),
+  marginBottom: theme.spacing(2),
   position: 'relative',
   [theme.breakpoints.down('sm')]: {
     flexDirection: 'column',
@@ -506,8 +462,8 @@ const EditModalPictureSection = styled(Box)(({ theme }) => ({
 }));
 
 const EditModalAvatar = styled(Avatar)(({ theme }) => ({
-  width: theme.spacing(20),
-  height: theme.spacing(20),
+  width: theme.spacing(16),
+  height: theme.spacing(16),
   border: `3px solid ${colors.surface}`,
   boxShadow: shadows.medium,
   cursor: 'pointer',
@@ -525,26 +481,6 @@ const EditModalPictureActions = styled(Box)(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
   gap: theme.spacing(1),
-}));
-
-const ContentContainer = styled(Box)(({ theme }) => ({
-  width: '100%',
-  position: 'relative',
-  minHeight: '600px',
-}));
-
-const ViewWrapper = styled(Box)(({ theme }) => ({
-  position: 'absolute',
-  top: 0,
-  left: 0,
-  width: '100%',
-  opacity: 0,
-  visibility: 'hidden',
-  transition: 'opacity 0.3s ease, visibility 0.3s ease',
-  '&.active': {
-    opacity: 1,
-    visibility: 'visible',
-  },
 }));
 
 const Notification = styled(SnackbarContent)(({ theme, variant }) => ({
@@ -590,12 +526,17 @@ const ChildCard = styled(Card)(({ theme }) => ({
 }));
 
 const ChildListItem = styled(ListItem)(({ theme }) => ({
-  border: '1px solid #e0e0e0',
-  borderRadius: theme.spacing(1),
-  marginBottom: theme.spacing(1),
+  border: `1px solid ${colors.primary}`,
+  borderRadius: theme.spacing(2),
+  marginBottom: theme.spacing(2),
+  backgroundColor: colors.secondary,
+  padding: theme.spacing(2),
+  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
   '&:hover': {
-    borderColor: colors.primary,
-    backgroundColor: alpha(colors.primary, 0.05),
+    borderColor: colors.primaryLight,
+    boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
+    transform: 'translateY(-2px)',
+    transition: 'all 0.2s ease',
   },
 }));
 
@@ -613,12 +554,17 @@ const CollegeCard = styled(Card)(({ theme }) => ({
 }));
 
 const CollegeListItem = styled(ListItem)(({ theme }) => ({
-  border: '1px solid #e0e0e0',
-  borderRadius: theme.spacing(1),
-  marginBottom: theme.spacing(1),
+  border: `1px solid ${colors.primary}`,
+  borderRadius: theme.spacing(2),
+  marginBottom: theme.spacing(2),
+  backgroundColor: colors.secondary,
+  padding: theme.spacing(2),
+  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
   '&:hover': {
-    borderColor: colors.primary,
-    backgroundColor: alpha(colors.primary, 0.05),
+    borderColor: colors.primaryLight,
+    boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
+    transform: 'translateY(-2px)',
+    transition: 'all 0.2s ease',
   },
 }));
 
@@ -636,12 +582,17 @@ const GraduateCard = styled(Card)(({ theme }) => ({
 }));
 
 const GraduateListItem = styled(ListItem)(({ theme }) => ({
-  border: '1px solid #e0e0e0',
-  borderRadius: theme.spacing(1),
-  marginBottom: theme.spacing(1),
+  border: `1px solid ${colors.primary}`,
+  borderRadius: theme.spacing(2),
+  marginBottom: theme.spacing(2),
+  backgroundColor: colors.secondary,
+  padding: theme.spacing(2),
+  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
   '&:hover': {
-    borderColor: colors.primary,
-    backgroundColor: alpha(colors.primary, 0.05),
+    borderColor: colors.primaryLight,
+    boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
+    transform: 'translateY(-2px)',
+    transition: 'all 0.2s ease',
   },
 }));
 
@@ -649,6 +600,7 @@ const ScrollableContainer = styled(Box)(({ theme }) => ({
   maxHeight: '500px',
   overflowY: 'auto',
   paddingRight: theme.spacing(1),
+  backgroundColor: colors.background,
   '&::-webkit-scrollbar': {
     width: '6px',
   },
@@ -659,6 +611,9 @@ const ScrollableContainer = styled(Box)(({ theme }) => ({
   '&::-webkit-scrollbar-thumb': {
     background: colors.primary,
     borderRadius: '3px',
+    '&:hover': {
+      background: colors.primaryLight,
+    },
   },
 }));
 
@@ -666,7 +621,7 @@ const EducationSubTabs = styled(Tabs)(({ theme }) => ({
   backgroundColor: alpha(colors.secondary, 0.5),
   borderRadius: theme.spacing(2),
   padding: theme.spacing(0.5),
-  marginBottom: theme.spacing(3),
+  marginBottom: theme.spacing(2),
   '& .MuiTabs-indicator': {
     display: 'none',
   },
@@ -675,9 +630,9 @@ const EducationSubTabs = styled(Tabs)(({ theme }) => ({
 const EducationSubTab = styled(Tab)(({ theme }) => ({
   textTransform: 'none',
   fontWeight: 600,
-  fontSize: '0.9rem',
+  fontSize: '0.85rem',
   minWidth: 'auto',
-  padding: theme.spacing(1, 2),
+  padding: theme.spacing(1, 1.5),
   borderRadius: theme.spacing(1.5),
   transition: 'all 0.3s ease',
   '&.Mui-selected': {
@@ -707,16 +662,20 @@ const EligibilityCard = styled(Card)(({ theme }) => ({
 }));
 
 const EligibilityListItem = styled(ListItem)(({ theme }) => ({
-  border: '1px solid #e0e0e0',
-  borderRadius: theme.spacing(1),
-  marginBottom: theme.spacing(1),
+  border: `1px solid ${colors.primary}`,
+  borderRadius: theme.spacing(2),
+  marginBottom: theme.spacing(2),
+  backgroundColor: colors.secondary,
+  padding: theme.spacing(2),
+  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
   '&:hover': {
-    borderColor: colors.primary,
-    backgroundColor: alpha(colors.primary, 0.05),
+    borderColor: colors.primaryLight,
+    boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
+    transform: 'translateY(-2px)',
+    transition: 'all 0.2s ease',
   },
 }));
 
-// Learning and Development Card and ListItem
 const LearningDevelopmentCard = styled(Card)(({ theme }) => ({
   border: '1px solid #e0e0e0',
   height: '100%',
@@ -731,16 +690,20 @@ const LearningDevelopmentCard = styled(Card)(({ theme }) => ({
 }));
 
 const LearningDevelopmentListItem = styled(ListItem)(({ theme }) => ({
-  border: '1px solid #e0e0e0',
-  borderRadius: theme.spacing(1),
-  marginBottom: theme.spacing(1),
+  border: `1px solid ${colors.primary}`,
+  borderRadius: theme.spacing(2),
+  marginBottom: theme.spacing(2),
+  backgroundColor: colors.secondary,
+  padding: theme.spacing(2),
+  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
   '&:hover': {
-    borderColor: colors.primary,
-    backgroundColor: alpha(colors.primary, 0.05),
+    borderColor: colors.primaryLight,
+    boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
+    transform: 'translateY(-2px)',
+    transition: 'all 0.2s ease',
   },
 }));
 
-// Other Information Card and ListItem
 const OtherInformationCard = styled(Card)(({ theme }) => ({
   border: '1px solid #e0e0e0',
   height: '100%',
@@ -755,12 +718,17 @@ const OtherInformationCard = styled(Card)(({ theme }) => ({
 }));
 
 const OtherInformationListItem = styled(ListItem)(({ theme }) => ({
-  border: '1px solid #e0e0e0',
-  borderRadius: theme.spacing(1),
-  marginBottom: theme.spacing(1),
+  border: `1px solid ${colors.primary}`,
+  borderRadius: theme.spacing(2),
+  marginBottom: theme.spacing(2),
+  backgroundColor: colors.secondary,
+  padding: theme.spacing(2),
+  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
   '&:hover': {
-    borderColor: colors.primary,
-    backgroundColor: alpha(colors.primary, 0.05),
+    borderColor: colors.primaryLight,
+    boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
+    transform: 'translateY(-2px)',
+    transition: 'all 0.2s ease',
   },
 }));
 
@@ -778,12 +746,17 @@ const VocationalCard = styled(Card)(({ theme }) => ({
 }));
 
 const VocationalListItem = styled(ListItem)(({ theme }) => ({
-  border: '1px solid #e0e0e0',
-  borderRadius: theme.spacing(1),
-  marginBottom: theme.spacing(1),
+  border: `1px solid ${colors.primary}`,
+  borderRadius: theme.spacing(2),
+  marginBottom: theme.spacing(2),
+  backgroundColor: colors.secondary,
+  padding: theme.spacing(2),
+  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
   '&:hover': {
-    borderColor: colors.primary,
-    backgroundColor: alpha(colors.primary, 0.05),
+    borderColor: colors.primaryLight,
+    boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
+    transform: 'translateY(-2px)',
+    transition: 'all 0.2s ease',
   },
 }));
 
@@ -801,12 +774,17 @@ const WorkExperienceCard = styled(Card)(({ theme }) => ({
 }));
 
 const WorkExperienceListItem = styled(ListItem)(({ theme }) => ({
-  border: '1px solid #e0e0e0',
-  borderRadius: theme.spacing(1),
-  marginBottom: theme.spacing(1),
+  border: `1px solid ${colors.primary}`,
+  borderRadius: theme.spacing(2),
+  marginBottom: theme.spacing(2),
+  backgroundColor: colors.secondary,
+  padding: theme.spacing(2),
+  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
   '&:hover': {
-    borderColor: colors.primary,
-    backgroundColor: alpha(colors.primary, 0.05),
+    borderColor: colors.primaryLight,
+    boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
+    transform: 'translateY(-2px)',
+    transition: 'all 0.2s ease',
   },
 }));
 
@@ -823,7 +801,71 @@ const StickyActionBar = styled(Box)(({ theme }) => ({
   boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
 }));
 
-// Percentage Input Component
+const Sidebar = styled(Paper)(({ theme }) => ({
+  padding: theme.spacing(2),
+  borderRadius: theme.spacing(2),
+  boxShadow: shadows.light,
+  height: 'fit-content',
+  position: 'sticky',
+  top: theme.spacing(2),
+  [theme.breakpoints.down('lg')]: {
+    marginBottom: theme.spacing(3),
+    position: 'relative',
+  },
+}));
+
+const MainContent = styled(Box)(({ theme }) => ({
+  flex: 1,
+}));
+
+const CategoryCard = styled(Card)(({ theme }) => ({
+  padding: theme.spacing(2),
+  marginBottom: theme.spacing(2),
+  borderRadius: theme.spacing(2),
+  cursor: 'pointer',
+  transition: 'all 0.2s ease',
+  border: '1px solid #e0e0e0',
+  '&:hover': {
+    boxShadow: shadows.medium,
+    transform: 'translateY(-2px)',
+    borderColor: colors.primary,
+  },
+  '&.active': {
+    backgroundColor: alpha(colors.primary, 0.1),
+    borderColor: colors.primary,
+  },
+}));
+
+const CategoryIcon = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: theme.spacing(5),
+  height: theme.spacing(5),
+  borderRadius: '50%',
+  backgroundColor: alpha(colors.primary, 0.1),
+  color: colors.primary,
+  marginRight: theme.spacing(2),
+}));
+
+const CategoryTitle = styled(Typography)(({ theme }) => ({
+  fontWeight: 600,
+  fontSize: '0.95rem',
+  color: colors.textPrimary,
+}));
+
+const CategoryDescription = styled(Typography)(({ theme }) => ({
+  fontSize: '0.8rem',
+  color: colors.textSecondary,
+  marginTop: theme.spacing(0.5),
+}));
+
+const TabPanel = styled(Box)(({ theme }) => ({
+  padding: theme.spacing(2),
+  borderRadius: theme.spacing(2),
+  backgroundColor: colors.surface,
+}));
+
 const PercentageInput = ({
   value,
   onChange,
@@ -910,10 +952,14 @@ const PercentageInput = ({
 
 const Profile = () => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const [person, setPerson] = useState(null);
-  const [profilePicture, setProfilePicture] = useState(null);
-  const [loading, setLoading] = useState(true);
+  
+  const { person, profilePicture, loading, refresh: refreshPerson } = useProfileData();
+  const { sections, loading: sectionsLoading, refresh: refreshSections } = useProfileSections();
+  const { saveProfile, saving } = useProfileMutations();
+  
+  const userInfo = getUserInfo();
+  const employeeNumber = userInfo.employeeNumber || localStorage.getItem('employeeNumber');
+  
   const [uploadStatus, setUploadStatus] = useState({ message: '', type: '' });
   const [editOpen, setEditOpen] = useState(false);
   const [formData, setFormData] = useState({});
@@ -922,308 +968,68 @@ const Profile = () => {
   const [imageZoomOpen, setImageZoomOpen] = useState(false);
   const [editImageZoomOpen, setEditImageZoomOpen] = useState(false);
   const [moreMenuAnchorEl, setMoreMenuAnchorEl] = useState(null);
-  const [viewMode, setViewMode] = useState('grid');
-  const employeeNumber = localStorage.getItem('employeeNumber');
+  const [educationSubTabValue, setEducationSubTabValue] = useState(0);
   const profileRef = useRef(null);
 
-  // Children related state
-  const [children, setChildren] = useState([]);
   const [childrenFormData, setChildrenFormData] = useState([]);
-
-  // College related state
-  const [colleges, setColleges] = useState([]);
   const [collegesFormData, setCollegesFormData] = useState([]);
-
-  // Graduate studies related state
-  const [graduates, setGraduates] = useState([]);
   const [graduatesFormData, setGraduatesFormData] = useState([]);
-
-  // Eligibility related state
-  const [eligibilities, setEligibilities] = useState([]);
   const [eligibilitiesFormData, setEligibilitiesFormData] = useState([]);
-
-  // Learning and Development related state
-  const [learningDevelopment, setLearningDevelopment] = useState([]);
-  const [learningDevelopmentFormData, setLearningDevelopmentFormData] =
-    useState([]);
-
-  // Other Information related state
-  const [otherInformation, setOtherInformation] = useState([]);
+  const [learningDevelopmentFormData, setLearningDevelopmentFormData] = useState([]);
   const [otherInformationFormData, setOtherInformationFormData] = useState([]);
-
-  // Education sub-tab state
-  const [educationSubTabValue, setEducationSubTabValue] = useState(0);
-
-  // Vocational related state
-  const [vocational, setVocational] = useState([]);
   const [vocationalFormData, setVocationalFormData] = useState([]);
-
-  const [workExperiences, setWorkExperiences] = useState([]);
   const [workExperiencesFormData, setWorkExperiencesFormData] = useState([]);
 
   useEffect(() => {
-    const fetchPersonData = async () => {
-      try {
-        const response = await axios.get(
-          `${API_BASE_URL}/personalinfo/person_table`
-        );
-        const match = response.data.find(
-          (p) => p.agencyEmployeeNum === employeeNumber
-        );
-        setPerson(match);
+    if (!sectionsLoading) {
+      if (sections.children.length > 0 && childrenFormData.length === 0) {
+        setChildrenFormData(sections.children);
+      }
+      if (sections.colleges.length > 0 && collegesFormData.length === 0) {
+        setCollegesFormData(sections.colleges);
+      }
+      if (sections.graduates.length > 0 && graduatesFormData.length === 0) {
+        setGraduatesFormData(sections.graduates);
+      }
+      if (sections.eligibilities.length > 0 && eligibilitiesFormData.length === 0) {
+        setEligibilitiesFormData(sections.eligibilities);
+      }
+      if (sections.learningDevelopment.length > 0 && learningDevelopmentFormData.length === 0) {
+        setLearningDevelopmentFormData(sections.learningDevelopment);
+      }
+      if (sections.otherInformation.length > 0 && otherInformationFormData.length === 0) {
+        setOtherInformationFormData(sections.otherInformation);
+      }
+      if (sections.vocational.length > 0 && vocationalFormData.length === 0) {
+        setVocationalFormData(sections.vocational);
+      }
+      if (sections.workExperiences.length > 0 && workExperiencesFormData.length === 0) {
+        setWorkExperiencesFormData(sections.workExperiences);
+      }
+    }
+  }, [sections, sectionsLoading]);
 
-        if (match) {
-          setProfilePicture(match.profile_picture);
-          const formattedData = { ...match };
-          if (match.birthDate) {
-            const date = new Date(match.birthDate);
-            if (!isNaN(date.getTime())) {
-              formattedData.birthDate = date.toISOString().split('T')[0];
-            }
-          }
-          setFormData(formattedData);
+  useEffect(() => {
+    if (person && Object.keys(formData).length === 0) {
+      const formattedData = { ...person };
+      if (person.birthDate) {
+        const date = new Date(person.birthDate);
+        if (!isNaN(date.getTime())) {
+          formattedData.birthDate = date.toISOString().split('T')[0];
         }
-      } catch (err) {
-        console.error('Error loading profile:', err);
-        setUploadStatus({
-          message: 'Failed to load profile data',
-          type: 'error',
-        });
-        setNotificationOpen(true);
-      } finally {
-        setLoading(false);
       }
-    };
-
-    fetchPersonData();
-  }, [employeeNumber]);
-
-  // Fetch children data for current user
-  useEffect(() => {
-    const fetchChildren = async () => {
-      try {
-        const response = await axios.get(
-          `${API_BASE_URL}/ChildrenRoute/children-by-person/${employeeNumber}`
-        );
-        console.log('Children data:', response.data);
-        setChildren(response.data);
-
-        // Initialize form data with fetched children
-        const formattedChildren = response.data.map((child) => ({
-          ...child,
-          dateOfBirth: child.dateOfBirth ? child.dateOfBirth.split('T')[0] : '',
-        }));
-        setChildrenFormData(formattedChildren);
-      } catch (error) {
-        console.error('Error fetching children:', error);
-        setUploadStatus({
-          message: 'Failed to load children data',
-          type: 'error',
-        });
-        setNotificationOpen(true);
-      }
-    };
-
-    if (employeeNumber) {
-      fetchChildren();
+      setFormData(formattedData);
     }
-  }, [employeeNumber]);
+  }, [person]);
 
-  // Fetch college data for current user
-  useEffect(() => {
-    const fetchColleges = async () => {
-      try {
-        const response = await axios.get(
-          `${API_BASE_URL}/college/college-by-person/${employeeNumber}`
-        );
-        console.log('College data:', response.data);
-        setColleges(response.data);
-        setCollegesFormData(response.data);
-      } catch (error) {
-        console.error('Error fetching colleges:', error);
-        setUploadStatus({
-          message: 'Failed to load college data',
-          type: 'error',
-        });
-        setNotificationOpen(true);
-      }
-    };
-
-    if (employeeNumber) {
-      fetchColleges();
-    }
-  }, [employeeNumber]);
-
-  // Fetch graduate studies data for current user
-  useEffect(() => {
-    const fetchGraduates = async () => {
-      try {
-        const response = await axios.get(
-          `${API_BASE_URL}/GraduateRoute/graduate-by-person/${employeeNumber}`
-        );
-        console.log('Graduate data:', response.data);
-        setGraduates(response.data);
-        setGraduatesFormData(response.data);
-      } catch (error) {
-        console.error('Error fetching graduates:', error);
-        setUploadStatus({
-          message: 'Failed to load graduate data',
-          type: 'error',
-        });
-        setNotificationOpen(true);
-      }
-    };
-
-    if (employeeNumber) {
-      fetchGraduates();
-    }
-  }, [employeeNumber]);
-
-  // Fetch eligibility data for current user
-  useEffect(() => {
-    const fetchEligibilities = async () => {
-      try {
-        const response = await axios.get(
-          `${API_BASE_URL}/eligibilityRoute/eligibility-by-person/${employeeNumber}`
-        );
-        console.log('Eligibility data:', response.data);
-        setEligibilities(response.data);
-
-        // Initialize form data with fetched eligibilities
-        const formattedEligibilities = response.data.map((eligibility) => ({
-          ...eligibility,
-          eligibilityDateOfExam: eligibility.eligibilityDateOfExam
-            ? eligibility.eligibilityDateOfExam.split('T')[0]
-            : '',
-          DateOfValidity: eligibility.DateOfValidity
-            ? eligibility.DateOfValidity.split('T')[0]
-            : '',
-        }));
-        setEligibilitiesFormData(formattedEligibilities);
-      } catch (error) {
-        console.error('Error fetching eligibilities:', error);
-        setUploadStatus({
-          message: 'Failed to load eligibility data',
-          type: 'error',
-        });
-        setNotificationOpen(true);
-      }
-    };
-
-    if (employeeNumber) {
-      fetchEligibilities();
-    }
-  }, [employeeNumber]);
-
-  // Fetch learning and development data for current user
-  // useEffect(() => {
-  //   const fetchLearningDevelopment = async () => {
-  //     try {
-  //       const response = await axios.get(
-  //         `${API_BASE_URL}/learning_and_development_table/by-person/${employeeNumber}`
-  //       );
-  //       console.log('Learning and Development data:', response.data);
-  //       setLearningDevelopment(response.data);
-  //       setLearningDevelopmentFormData(response.data);
-  //     } catch (error) {
-  //       console.error('Error fetching learning and development:', error);
-  //       setUploadStatus({
-  //         message: 'Failed to load learning and development data',
-  //         type: 'error',
-  //       });
-  //       setNotificationOpen(true);
-  //     }
-  //   };
-
-  //   if (employeeNumber) {
-  //     fetchLearningDevelopment();
-  //   }
-  // }, [employeeNumber]);
-
-  // Fetch other information data for current user
-  // useEffect(() => {
-  //   const fetchOtherInformation = async () => {
-  //     try {
-  //       const response = await axios.get(
-  //         `${API_BASE_URL}/OtherInfo/other-information-by-person/${employeeNumber}`
-  //       );
-  //       console.log('Other Information data:', response.data);
-  //       setOtherInformation(response.data);
-  //       setOtherInformationFormData(response.data);
-  //     } catch (error) {
-  //       console.error('Error fetching other information:', error);
-  //       setUploadStatus({
-  //         message: 'Failed to load other information data',
-  //         type: 'error',
-  //       });
-  //       setNotificationOpen(true);
-  //     }
-  //   };
-
-  //   if (employeeNumber) {
-  //     fetchOtherInformation();
-  //   }
-  // }, [employeeNumber]);
-
-  // Fetch vocational data for current user
-  // useEffect(() => {
-  //   const fetchVocational = async () => {
-  //     try {
-  //       const response = await axios.get(
-  //         `${API_BASE_URL}/vocational/vocational-by-person/${employeeNumber}`
-  //       );
-  //       console.log('Vocational data:', response.data);
-  //       setVocational(response.data);
-  //       setVocationalFormData(response.data);
-  //     } catch (error) {
-  //       console.error('Error fetching vocational:', error);
-  //       setUploadStatus({
-  //         message: 'Failed to load vocational data',
-  //         type: 'error',
-  //       });
-  //       setNotificationOpen(true);
-  //     }
-  //   };
-
-  //   if (employeeNumber) {
-  //     fetchVocational();
-  //   }
-  // }, [employeeNumber]);
-
-  // useEffect(() => {
-  //   const fetchWorkExperiences = async () => {
-  //     try {
-  //       const response = await axios.get(
-  //         `${API_BASE_URL}/WorkExperienceRoute/work-experience-by-person/${employeeNumber}`
-  //       );
-  //       console.log('Work Experience data:', response.data);
-  //       setWorkExperiences(response.data);
-
-  //       // Initialize form data with fetched work experiences
-  //       const formattedWorkExperiences = response.data.map((workExp) => ({
-  //         ...workExp,
-  //         workDateFrom: workExp.workDateFrom
-  //           ? workExp.workDateFrom.split('T')[0]
-  //           : '',
-  //         workDateTo: workExp.workDateTo
-  //           ? workExp.workDateTo.split('T')[0]
-  //           : '',
-  //       }));
-  //       setWorkExperiencesFormData(formattedWorkExperiences);
-  //     } catch (error) {
-  //       console.error('Error fetching work experiences:', error);
-  //       setUploadStatus({
-  //         message: 'Failed to load work experience data',
-  //         type: 'error',
-  //       });
-  //       setNotificationOpen(true);
-  //     }
-  //   };
-
-  //   if (employeeNumber) {
-  //     fetchWorkExperiences();
-  //   }
-  // }, [employeeNumber]);
+  const children = sections.children;
+  const colleges = sections.colleges;
+  const graduates = sections.graduates;
+  const eligibilities = sections.eligibilities;
+  const learningDevelopment = sections.learningDevelopment;
+  const otherInformation = sections.otherInformation;
+  const vocational = sections.vocational;
+  const workExperiences = sections.workExperiences;
 
   const handleEditOpen = () => {
     setEditOpen(true);
@@ -1240,148 +1046,17 @@ const Profile = () => {
 
   const handleSave = async () => {
     try {
-      // Save personal info
-      await axios.put(
-        `${API_BASE_URL}/personalinfo/person_table/by-employee/${employeeNumber}`,
-        formData
-      );
-      setPerson(formData);
-
-      // Save children data
-      for (const child of childrenFormData) {
-        if (child.id) {
-          // Update existing child
-          await axios.put(
-            `${API_BASE_URL}/ChildrenRoute/children-table/${child.id}`,
-            child
-          );
-        } else if (
-          child.childrenFirstName &&
-          child.childrenLastName &&
-          child.dateOfBirth
-        ) {
-          // Add new child
-          await axios.post(
-            `${API_BASE_URL}/ChildrenRoute/children-table`,
-            child
-          );
-        }
-      }
-
-      // Save college data
-      for (const college of collegesFormData) {
-        if (college.id) {
-          // Update existing college
-          await axios.put(
-            `${API_BASE_URL}/college/college-table/${college.id}`,
-            college
-          );
-        } else if (college.collegeNameOfSchool && college.collegeDegree) {
-          // Add new college
-          await axios.post(`${API_BASE_URL}/college/college-table`, college);
-        }
-      }
-
-      // Save graduate studies data
-      for (const graduate of graduatesFormData) {
-        if (graduate.id) {
-          // Update existing graduate
-          await axios.put(
-            `${API_BASE_URL}/graduate/graduate-table/${graduate.id}`,
-            graduate
-          );
-        } else if (graduate.graduateNameOfSchool && graduate.graduateDegree) {
-          // Add new graduate
-          await axios.post(`${API_BASE_URL}/graduate/graduate-table`, graduate);
-        }
-      }
-
-      // Save eligibility data
-      for (const eligibility of eligibilitiesFormData) {
-        if (eligibility.id) {
-          // Update existing eligibility
-          await axios.put(
-            `${API_BASE_URL}/eligibilityRoute/eligibility/${eligibility.id}`,
-            eligibility
-          );
-        } else if (eligibility.eligibilityName && eligibility.DateOfValidity) {
-          // Add new eligibility
-          await axios.post(
-            `${API_BASE_URL}/eligibilityRoute/eligibility`,
-            eligibility
-          );
-        }
-      }
-
-      // Save learning and development data
-      for (const learning of learningDevelopmentFormData) {
-        if (learning.id) {
-          // Update existing learning and development
-          await axios.put(
-            `${API_BASE_URL}/learning_and_development_table/${learning.id}`,
-            learning
-          );
-        } else if (
-          learning.titleOfProgram &&
-          learning.dateFrom &&
-          learning.dateTo
-        ) {
-          // Add new learning and development
-          await axios.post(
-            `${API_BASE_URL}/learning_and_development_table`,
-            learning
-          );
-        }
-      }
-
-      // Save other information data
-      for (const info of otherInformationFormData) {
-        if (info.id) {
-          // Update existing other information
-          await axios.put(
-            `${API_BASE_URL}/OtherInfo/other-information/${info.id}`,
-            info
-          );
-        } else {
-          // Add new other information
-          await axios.post(`${API_BASE_URL}/OtherInfo/other-information`, info);
-        }
-      }
-
-      // Save vocational data
-      for (const voc of vocationalFormData) {
-        if (voc.id) {
-          // Update existing vocational record
-          await axios.put(
-            `${API_BASE_URL}/vocational/vocational-table/${voc.id}`,
-            voc
-          );
-        } else if (voc.vocationalNameOfSchool && voc.vocationalDegree) {
-          // Add new vocational record
-          await axios.post(`${API_BASE_URL}/vocational/vocational-table`, voc);
-        }
-      }
-
-      for (const workExp of workExperiencesFormData) {
-        if (workExp.id) {
-          // Update existing work experience
-          await axios.put(
-            `${API_BASE_URL}/WorkExperienceRoute/work-experience-table/${workExp.id}`,
-            workExp
-          );
-        } else if (
-          workExp.workPositionTitle &&
-          workExp.workCompany &&
-          workExp.workDateFrom &&
-          workExp.workDateTo
-        ) {
-          // Add new work experience
-          await axios.post(
-            `${API_BASE_URL}/WorkExperienceRoute/work-experience-table`,
-            workExp
-          );
-        }
-      }
+      await saveProfile({
+        personalInfo: formData,
+        children: childrenFormData,
+        colleges: collegesFormData,
+        graduates: graduatesFormData,
+        eligibilities: eligibilitiesFormData,
+        learningDevelopment: learningDevelopmentFormData,
+        otherInformation: otherInformationFormData,
+        vocational: vocationalFormData,
+        workExperiences: workExperiencesFormData,
+      });
 
       setEditOpen(false);
       setUploadStatus({
@@ -1391,10 +1066,14 @@ const Profile = () => {
       setNotificationOpen(true);
 
       // Refresh data
-      window.location.reload();
+      refreshPerson();
+      refreshSections();
     } catch (err) {
       console.error('Update failed:', err);
-      setUploadStatus({ message: 'Failed to update profile', type: 'error' });
+      setUploadStatus({
+        message: err.message || 'Failed to update profile',
+        type: 'error',
+      });
       setNotificationOpen(true);
     }
   };
@@ -1430,21 +1109,23 @@ const Profile = () => {
       setUploadStatus({ message: 'Uploading...', type: 'info' });
       setNotificationOpen(true);
 
+      // Get auth headers without Content-Type (browser will set it with boundary for multipart/form-data)
+      const authHeaders = getAuthHeaders({ includeContentType: false });
       const res = await axios.post(
         `${API_BASE_URL}/upload-profile-picture/${employeeNumber}`,
         fd,
         {
-          headers: { 'Content-Type': 'multipart/form-data' },
+          headers: {
+            ...authHeaders.headers,
+            'Content-Type': 'multipart/form-data',
+          },
           timeout: 30000,
         }
       );
 
       const newPicturePath = res.data.filePath;
-      setProfilePicture(newPicturePath);
-
-      if (person) {
-        setPerson((prev) => ({ ...prev, profile_picture: newPicturePath }));
-      }
+      // Refresh person data to get updated profile picture
+      refreshPerson();
 
       setUploadStatus({
         message: 'Profile picture updated successfully!',
@@ -1461,15 +1142,16 @@ const Profile = () => {
     }
   };
 
-  const handleRemovePicture = () => {
+  const handleRemovePicture = async () => {
     if (!person?.id) return;
 
     try {
-      axios.delete(
-        `${API_BASE_URL}/personalinfo/remove-profile-picture/${person.id}`
+      await axios.delete(
+        `${API_BASE_URL}/personalinfo/remove-profile-picture/${person.id}`,
+        getAuthHeaders()
       );
-      setProfilePicture(null);
-      setPerson((prev) => ({ ...prev, profile_picture: null }));
+      // Refresh person data to get updated profile picture
+      refreshPerson();
       setUploadStatus({
         message: 'Profile picture removed successfully!',
         type: 'success',
@@ -1485,6 +1167,7 @@ const Profile = () => {
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
   };
+
 
   const handleImageZoom = () => {
     setImageZoomOpen(true);
@@ -1507,18 +1190,12 @@ const Profile = () => {
   };
 
   const handleRefresh = () => {
-    setLoading(true);
-    window.location.reload();
+    refreshPerson();
+    refreshSections();
   };
 
   const handleMoreMenuOpen = (event) => {
     setMoreMenuAnchorEl(event.currentTarget);
-  };
-
-  const handleViewModeChange = (event, newMode) => {
-    if (newMode !== null) {
-      setViewMode(newMode);
-    }
   };
 
   const trigger = useScrollTrigger({
@@ -1530,7 +1207,6 @@ const Profile = () => {
     profileRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Children related functions
   const handleChildrenFormChange = (index, e) => {
     const { name, value } = e.target;
     const updatedChildren = [...childrenFormData];
@@ -1558,7 +1234,6 @@ const Profile = () => {
     setChildrenFormData(updatedChildren);
   };
 
-  // College related functions
   const handleCollegeFormChange = (index, e) => {
     const { name, value } = e.target;
     const updatedColleges = [...collegesFormData];
@@ -1588,7 +1263,6 @@ const Profile = () => {
     setCollegesFormData(updatedColleges);
   };
 
-  // Graduate studies related functions
   const handleGraduateFormChange = (index, e) => {
     const { name, value } = e.target;
     const updatedGraduates = [...graduatesFormData];
@@ -1618,7 +1292,6 @@ const Profile = () => {
     setGraduatesFormData(updatedGraduates);
   };
 
-  // Eligibility related functions
   const handleEligibilityFormChange = (index, e) => {
     const { name, value } = e.target;
     const updatedEligibilities = [...eligibilitiesFormData];
@@ -1650,7 +1323,6 @@ const Profile = () => {
     setEligibilitiesFormData(updatedEligibilities);
   };
 
-  // Learning and Development related functions
   const handleLearningDevelopmentFormChange = (index, e) => {
     const { name, value } = e.target;
     const updatedLearningDevelopment = [...learningDevelopmentFormData];
@@ -1682,7 +1354,6 @@ const Profile = () => {
     setLearningDevelopmentFormData(updatedLearningDevelopment);
   };
 
-  // Other Information related functions
   const handleOtherInformationFormChange = (index, e) => {
     const { name, value } = e.target;
     const updatedOtherInformation = [...otherInformationFormData];
@@ -1711,7 +1382,6 @@ const Profile = () => {
     setOtherInformationFormData(updatedOtherInformation);
   };
 
-  // Vocational related functions
   const handleVocationalFormChange = (index, e) => {
     const { name, value } = e.target;
     const updatedVocational = [...vocationalFormData];
@@ -1751,7 +1421,6 @@ const Profile = () => {
     setWorkExperiencesFormData(updatedWorkExperiences);
   };
 
-  // Add new work experience
   const handleAddWorkExperience = () => {
     setWorkExperiencesFormData([
       ...workExperiencesFormData,
@@ -1769,7 +1438,6 @@ const Profile = () => {
     ]);
   };
 
-  // Remove work experience
   const handleRemoveWorkExperience = (index) => {
     const updatedWorkExperiences = [...workExperiencesFormData];
     updatedWorkExperiences.splice(index, 1);
@@ -1792,7 +1460,12 @@ const Profile = () => {
     return age;
   };
 
-  // Format rating as percentage for display
+  const formatDate = (value) => {
+    if (!value) return '';
+    const date = new Date(value);
+    return isNaN(date.getTime()) ? value : date.toLocaleDateString();
+  };
+
   const formatRating = (rating) => {
     if (!rating) return 'N/A';
     const numRating = parseFloat(rating);
@@ -1800,7 +1473,6 @@ const Profile = () => {
     return `${numRating}%`;
   };
 
-  // Always include the Children, College, Eligibility, Learning and Development, and Other Information tabs
   const tabs = [
     { key: 0, label: 'Personal', icon: <PersonIcon /> },
     { key: 1, label: 'Gov. IDs', icon: <BadgeIcon /> },
@@ -1812,9 +1484,10 @@ const Profile = () => {
     { key: 7, label: 'Eligibility', icon: <FactCheckIcon /> },
     { key: 8, label: 'Learning & Development', icon: <BookIcon /> },
     { key: 9, label: 'Other Information', icon: <InfoIcon /> },
-    { key: 10, label: 'Work Experience', icon: <WorkIcon /> }, // Add this line
+    { key: 10, label: 'Work Experience', icon: <WorkIcon /> },
   ];
 
+  // Form fields for each tab
   const formFields = {
     0: [
       {
@@ -1971,7 +1644,9 @@ const Profile = () => {
     10: [], // Work Experience tab doesn't have form fields
   };
 
-  if (loading) {
+  const isLoading = loading || sectionsLoading;
+
+  if (isLoading) {
     return (
       <ProfileContainer ref={profileRef}>
         <Box
@@ -2003,7 +1678,8 @@ const Profile = () => {
   }
 
   const renderTabContentGrid = (tabIndex) => {
-    // Special handling for Education tab with sub-tabs
+    return renderTabContentList(tabIndex);
+    /*
     // Special handling for Education tab with sub-tabs
     if (tabIndex === 5) {
       return (
@@ -2026,132 +1702,134 @@ const Profile = () => {
           </EducationSubTabs>
 
           {educationSubTabValue === 0 && (
-            <Grid container spacing={3}>
-              <Grid item xs={12} sm={6} md={4}>
-                <Card
-                  sx={{
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                      transform: 'translateY(-5px)',
-                      boxShadow: shadows.medium,
-                    },
-                  }}
-                >
-                  <CardContent sx={{ flex: 1 }}>
-                    <Box display="flex" alignItems="center" mb={1}>
-                      <SchoolIcon fontSize="small" />
-                      <Typography
-                        variant="subtitle2"
-                        color={colors.textSecondary}
-                        ml={1}
-                      >
-                        Elementary School
+            <TabPanel>
+              <Grid container spacing={3}>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Card
+                    sx={{
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        transform: 'translateY(-5px)',
+                        boxShadow: shadows.medium,
+                      },
+                    }}
+                  >
+                    <CardContent sx={{ flex: 1 }}>
+                      <Box display="flex" alignItems="center" mb={1}>
+                        <SchoolIcon fontSize="small" />
+                        <Typography
+                          variant="subtitle2"
+                          color={colors.textSecondary}
+                          ml={1}
+                        >
+                          Elementary School
+                        </Typography>
+                      </Box>
+                      <Typography variant="body1" fontWeight={500}>
+                        {person?.elementaryNameOfSchool || '—'}
                       </Typography>
-                    </Box>
-                    <Typography variant="body1" fontWeight={500}>
-                      {person?.elementaryNameOfSchool || '—'}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <Card
-                  sx={{
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                      transform: 'translateY(-5px)',
-                      boxShadow: shadows.medium,
-                    },
-                  }}
-                >
-                  <CardContent sx={{ flex: 1 }}>
-                    <Box display="flex" alignItems="center" mb={1}>
-                      <SchoolIcon fontSize="small" />
-                      <Typography
-                        variant="subtitle2"
-                        color={colors.textSecondary}
-                        ml={1}
-                      >
-                        Elementary Degree
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Card
+                    sx={{
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        transform: 'translateY(-5px)',
+                        boxShadow: shadows.medium,
+                      },
+                    }}
+                  >
+                    <CardContent sx={{ flex: 1 }}>
+                      <Box display="flex" alignItems="center" mb={1}>
+                        <SchoolIcon fontSize="small" />
+                        <Typography
+                          variant="subtitle2"
+                          color={colors.textSecondary}
+                          ml={1}
+                        >
+                          Elementary Degree
+                        </Typography>
+                      </Box>
+                      <Typography variant="body1" fontWeight={500}>
+                        {person?.elementaryDegree || '—'}
                       </Typography>
-                    </Box>
-                    <Typography variant="body1" fontWeight={500}>
-                      {person?.elementaryDegree || '—'}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <Card
-                  sx={{
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                      transform: 'translateY(-5px)',
-                      boxShadow: shadows.medium,
-                    },
-                  }}
-                >
-                  <CardContent sx={{ flex: 1 }}>
-                    <Box display="flex" alignItems="center" mb={1}>
-                      <SchoolIcon fontSize="small" />
-                      <Typography
-                        variant="subtitle2"
-                        color={colors.textSecondary}
-                        ml={1}
-                      >
-                        Secondary School
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Card
+                    sx={{
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        transform: 'translateY(-5px)',
+                        boxShadow: shadows.medium,
+                      },
+                    }}
+                  >
+                    <CardContent sx={{ flex: 1 }}>
+                      <Box display="flex" alignItems="center" mb={1}>
+                        <SchoolIcon fontSize="small" />
+                        <Typography
+                          variant="subtitle2"
+                          color={colors.textSecondary}
+                          ml={1}
+                        >
+                          Secondary School
+                        </Typography>
+                      </Box>
+                      <Typography variant="body1" fontWeight={500}>
+                        {person?.secondaryNameOfSchool || '—'}
                       </Typography>
-                    </Box>
-                    <Typography variant="body1" fontWeight={500}>
-                      {person?.secondaryNameOfSchool || '—'}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <Card
-                  sx={{
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                      transform: 'translateY(-5px)',
-                      boxShadow: shadows.medium,
-                    },
-                  }}
-                >
-                  <CardContent sx={{ flex: 1 }}>
-                    <Box display="flex" alignItems="center" mb={1}>
-                      <SchoolIcon fontSize="small" />
-                      <Typography
-                        variant="subtitle2"
-                        color={colors.textSecondary}
-                        ml={1}
-                      >
-                        Secondary Degree
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Card
+                    sx={{
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        transform: 'translateY(-5px)',
+                        boxShadow: shadows.medium,
+                      },
+                    }}
+                  >
+                    <CardContent sx={{ flex: 1 }}>
+                      <Box display="flex" alignItems="center" mb={1}>
+                        <SchoolIcon fontSize="small" />
+                        <Typography
+                          variant="subtitle2"
+                          color={colors.textSecondary}
+                          ml={1}
+                        >
+                          Secondary Degree
+                        </Typography>
+                      </Box>
+                      <Typography variant="body1" fontWeight={500}>
+                        {person?.secondaryDegree || '—'}
                       </Typography>
-                    </Box>
-                    <Typography variant="body1" fontWeight={500}>
-                      {person?.secondaryDegree || '—'}
-                    </Typography>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                </Grid>
               </Grid>
-            </Grid>
+            </TabPanel>
           )}
 
           {educationSubTabValue === 1 && (
-            <Box>
+            <TabPanel>
               {colleges.length > 0 ? (
                 <Grid container spacing={3}>
                   {colleges.map((college) => (
@@ -2211,11 +1889,11 @@ const Profile = () => {
                   </Typography>
                 </Box>
               )}
-            </Box>
+            </TabPanel>
           )}
 
           {educationSubTabValue === 2 && (
-            <Box>
+            <TabPanel>
               {graduates.length > 0 ? (
                 <Grid container spacing={3}>
                   {graduates.map((graduate) => (
@@ -2275,11 +1953,11 @@ const Profile = () => {
                   </Typography>
                 </Box>
               )}
-            </Box>
+            </TabPanel>
           )}
 
           {educationSubTabValue === 3 && (
-            <Box>
+            <TabPanel>
               {vocational.length > 0 ? (
                 <Grid container spacing={3}>
                   {vocational.map((voc) => (
@@ -2339,671 +2017,7 @@ const Profile = () => {
                   </Typography>
                 </Box>
               )}
-            </Box>
-          )}
-        </Box>
-      );
-    }
-
-    // Special handling for Children tab
-    if (tabIndex === 6) {
-      return (
-        <Box>
-          <ScrollableContainer>
-            {children.length > 0 ? (
-              <Grid container spacing={3}>
-                {children.map((child) => (
-                  <Grid item xs={12} sm={6} md={4} key={child.id}>
-                    <ChildCard>
-                      <CardContent sx={{ flex: 1 }}>
-                        <Box display="flex" alignItems="center" mb={1}>
-                          <ChildCareIcon
-                            sx={{ color: colors.primary, mr: 1 }}
-                          />
-                        </Box>
-                        <Typography
-                          variant="h6"
-                          fontWeight="bold"
-                          color={colors.textPrimary}
-                          mb={1}
-                        >
-                          {child.childrenFirstName} {child.childrenMiddleName}{' '}
-                          {child.childrenLastName}
-                          {child.childrenNameExtension &&
-                            ` ${child.childrenNameExtension}`}
-                        </Typography>
-                        {child.dateOfBirth && (
-                          <Box display="flex" alignItems="center" mb={1}>
-                            <CakeIcon
-                              sx={{
-                                fontSize: 16,
-                                color: colors.textSecondary,
-                                mr: 1,
-                              }}
-                            />
-                            <Typography
-                              variant="body2"
-                              color={colors.textSecondary}
-                            >
-                              {new Date(child.dateOfBirth).toLocaleDateString()}{' '}
-                              (Age: {getAge(child.dateOfBirth)})
-                            </Typography>
-                          </Box>
-                        )}
-                      </CardContent>
-                    </ChildCard>
-                  </Grid>
-                ))}
-              </Grid>
-            ) : (
-              <Box textAlign="center" py={4}>
-                <Typography variant="h6" color={colors.textSecondary}>
-                  No children records found
-                </Typography>
-                <Typography variant="body2" color={colors.textSecondary} mt={1}>
-                  Click "Edit Profile" to add children records
-                </Typography>
-              </Box>
-            )}
-          </ScrollableContainer>
-        </Box>
-      );
-    }
-
-    // Special handling for Eligibility tab
-    if (tabIndex === 7) {
-      return (
-        <Box>
-          <ScrollableContainer>
-            {eligibilities.length > 0 ? (
-              <Grid container spacing={3}>
-                {eligibilities.map((eligibility) => (
-                  <Grid item xs={12} sm={6} md={4} key={eligibility.id}>
-                    <EligibilityCard>
-                      <CardContent sx={{ flex: 1 }}>
-                        <Box display="flex" alignItems="center" mb={1}>
-                          <FactCheckIcon
-                            sx={{ color: colors.primary, mr: 1 }}
-                          />
-                        </Box>
-                        <Typography
-                          variant="h6"
-                          fontWeight="bold"
-                          color={colors.textPrimary}
-                          mb={1}
-                        >
-                          {eligibility.eligibilityName}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          color={colors.textSecondary}
-                          mb={1}
-                        >
-                          Rating: {formatRating(eligibility.eligibilityRating)}
-                        </Typography>
-                        {eligibility.licenseNumber && (
-                          <Box display="flex" alignItems="center" mb={1}>
-                            <Typography
-                              variant="body2"
-                              color={colors.textSecondary}
-                              sx={{ mr: 1 }}
-                            >
-                              License:
-                            </Typography>
-                            <Typography
-                              variant="body2"
-                              color={colors.textPrimary}
-                            >
-                              {eligibility.licenseNumber}
-                            </Typography>
-                          </Box>
-                        )}
-                        {eligibility.DateOfValidity && (
-                          <Box display="flex" alignItems="center">
-                            <Typography
-                              variant="body2"
-                              color={colors.textSecondary}
-                              sx={{ mr: 1 }}
-                            >
-                              Valid Until:
-                            </Typography>
-                            <Typography
-                              variant="body2"
-                              color={colors.textPrimary}
-                            >
-                              {new Date(
-                                eligibility.DateOfValidity
-                              ).toLocaleDateString()}
-                            </Typography>
-                          </Box>
-                        )}
-                      </CardContent>
-                    </EligibilityCard>
-                  </Grid>
-                ))}
-              </Grid>
-            ) : (
-              <Box textAlign="center" py={4}>
-                <Typography variant="h6" color={colors.textSecondary}>
-                  No eligibility records found
-                </Typography>
-                <Typography variant="body2" color={colors.textSecondary} mt={1}>
-                  Click "Edit Profile" to add eligibility records
-                </Typography>
-              </Box>
-            )}
-          </ScrollableContainer>
-        </Box>
-      );
-    }
-
-    // Special handling for Learning and Development tab
-    if (tabIndex === 8) {
-      return (
-        <Box>
-          <ScrollableContainer>
-            {learningDevelopment.length > 0 ? (
-              <Grid container spacing={3}>
-                {learningDevelopment.map((learning) => (
-                  <Grid item xs={12} sm={6} md={4} key={learning.id}>
-                    <LearningDevelopmentCard>
-                      <CardContent sx={{ flex: 1 }}>
-                        <Box display="flex" alignItems="center" mb={1}>
-                          <LightbulbIcon
-                            sx={{ color: colors.primary, mr: 1 }}
-                          />
-                        </Box>
-                        <Typography
-                          variant="h6"
-                          fontWeight="bold"
-                          color={colors.textPrimary}
-                          mb={1}
-                        >
-                          {learning.titleOfProgram}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          color={colors.textSecondary}
-                          mb={1}
-                        >
-                          Type: {learning.typeOfLearningDevelopment || 'N/A'}
-                        </Typography>
-                        {learning.dateFrom && learning.dateTo && (
-                          <Box display="flex" alignItems="center" mb={1}>
-                            <CalendarTodayIcon
-                              sx={{
-                                fontSize: 16,
-                                color: colors.textSecondary,
-                                mr: 1,
-                              }}
-                            />
-                            <Typography
-                              variant="body2"
-                              color={colors.textSecondary}
-                            >
-                              {learning.dateFrom} - {learning.dateTo}
-                            </Typography>
-                          </Box>
-                        )}
-                        {learning.numberOfHours && (
-                          <Typography
-                            variant="body2"
-                            color={colors.textSecondary}
-                            mb={1}
-                          >
-                            Hours: {learning.numberOfHours}
-                          </Typography>
-                        )}
-                        {learning.conductedSponsored && (
-                          <Typography
-                            variant="body2"
-                            color={colors.textSecondary}
-                          >
-                            Conducted/Sponsored by:{' '}
-                            {learning.conductedSponsored}
-                          </Typography>
-                        )}
-                      </CardContent>
-                    </LearningDevelopmentCard>
-                  </Grid>
-                ))}
-              </Grid>
-            ) : (
-              <Box textAlign="center" py={4}>
-                <Typography variant="h6" color={colors.textSecondary}>
-                  No learning and development records found
-                </Typography>
-                <Typography variant="body2" color={colors.textSecondary} mt={1}>
-                  Click "Edit Profile" to add learning and development records
-                </Typography>
-              </Box>
-            )}
-          </ScrollableContainer>
-        </Box>
-      );
-    }
-
-    // Special handling for Other Information tab
-    if (tabIndex === 9) {
-      return (
-        <Box>
-          <ScrollableContainer>
-            {otherInformation.length > 0 ? (
-              <Grid container spacing={3}>
-                {otherInformation.map((info) => (
-                  <Grid item xs={12} sm={6} md={4} key={info.id}>
-                    <OtherInformationCard>
-                      <CardContent sx={{ flex: 1 }}>
-                        <Box display="flex" alignItems="center" mb={1}>
-                          <InfoIcon sx={{ color: colors.primary, mr: 1 }} />
-                        </Box>
-                        <Typography
-                          variant="h6"
-                          fontWeight="bold"
-                          color={colors.textPrimary}
-                          mb={1}
-                        >
-                          Other Information
-                        </Typography>
-                        {info.specialSkills && (
-                          <Typography
-                            variant="body2"
-                            color={colors.textSecondary}
-                            mb={1}
-                          >
-                            Skills:{' '}
-                            {info.specialSkills.length > 50
-                              ? `${info.specialSkills.substring(0, 50)}...`
-                              : info.specialSkills}
-                          </Typography>
-                        )}
-                        {info.nonAcademicDistinctions && (
-                          <Typography
-                            variant="body2"
-                            color={colors.textSecondary}
-                            mb={1}
-                          >
-                            Distinctions:{' '}
-                            {info.nonAcademicDistinctions.length > 50
-                              ? `${info.nonAcademicDistinctions.substring(
-                                  0,
-                                  50
-                                )}...`
-                              : info.nonAcademicDistinctions}
-                          </Typography>
-                        )}
-                        {info.membershipInAssociation && (
-                          <Typography
-                            variant="body2"
-                            color={colors.textSecondary}
-                          >
-                            Associations:{' '}
-                            {info.membershipInAssociation.length > 50
-                              ? `${info.membershipInAssociation.substring(
-                                  0,
-                                  50
-                                )}...`
-                              : info.membershipInAssociation}
-                          </Typography>
-                        )}
-                      </CardContent>
-                    </OtherInformationCard>
-                  </Grid>
-                ))}
-              </Grid>
-            ) : (
-              <Box textAlign="center" py={4}>
-                <Typography variant="h6" color={colors.textSecondary}>
-                  No other information records found
-                </Typography>
-                <Typography variant="body2" color={colors.textSecondary} mt={1}>
-                  Click "Edit Profile" to add other information records
-                </Typography>
-              </Box>
-            )}
-          </ScrollableContainer>
-        </Box>
-      );
-    }
-
-    if (tabIndex === 10) {
-      return (
-        <Box>
-          <ScrollableContainer>
-            {workExperiences.length > 0 ? (
-              <Grid container spacing={3}>
-                {workExperiences.map((workExp) => (
-                  <Grid item xs={12} sm={6} md={4} key={workExp.id}>
-                    <WorkExperienceCard>
-                      <CardContent sx={{ flex: 1 }}>
-                        <Box display="flex" alignItems="center" mb={1}>
-                          <WorkIcon sx={{ color: colors.primary, mr: 1 }} />
-                        </Box>
-                        <Typography
-                          variant="h6"
-                          fontWeight="bold"
-                          color={colors.textPrimary}
-                          mb={1}
-                        >
-                          {workExp.workPositionTitle}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          color={colors.textSecondary}
-                          mb={1}
-                        >
-                          {workExp.workCompany}
-                        </Typography>
-                        {workExp.workDateFrom && workExp.workDateTo && (
-                          <Box display="flex" alignItems="center" mb={1}>
-                            <CalendarTodayIcon
-                              sx={{
-                                fontSize: 16,
-                                color: colors.textSecondary,
-                                mr: 1,
-                              }}
-                            />
-                            <Typography
-                              variant="body2"
-                              color={colors.textSecondary}
-                            >
-                              {new Date(
-                                workExp.workDateFrom
-                              ).toLocaleDateString()}{' '}
-                              -{' '}
-                              {new Date(
-                                workExp.workDateTo
-                              ).toLocaleDateString()}
-                            </Typography>
-                          </Box>
-                        )}
-                        {workExp.workMonthlySalary && (
-                          <Typography
-                            variant="body2"
-                            color={colors.textSecondary}
-                            mb={1}
-                          >
-                            Salary: ₱
-                            {parseFloat(
-                              workExp.workMonthlySalary
-                            ).toLocaleString()}
-                          </Typography>
-                        )}
-                        {workExp.isGovtService && (
-                          <Chip
-                            label={
-                              workExp.isGovtService === 'Yes'
-                                ? 'Government'
-                                : 'Private'
-                            }
-                            size="small"
-                            sx={{
-                              backgroundColor:
-                                workExp.isGovtService === 'Yes'
-                                  ? alpha(colors.primary, 0.1)
-                                  : alpha(colors.secondary, 0.5),
-                              color:
-                                workExp.isGovtService === 'Yes'
-                                  ? colors.primary
-                                  : colors.textSecondary,
-                              fontWeight: 600,
-                            }}
-                          />
-                        )}
-                      </CardContent>
-                    </WorkExperienceCard>
-                  </Grid>
-                ))}
-              </Grid>
-            ) : (
-              <Box textAlign="center" py={4}>
-                <Typography variant="h6" color={colors.textSecondary}>
-                  No work experience records found
-                </Typography>
-                <Typography variant="body2" color={colors.textSecondary} mt={1}>
-                  Click "Edit Profile" to add work experience records
-                </Typography>
-              </Box>
-            )}
-          </ScrollableContainer>
-        </Box>
-      );
-    }
-
-    const fields = formFields[tabIndex] || [];
-
-    return (
-      <Grid container spacing={3}>
-        {fields.map((field, idx) => (
-          <Grid item xs={12} sm={6} md={4} key={idx}>
-            <Card
-              sx={{
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                transition: 'all 0.3s ease',
-                '&:hover': {
-                  transform: 'translateY(-5px)',
-                  boxShadow: shadows.medium,
-                },
-              }}
-            >
-              <CardContent sx={{ flex: 1 }}>
-                <Box display="flex" alignItems="center" mb={1}>
-                  {field.icon}
-                  <Typography
-                    variant="subtitle2"
-                    color={colors.textSecondary}
-                    ml={1}
-                  >
-                    {field.label}
-                  </Typography>
-                </Box>
-                <Typography variant="body1" fontWeight={500}>
-                  {person?.[field.name] || '—'}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-    );
-  };
-
-  const renderTabContentList = (tabIndex) => {
-    // Special handling for Education tab with sub-tabs
-    // Special handling for Education tab with sub-tabs
-    if (tabIndex === 5) {
-      return (
-        <Box>
-          <EducationSubTabs
-            value={educationSubTabValue}
-            onChange={(e, newValue) => setEducationSubTabValue(newValue)}
-            variant="fullWidth"
-          >
-            <EducationSubTab
-              label="Elementary & Secondary"
-              icon={<SchoolIcon />}
-            />
-            <EducationSubTab label="College" icon={<SchoolRoundedIcon />} />
-            <EducationSubTab
-              label="Graduate Studies"
-              icon={<PsychologyIcon />}
-            />
-            <EducationSubTab label="Vocational" icon={<ConstructionIcon />} />
-          </EducationSubTabs>
-
-          {educationSubTabValue === 0 && (
-            <Box>
-              <InfoItem>
-                <InfoLabel variant="body2">
-                  <SchoolIcon fontSize="small" />
-                  Elementary School:
-                </InfoLabel>
-                <InfoValue variant="body1">
-                  {person?.elementaryNameOfSchool || '—'}
-                </InfoValue>
-              </InfoItem>
-              <InfoItem>
-                <InfoLabel variant="body2">
-                  <SchoolIcon fontSize="small" />
-                  Elementary Degree:
-                </InfoLabel>
-                <InfoValue variant="body1">
-                  {person?.elementaryDegree || '—'}
-                </InfoValue>
-              </InfoItem>
-              <InfoItem>
-                <InfoLabel variant="body2">
-                  <SchoolIcon fontSize="small" />
-                  Secondary School:
-                </InfoLabel>
-                <InfoValue variant="body1">
-                  {person?.secondaryNameOfSchool || '—'}
-                </InfoValue>
-              </InfoItem>
-              <InfoItem>
-                <InfoLabel variant="body2">
-                  <SchoolIcon fontSize="small" />
-                  Secondary Degree:
-                </InfoLabel>
-                <InfoValue variant="body1">
-                  {person?.secondaryDegree || '—'}
-                </InfoValue>
-              </InfoItem>
-            </Box>
-          )}
-
-          {educationSubTabValue === 1 && (
-            <Box>
-              <ScrollableContainer>
-                {colleges.length > 0 ? (
-                  <List>
-                    {colleges.map((college) => (
-                      <React.Fragment key={college.id}>
-                        <CollegeListItem>
-                          <MuiListItemIcon>
-                            <SchoolRoundedIcon sx={{ color: colors.primary }} />
-                          </MuiListItemIcon>
-                          <MuiListItemText
-                            primary={college.collegeNameOfSchool}
-                            secondary={
-                              college.collegeDegree
-                                ? `${college.collegeDegree} (${
-                                    college.collegePeriodFrom || 'N/A'
-                                  } - ${college.collegePeriodTo || 'N/A'})`
-                                : 'No degree information'
-                            }
-                          />
-                        </CollegeListItem>
-                        <Divider variant="inset" component="li" />
-                      </React.Fragment>
-                    ))}
-                  </List>
-                ) : (
-                  <Box textAlign="center" py={4}>
-                    <Typography variant="h6" color={colors.textSecondary}>
-                      No college records found
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      color={colors.textSecondary}
-                      mt={1}
-                    >
-                      Click "Edit Profile" to add college records
-                    </Typography>
-                  </Box>
-                )}
-              </ScrollableContainer>
-            </Box>
-          )}
-
-          {educationSubTabValue === 2 && (
-            <Box>
-              <ScrollableContainer>
-                {graduates.length > 0 ? (
-                  <List>
-                    {graduates.map((graduate) => (
-                      <React.Fragment key={graduate.id}>
-                        <GraduateListItem>
-                          <MuiListItemIcon>
-                            <PsychologyIcon sx={{ color: colors.primary }} />
-                          </MuiListItemIcon>
-                          <MuiListItemText
-                            primary={graduate.graduateNameOfSchool}
-                            secondary={
-                              graduate.graduateDegree
-                                ? `${graduate.graduateDegree} (${
-                                    graduate.graduatePeriodFrom || 'N/A'
-                                  } - ${graduate.graduatePeriodTo || 'N/A'})`
-                                : 'No degree information'
-                            }
-                          />
-                        </GraduateListItem>
-                        <Divider variant="inset" component="li" />
-                      </React.Fragment>
-                    ))}
-                  </List>
-                ) : (
-                  <Box textAlign="center" py={4}>
-                    <Typography variant="h6" color={colors.textSecondary}>
-                      No graduate studies records found
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      color={colors.textSecondary}
-                      mt={1}
-                    >
-                      Click "Edit Profile" to add graduate studies records
-                    </Typography>
-                  </Box>
-                )}
-              </ScrollableContainer>
-            </Box>
-          )}
-
-          {educationSubTabValue === 3 && (
-            <Box>
-              <ScrollableContainer>
-                {vocational.length > 0 ? (
-                  <List>
-                    {vocational.map((voc) => (
-                      <React.Fragment key={voc.id}>
-                        <VocationalListItem>
-                          <MuiListItemIcon>
-                            <ConstructionIcon sx={{ color: colors.primary }} />
-                          </MuiListItemIcon>
-                          <MuiListItemText
-                            primary={voc.vocationalNameOfSchool}
-                            secondary={
-                              voc.vocationalDegree
-                                ? `${voc.vocationalDegree} (${
-                                    voc.vocationalPeriodFrom || 'N/A'
-                                  } - ${voc.vocationalPeriodTo || 'N/A'})`
-                                : 'No degree information'
-                            }
-                          />
-                        </VocationalListItem>
-                        <Divider variant="inset" component="li" />
-                      </React.Fragment>
-                    ))}
-                  </List>
-                ) : (
-                  <Box textAlign="center" py={4}>
-                    <Typography variant="h6" color={colors.textSecondary}>
-                      No vocational records found
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      color={colors.textSecondary}
-                      mt={1}
-                    >
-                      Click "Edit Profile" to add vocational records
-                    </Typography>
-                  </Box>
-                )}
-              </ScrollableContainer>
-            </Box>
+            </TabPanel>
           )}
         </Box>
       );
@@ -3020,26 +2034,40 @@ const Profile = () => {
                   <React.Fragment key={child.id}>
                     <ChildListItem>
                       <MuiListItemIcon>
-                        <ChildCareIcon sx={{ color: colors.primary }} />
+                        <Box
+                          sx={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 1.5,
+                            backgroundColor: colors.primary,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            mr: 2,
+                          }}
+                        >
+                          <ChildCareIcon sx={{ color: colors.textLight, fontSize: 20 }} />
+                        </Box>
                       </MuiListItemIcon>
                       <MuiListItemText
-                        primary={`${child.childrenFirstName} ${
-                          child.childrenMiddleName
-                        } ${child.childrenLastName}${
-                          child.childrenNameExtension
-                            ? ` ${child.childrenNameExtension}`
-                            : ''
-                        }`}
+                        primary={
+                          <Typography variant="h6" sx={{ fontWeight: 600, color: colors.textPrimary, mb: 0.5 }}>
+                            {`${child.childrenFirstName} ${child.childrenMiddleName} ${child.childrenLastName}${
+                              child.childrenNameExtension ? ` ${child.childrenNameExtension}` : ''
+                            }`}
+                          </Typography>
+                        }
                         secondary={
-                          child.dateOfBirth
-                            ? `Born: ${new Date(
-                                child.dateOfBirth
-                              ).toLocaleDateString()} (Age: {getAge(child.dateOfBirth)})`
-                            : 'No birth date recorded'
+                          child.dateOfBirth ? (
+                            <Typography component="span" sx={{ display: 'block', color: colors.textPrimary }}>
+                              Born: {new Date(child.dateOfBirth).toLocaleDateString()} (Age: {getAge(child.dateOfBirth)})
+                            </Typography>
+                          ) : (
+                            'No birth date recorded'
+                          )
                         }
                       />
                     </ChildListItem>
-                    <Divider variant="inset" component="li" />
                   </React.Fragment>
                 ))}
               </List>
@@ -3069,35 +2097,42 @@ const Profile = () => {
                   <React.Fragment key={eligibility.id}>
                     <EligibilityListItem>
                       <MuiListItemIcon>
-                        <FactCheckIcon sx={{ color: colors.primary }} />
+                        <Box
+                          sx={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 1.5,
+                            backgroundColor: colors.primary,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            mr: 2,
+                          }}
+                        >
+                          <FactCheckIcon sx={{ color: colors.textLight, fontSize: 20 }} />
+                        </Box>
                       </MuiListItemIcon>
                       <MuiListItemText
-                        primary={eligibility.eligibilityName}
+                        primary={
+                          <Typography variant="h6" sx={{ fontWeight: 600, color: colors.textPrimary, mb: 0.5 }}>
+                            {eligibility.eligibilityName}
+                          </Typography>
+                        }
                         secondary={
                           <>
-                            Rating:{' '}
-                            {formatRating(eligibility.eligibilityRating)}
-                            {eligibility.licenseNumber && (
-                              <Typography component="span" sx={{ ml: 1 }}>
-                                License: {eligibility.licenseNumber}
-                              </Typography>
-                            )}
+                            <Typography component="span" sx={{ display: 'block', color: colors.textPrimary, mb: 0.5 }}>
+                              Rating: {formatRating(eligibility.eligibilityRating)}
+                              {eligibility.licenseNumber && ` License: ${eligibility.licenseNumber}`}
+                            </Typography>
                             {eligibility.DateOfValidity && (
-                              <Typography
-                                component="span"
-                                sx={{ ml: 1, display: 'block' }}
-                              >
-                                Valid Until:{' '}
-                                {new Date(
-                                  eligibility.DateOfValidity
-                                ).toLocaleDateString()}
+                              <Typography component="span" sx={{ display: 'block', color: colors.textPrimary }}>
+                                Valid Until: {new Date(eligibility.DateOfValidity).toLocaleDateString()}
                               </Typography>
                             )}
                           </>
                         }
                       />
                     </EligibilityListItem>
-                    <Divider variant="inset" component="li" />
                   </React.Fragment>
                 ))}
               </List>
@@ -3127,43 +2162,47 @@ const Profile = () => {
                   <React.Fragment key={learning.id}>
                     <LearningDevelopmentListItem>
                       <MuiListItemIcon>
-                        <LightbulbIcon sx={{ color: colors.primary }} />
+                        <Box
+                          sx={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 1.5,
+                            backgroundColor: colors.primary,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            mr: 2,
+                          }}
+                        >
+                          <LightbulbIcon sx={{ color: colors.textLight, fontSize: 20 }} />
+                        </Box>
                       </MuiListItemIcon>
                       <MuiListItemText
-                        primary={learning.titleOfProgram}
+                        primary={
+                          <Typography variant="h6" sx={{ fontWeight: 600, color: colors.textPrimary, mb: 0.5 }}>
+                            {learning.titleOfProgram}
+                          </Typography>
+                        }
                         secondary={
                           <>
-                            Type: {learning.typeOfLearningDevelopment || 'N/A'}
+                            <Typography component="span" sx={{ display: 'block', color: colors.textPrimary, mb: 0.5 }}>
+                              Type: {learning.typeOfLearningDevelopment || 'N/A'}
+                              {learning.numberOfHours && ` Hours: ${learning.numberOfHours}`}
+                            </Typography>
                             {learning.dateFrom && learning.dateTo && (
-                              <Typography
-                                component="span"
-                                sx={{ ml: 1, display: 'block' }}
-                              >
+                              <Typography component="span" sx={{ display: 'block', color: colors.textPrimary, mb: 0.5 }}>
                                 Period: {learning.dateFrom} - {learning.dateTo}
                               </Typography>
                             )}
-                            {learning.numberOfHours && (
-                              <Typography
-                                component="span"
-                                sx={{ ml: 1, display: 'block' }}
-                              >
-                                Hours: {learning.numberOfHours}
-                              </Typography>
-                            )}
                             {learning.conductedSponsored && (
-                              <Typography
-                                component="span"
-                                sx={{ ml: 1, display: 'block' }}
-                              >
-                                Conducted/Sponsored by:{' '}
-                                {learning.conductedSponsored}
+                              <Typography component="span" sx={{ display: 'block', color: colors.textPrimary }}>
+                                Conducted/Sponsored by: {learning.conductedSponsored}
                               </Typography>
                             )}
                           </>
                         }
                       />
                     </LearningDevelopmentListItem>
-                    <Divider variant="inset" component="li" />
                   </React.Fragment>
                 ))}
               </List>
@@ -3193,33 +2232,41 @@ const Profile = () => {
                   <React.Fragment key={info.id}>
                     <OtherInformationListItem>
                       <MuiListItemIcon>
-                        <InfoIcon sx={{ color: colors.primary }} />
+                        <Box
+                          sx={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 1.5,
+                            backgroundColor: colors.primary,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            mr: 2,
+                          }}
+                        >
+                          <InfoIcon sx={{ color: colors.textLight, fontSize: 20 }} />
+                        </Box>
                       </MuiListItemIcon>
                       <MuiListItemText
-                        primary="Other Information"
+                        primary={
+                          <Typography variant="h6" sx={{ fontWeight: 600, color: colors.textPrimary, mb: 0.5 }}>
+                            Other Information
+                          </Typography>
+                        }
                         secondary={
                           <>
                             {info.specialSkills && (
-                              <Typography
-                                component="span"
-                                sx={{ display: 'block' }}
-                              >
+                              <Typography component="span" sx={{ display: 'block', color: colors.textPrimary, mb: 0.5 }}>
                                 Skills: {info.specialSkills}
                               </Typography>
                             )}
                             {info.nonAcademicDistinctions && (
-                              <Typography
-                                component="span"
-                                sx={{ display: 'block' }}
-                              >
+                              <Typography component="span" sx={{ display: 'block', color: colors.textPrimary, mb: 0.5 }}>
                                 Distinctions: {info.nonAcademicDistinctions}
                               </Typography>
                             )}
                             {info.membershipInAssociation && (
-                              <Typography
-                                component="span"
-                                sx={{ display: 'block' }}
-                              >
+                              <Typography component="span" sx={{ display: 'block', color: colors.textPrimary }}>
                                 Associations: {info.membershipInAssociation}
                               </Typography>
                             )}
@@ -3227,7 +2274,6 @@ const Profile = () => {
                         }
                       />
                     </OtherInformationListItem>
-                    <Divider variant="inset" component="li" />
                   </React.Fragment>
                 ))}
               </List>
@@ -3256,59 +2302,43 @@ const Profile = () => {
                   <React.Fragment key={workExp.id}>
                     <WorkExperienceListItem>
                       <MuiListItemIcon>
-                        <WorkIcon sx={{ color: colors.primary }} />
+                        <Box
+                          sx={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 1.5,
+                            backgroundColor: colors.primary,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            mr: 2,
+                          }}
+                        >
+                          <WorkIcon sx={{ color: colors.textLight, fontSize: 20 }} />
+                        </Box>
                       </MuiListItemIcon>
                       <MuiListItemText
-                        primary={workExp.workPositionTitle}
+                        primary={
+                          <Typography variant="h6" sx={{ fontWeight: 600, color: colors.textPrimary, mb: 0.5 }}>
+                            {workExp.workPositionTitle}
+                          </Typography>
+                        }
                         secondary={
                           <>
-                            <Typography
-                              component="span"
-                              sx={{ display: 'block' }}
-                            >
+                            <Typography component="span" sx={{ display: 'block', color: colors.textPrimary, mb: 0.5 }}>
                               {workExp.workCompany}
+                              {workExp.workMonthlySalary && ` | Salary: ₱${parseFloat(workExp.workMonthlySalary).toLocaleString()}`}
+                              {workExp.isGovtService && ` | ${workExp.isGovtService === 'Yes' ? 'Government' : 'Private'}`}
                             </Typography>
                             {workExp.workDateFrom && workExp.workDateTo && (
-                              <Typography
-                                component="span"
-                                sx={{ display: 'block' }}
-                              >
-                                {new Date(
-                                  workExp.workDateFrom
-                                ).toLocaleDateString()}{' '}
-                                -{' '}
-                                {new Date(
-                                  workExp.workDateTo
-                                ).toLocaleDateString()}
-                              </Typography>
-                            )}
-                            {workExp.workMonthlySalary && (
-                              <Typography
-                                component="span"
-                                sx={{ display: 'block' }}
-                              >
-                                Salary: ₱
-                                {parseFloat(
-                                  workExp.workMonthlySalary
-                                ).toLocaleString()}
-                              </Typography>
-                            )}
-                            {workExp.isGovtService && (
-                              <Typography
-                                component="span"
-                                sx={{ display: 'block' }}
-                              >
-                                Service Type:{' '}
-                                {workExp.isGovtService === 'Yes'
-                                  ? 'Government'
-                                  : 'Private'}
+                              <Typography component="span" sx={{ display: 'block', color: colors.textPrimary }}>
+                                {new Date(workExp.workDateFrom).toLocaleDateString()} - {new Date(workExp.workDateTo).toLocaleDateString()}
                               </Typography>
                             )}
                           </>
                         }
                       />
                     </WorkExperienceListItem>
-                    <Divider variant="inset" component="li" />
                   </React.Fragment>
                 ))}
               </List>
@@ -3327,25 +2357,738 @@ const Profile = () => {
       );
     }
 
+    // Default case for other tabs
     const fields = formFields[tabIndex] || [];
 
     return (
       <Box>
-        {fields.map((field, idx) => (
-          <InfoItem key={idx}>
-            <InfoLabel variant="body2">
-              {field.icon}
-              {field.label}:
-            </InfoLabel>
-            <InfoValue variant="body1">{person?.[field.name] || '—'}</InfoValue>
-          </InfoItem>
-        ))}
+        <ScrollableContainer>
+          {fields.length > 0 ? (
+            <List>
+              {fields.map((field, idx) => (
+                <React.Fragment key={idx}>
+                  <EligibilityListItem>
+                    <MuiListItemIcon>
+                      <Box
+                        sx={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: 1.5,
+                          backgroundColor: colors.primary,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          mr: 2,
+                        }}
+                      >
+                        {field.icon && React.cloneElement(field.icon, { sx: { color: colors.textLight, fontSize: 20 } })}
+                      </Box>
+                    </MuiListItemIcon>
+                    <MuiListItemText
+                      primary={
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: colors.textPrimary, mb: 0.5 }}>
+                          {field.label}
+                        </Typography>
+                      }
+                      secondary={
+                        <Typography component="span" sx={{ display: 'block', color: colors.textPrimary }}>
+                          {person?.[field.name] || '—'}
+                        </Typography>
+                      }
+                    />
+                  </EligibilityListItem>
+                </React.Fragment>
+              ))}
+            </List>
+          ) : (
+            <Box textAlign="center" py={4}>
+              <Typography variant="h6" color={colors.textSecondary}>
+                No information available
+              </Typography>
+            </Box>
+          )}
+        </ScrollableContainer>
       </Box>
+    );
+    */
+  };
+
+  const renderRecordGroup = (items, emptyMessage, formatter) => {
+    if (!items || items.length === 0) {
+      return (
+        <Box py={2} textAlign="center">
+          <Typography variant="body2" color={colors.textSecondary}>
+            {emptyMessage}
+          </Typography>
+        </Box>
+      );
+    }
+
+    return items.map((item, index) => {
+      const { label, lines } = formatter(item, index);
+      const contentLines = (lines || []).filter(Boolean);
+
+      return (
+        <InfoItem key={item.id || index}>
+          <InfoLabel variant="body2">{label}</InfoLabel>
+          <InfoValue variant="body1">
+            {contentLines.length > 0 ? (
+              contentLines.map((line, lineIdx) => (
+                <Typography
+                  key={lineIdx}
+                  variant="body2"
+                  color={colors.textPrimary}
+                  sx={{ display: 'block' }}
+                >
+                  {line}
+                </Typography>
+              ))
+            ) : (
+              <Typography variant="body2" color={colors.textSecondary}>
+                —
+              </Typography>
+            )}
+          </InfoValue>
+        </InfoItem>
+      );
+    });
+  };
+
+  const renderTabContentList = (tabIndex) => {
+    if (tabIndex === 5) {
+      return (
+        <Box>
+          <EducationSubTabs
+            value={educationSubTabValue}
+            onChange={(e, newValue) => setEducationSubTabValue(newValue)}
+            variant="fullWidth"
+          >
+            <EducationSubTab
+              label="Elementary & Secondary"
+              icon={<SchoolIcon />}
+            />
+            <EducationSubTab label="College" icon={<SchoolRoundedIcon />} />
+            <EducationSubTab
+              label="Graduate Studies"
+              icon={<PsychologyIcon />}
+            />
+            <EducationSubTab label="Vocational" icon={<ConstructionIcon />} />
+          </EducationSubTabs>
+
+          {educationSubTabValue === 0 && (
+            <TabPanel>
+              <Box>
+                <InfoItem>
+                  <InfoLabel variant="body2">
+                    <SchoolIcon fontSize="small" />
+                    Elementary School:
+                  </InfoLabel>
+                  <InfoValue variant="body1">
+                    {person?.elementaryNameOfSchool || '—'}
+                  </InfoValue>
+                </InfoItem>
+                <InfoItem>
+                  <InfoLabel variant="body2">
+                    <SchoolIcon fontSize="small" />
+                    Elementary Degree:
+                  </InfoLabel>
+                  <InfoValue variant="body1">
+                    {person?.elementaryDegree || '—'}
+                  </InfoValue>
+                </InfoItem>
+                <InfoItem>
+                  <InfoLabel variant="body2">
+                    <SchoolIcon fontSize="small" />
+                    Secondary School:
+                  </InfoLabel>
+                  <InfoValue variant="body1">
+                    {person?.secondaryNameOfSchool || '—'}
+                  </InfoValue>
+                </InfoItem>
+                <InfoItem>
+                  <InfoLabel variant="body2">
+                    <SchoolIcon fontSize="small" />
+                    Secondary Degree:
+                  </InfoLabel>
+                  <InfoValue variant="body1">
+                    {person?.secondaryDegree || '—'}
+                  </InfoValue>
+                </InfoItem>
+              </Box>
+            </TabPanel>
+          )}
+
+          {educationSubTabValue === 1 && (
+            <TabPanel>
+              <ScrollableContainer>
+                {colleges.length > 0 ? (
+                  <List>
+                    {colleges.map((college) => (
+                      <React.Fragment key={college.id}>
+                        <CollegeListItem>
+                          <MuiListItemIcon>
+                            <Box
+                              sx={{
+                                width: 40,
+                                height: 40,
+                                borderRadius: 1.5,
+                                backgroundColor: colors.primary,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                mr: 2,
+                              }}
+                            >
+                              <SchoolRoundedIcon sx={{ color: colors.textLight, fontSize: 20 }} />
+                            </Box>
+                          </MuiListItemIcon>
+                          <MuiListItemText
+                            primary={
+                              <Typography variant="h6" sx={{ fontWeight: 600, color: colors.textPrimary, mb: 0.5 }}>
+                                {college.collegeNameOfSchool}
+                              </Typography>
+                            }
+                            secondary={
+                              college.collegeDegree ? (
+                                <Typography component="span" sx={{ display: 'block', color: colors.textPrimary }}>
+                                  {college.collegeDegree} ({college.collegePeriodFrom || 'N/A'} - {college.collegePeriodTo || 'N/A'})
+                                </Typography>
+                              ) : (
+                                'No degree information'
+                              )
+                            }
+                          />
+                        </CollegeListItem>
+                      </React.Fragment>
+                    ))}
+                  </List>
+                ) : (
+                  <Box textAlign="center" py={4}>
+                    <Typography variant="h6" color={colors.textSecondary}>
+                      No college records found
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      color={colors.textSecondary}
+                      mt={1}
+                    >
+                      Click "Edit Profile" to add college records
+                    </Typography>
+                  </Box>
+                )}
+              </ScrollableContainer>
+            </TabPanel>
+          )}
+
+          {educationSubTabValue === 2 && (
+            <TabPanel>
+              <ScrollableContainer>
+                {graduates.length > 0 ? (
+                  <List>
+                    {graduates.map((graduate) => (
+                      <React.Fragment key={graduate.id}>
+                        <GraduateListItem>
+                          <MuiListItemIcon>
+                            <Box
+                              sx={{
+                                width: 40,
+                                height: 40,
+                                borderRadius: 1.5,
+                                backgroundColor: colors.primary,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                mr: 2,
+                              }}
+                            >
+                              <PsychologyIcon sx={{ color: colors.textLight, fontSize: 20 }} />
+                            </Box>
+                          </MuiListItemIcon>
+                          <MuiListItemText
+                            primary={
+                              <Typography variant="h6" sx={{ fontWeight: 600, color: colors.textPrimary, mb: 0.5 }}>
+                                {graduate.graduateNameOfSchool}
+                              </Typography>
+                            }
+                            secondary={
+                              graduate.graduateDegree ? (
+                                <Typography component="span" sx={{ display: 'block', color: colors.textPrimary }}>
+                                  {graduate.graduateDegree} ({graduate.graduatePeriodFrom || 'N/A'} - {graduate.graduatePeriodTo || 'N/A'})
+                                </Typography>
+                              ) : (
+                                'No degree information'
+                              )
+                            }
+                          />
+                        </GraduateListItem>
+                      </React.Fragment>
+                    ))}
+                  </List>
+                ) : (
+                  <Box textAlign="center" py={4}>
+                    <Typography variant="h6" color={colors.textSecondary}>
+                      No graduate studies records found
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      color={colors.textSecondary}
+                      mt={1}
+                    >
+                      Click "Edit Profile" to add graduate studies records
+                    </Typography>
+                  </Box>
+                )}
+              </ScrollableContainer>
+            </TabPanel>
+          )}
+
+          {educationSubTabValue === 3 && (
+            <TabPanel>
+              <ScrollableContainer>
+                {vocational.length > 0 ? (
+                  <List>
+                    {vocational.map((voc) => (
+                      <React.Fragment key={voc.id}>
+                        <VocationalListItem>
+                          <MuiListItemIcon>
+                            <Box
+                              sx={{
+                                width: 40,
+                                height: 40,
+                                borderRadius: 1.5,
+                                backgroundColor: colors.primary,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                mr: 2,
+                              }}
+                            >
+                              <ConstructionIcon sx={{ color: colors.textLight, fontSize: 20 }} />
+                            </Box>
+                          </MuiListItemIcon>
+                          <MuiListItemText
+                            primary={
+                              <Typography variant="h6" sx={{ fontWeight: 600, color: colors.textPrimary, mb: 0.5 }}>
+                                {voc.vocationalNameOfSchool}
+                              </Typography>
+                            }
+                            secondary={
+                              voc.vocationalDegree ? (
+                                <Typography component="span" sx={{ display: 'block', color: colors.textPrimary }}>
+                                  {voc.vocationalDegree} ({voc.vocationalPeriodFrom || 'N/A'} - {voc.vocationalPeriodTo || 'N/A'})
+                                </Typography>
+                              ) : (
+                                'No degree information'
+                              )
+                            }
+                          />
+                        </VocationalListItem>
+                      </React.Fragment>
+                    ))}
+                  </List>
+                ) : (
+                  <Box textAlign="center" py={4}>
+                    <Typography variant="h6" color={colors.textSecondary}>
+                      No vocational records found
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      color={colors.textSecondary}
+                      mt={1}
+                    >
+                      Click "Edit Profile" to add vocational records
+                    </Typography>
+                  </Box>
+                )}
+              </ScrollableContainer>
+            </TabPanel>
+          )}
+        </Box>
+      );
+    }
+
+    if (tabIndex === 6) {
+      if (!children || children.length === 0) {
+        return (
+          <Box py={2} textAlign="center">
+            <Typography variant="body2" color={colors.textSecondary}>
+              No children records found
+            </Typography>
+          </Box>
+        );
+      }
+
+      const formatChildName = (child) =>
+        [
+          child.childrenFirstName,
+          child.childrenMiddleName,
+          child.childrenLastName,
+          child.childrenNameExtension,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .trim();
+
+      return (
+        <Box>
+          {children.map((child, index) => (
+            <ChildListItem key={child.id || index}>
+              <MuiListItemText
+                primary={
+                  <Typography
+                    variant="subtitle1"
+                    sx={{ fontWeight: 600, color: colors.textPrimary, mb: 0.5 }}
+                  >
+                    {formatChildName(child) || `Child ${index + 1}`}
+                  </Typography>
+                }
+                secondary={
+                  <Box>
+                    <InfoItem sx={{ mb: 0.5, p: 0 }}>
+                      <InfoLabel sx={{ minWidth: 140 }}>Full Name</InfoLabel>
+                      <InfoValue>
+                        {formatChildName(child) || '—'}
+                      </InfoValue>
+                    </InfoItem>
+                    <InfoItem sx={{ mb: 0, p: 0 }}>
+                      <InfoLabel sx={{ minWidth: 140 }}>Date of Birth</InfoLabel>
+                      <InfoValue>
+                        {child.dateOfBirth
+                          ? `${formatDate(child.dateOfBirth)} (Age: ${getAge(
+                              child.dateOfBirth
+                            )})`
+                          : '—'}
+                      </InfoValue>
+                    </InfoItem>
+                  </Box>
+                }
+              />
+            </ChildListItem>
+          ))}
+        </Box>
+      );
+    }
+
+    if (tabIndex === 7) {
+      if (!eligibilities || eligibilities.length === 0) {
+        return (
+          <Box py={2} textAlign="center">
+            <Typography variant="body2" color={colors.textSecondary}>
+              No eligibility records found
+            </Typography>
+          </Box>
+        );
+      }
+
+      return (
+        <Box>
+          {eligibilities.map((eligibility, index) => (
+            <EligibilityListItem key={eligibility.id || index}>
+              <MuiListItemText
+                primary={
+                  <Typography
+                    variant="subtitle1"
+                    sx={{ fontWeight: 600, color: colors.textPrimary, mb: 0.5 }}
+                  >
+                    {eligibility.eligibilityName ||
+                      `Eligibility ${index + 1}`}
+                  </Typography>
+                }
+                secondary={
+                  <Box sx={{ ml: { xs: 0, md: 0 } }}>
+                    <InfoItem sx={{ mb: 0.5, p: 0 }}>
+                      <InfoLabel sx={{ minWidth: 120 }}>Rating</InfoLabel>
+                      <InfoValue>
+                        {eligibility.eligibilityRating
+                          ? formatRating(eligibility.eligibilityRating)
+                          : '—'}
+                      </InfoValue>
+                    </InfoItem>
+                    <InfoItem sx={{ mb: 0.5, p: 0 }}>
+                      <InfoLabel sx={{ minWidth: 120 }}>Date of Exam</InfoLabel>
+                      <InfoValue>
+                        {eligibility.eligibilityDateOfExam
+                          ? formatDate(eligibility.eligibilityDateOfExam)
+                          : '—'}
+                      </InfoValue>
+                    </InfoItem>
+                    <InfoItem sx={{ mb: 0.5, p: 0 }}>
+                      <InfoLabel sx={{ minWidth: 120 }}>Place of Exam</InfoLabel>
+                      <InfoValue>
+                        {eligibility.eligibilityPlaceOfExam || '—'}
+                      </InfoValue>
+                    </InfoItem>
+                    <InfoItem sx={{ mb: 0.5, p: 0 }}>
+                      <InfoLabel sx={{ minWidth: 120 }}>
+                        License Number
+                      </InfoLabel>
+                      <InfoValue>
+                        {eligibility.licenseNumber || '—'}
+                      </InfoValue>
+                    </InfoItem>
+                    <InfoItem sx={{ mb: 0, p: 0 }}>
+                      <InfoLabel sx={{ minWidth: 120 }}>Valid Until</InfoLabel>
+                      <InfoValue>
+                        {eligibility.DateOfValidity
+                          ? formatDate(eligibility.DateOfValidity)
+                          : '—'}
+                      </InfoValue>
+                    </InfoItem>
+                  </Box>
+                }
+              />
+            </EligibilityListItem>
+          ))}
+        </Box>
+      );
+    }
+
+    if (tabIndex === 8) {
+      if (!learningDevelopment || learningDevelopment.length === 0) {
+        return (
+          <Box py={2} textAlign="center">
+            <Typography variant="body2" color={colors.textSecondary}>
+              No learning and development records found
+            </Typography>
+          </Box>
+        );
+      }
+
+      return (
+        <Box>
+          {learningDevelopment.map((learning, index) => (
+            <LearningDevelopmentListItem key={learning.id || index}>
+              <MuiListItemText
+                primary={
+                  <Typography
+                    variant="subtitle1"
+                    sx={{ fontWeight: 600, color: colors.textPrimary, mb: 0.5 }}
+                  >
+                    {learning.titleOfProgram || `Program ${index + 1}`}
+                  </Typography>
+                }
+                secondary={
+                  <Box>
+                    <InfoItem sx={{ mb: 0.5, p: 0 }}>
+                      <InfoLabel sx={{ minWidth: 160 }}>Type</InfoLabel>
+                      <InfoValue>
+                        {learning.typeOfLearningDevelopment || '—'}
+                      </InfoValue>
+                    </InfoItem>
+                    <InfoItem sx={{ mb: 0.5, p: 0 }}>
+                      <InfoLabel sx={{ minWidth: 160 }}>Number of Hours</InfoLabel>
+                      <InfoValue>{learning.numberOfHours || '—'}</InfoValue>
+                    </InfoItem>
+                    <InfoItem sx={{ mb: 0.5, p: 0 }}>
+                      <InfoLabel sx={{ minWidth: 160 }}>Period</InfoLabel>
+                      <InfoValue>
+                        {learning.dateFrom && learning.dateTo
+                          ? `${formatDate(learning.dateFrom)} - ${formatDate(
+                              learning.dateTo
+                            )}`
+                          : '—'}
+                      </InfoValue>
+                    </InfoItem>
+                    <InfoItem sx={{ mb: 0, p: 0 }}>
+                      <InfoLabel sx={{ minWidth: 160 }}>
+                        Conducted / Sponsored by
+                      </InfoLabel>
+                      <InfoValue>
+                        {learning.conductedSponsored || '—'}
+                      </InfoValue>
+                    </InfoItem>
+                  </Box>
+                }
+              />
+            </LearningDevelopmentListItem>
+          ))}
+        </Box>
+      );
+    }
+
+    if (tabIndex === 9) {
+      if (!otherInformation || otherInformation.length === 0) {
+        return (
+          <Box py={2} textAlign="center">
+            <Typography variant="body2" color={colors.textSecondary}>
+              No other information records found
+            </Typography>
+          </Box>
+        );
+      }
+
+      return (
+        <Box>
+          {otherInformation.map((info, index) => (
+            <OtherInformationListItem key={info.id || index}>
+              <MuiListItemText
+                primary={
+                  <Typography
+                    variant="subtitle1"
+                    sx={{ fontWeight: 600, color: colors.textPrimary, mb: 0.5 }}
+                  >
+                    {`Entry ${index + 1}`}
+                  </Typography>
+                }
+                secondary={
+                  <Box>
+                    <InfoItem sx={{ mb: 0.5, p: 0 }}>
+                      <InfoLabel sx={{ minWidth: 180 }}>Special Skills</InfoLabel>
+                      <InfoValue>{info.specialSkills || '—'}</InfoValue>
+                    </InfoItem>
+                    <InfoItem sx={{ mb: 0.5, p: 0 }}>
+                      <InfoLabel sx={{ minWidth: 180 }}>
+                        Non-Academic Distinctions
+                      </InfoLabel>
+                      <InfoValue>
+                        {info.nonAcademicDistinctions || '—'}
+                      </InfoValue>
+                    </InfoItem>
+                    <InfoItem sx={{ mb: 0, p: 0 }}>
+                      <InfoLabel sx={{ minWidth: 180 }}>
+                        Membership in Association
+                      </InfoLabel>
+                      <InfoValue>
+                        {info.membershipInAssociation || '—'}
+                      </InfoValue>
+                    </InfoItem>
+                  </Box>
+                }
+              />
+            </OtherInformationListItem>
+          ))}
+        </Box>
+      );
+    }
+
+    if (tabIndex === 10) {
+      if (!workExperiences || workExperiences.length === 0) {
+        return (
+          <Box py={2} textAlign="center">
+            <Typography variant="body2" color={colors.textSecondary}>
+              No work experience records found
+            </Typography>
+          </Box>
+        );
+      }
+
+      return (
+        <Box>
+          {workExperiences.map((workExp, index) => (
+            <WorkExperienceListItem key={workExp.id || index}>
+              <MuiListItemText
+                primary={
+                  <Typography
+                    variant="subtitle1"
+                    sx={{ fontWeight: 600, color: colors.textPrimary, mb: 0.5 }}
+                  >
+                    {workExp.workPositionTitle ||
+                      `Work Experience ${index + 1}`}
+                  </Typography>
+                }
+                secondary={
+                  <Box>
+                    <InfoItem sx={{ mb: 0.5, p: 0 }}>
+                      <InfoLabel sx={{ minWidth: 160 }}>Company</InfoLabel>
+                      <InfoValue>{workExp.workCompany || '—'}</InfoValue>
+                    </InfoItem>
+                    <InfoItem sx={{ mb: 0.5, p: 0 }}>
+                      <InfoLabel sx={{ minWidth: 160 }}>Duration</InfoLabel>
+                      <InfoValue>
+                        {workExp.workDateFrom && workExp.workDateTo
+                          ? `${formatDate(workExp.workDateFrom)} - ${formatDate(
+                              workExp.workDateTo
+                            )}`
+                          : '—'}
+                      </InfoValue>
+                    </InfoItem>
+                    <InfoItem sx={{ mb: 0.5, p: 0 }}>
+                      <InfoLabel sx={{ minWidth: 160 }}>
+                        Monthly Salary
+                      </InfoLabel>
+                      <InfoValue>
+                        {workExp.workMonthlySalary
+                          ? `₱${parseFloat(
+                              workExp.workMonthlySalary
+                            ).toLocaleString()}`
+                          : '—'}
+                      </InfoValue>
+                    </InfoItem>
+                    <InfoItem sx={{ mb: 0.5, p: 0 }}>
+                      <InfoLabel sx={{ minWidth: 160 }}>
+                        Salary Job / Pay Grade
+                      </InfoLabel>
+                      <InfoValue>
+                        {workExp.SalaryJobOrPayGrade || '—'}
+                      </InfoValue>
+                    </InfoItem>
+                    <InfoItem sx={{ mb: 0.5, p: 0 }}>
+                      <InfoLabel sx={{ minWidth: 160 }}>
+                        Status of Appointment
+                      </InfoLabel>
+                      <InfoValue>
+                        {workExp.StatusOfAppointment || '—'}
+                      </InfoValue>
+                    </InfoItem>
+                    <InfoItem sx={{ mb: 0, p: 0 }}>
+                      <InfoLabel sx={{ minWidth: 160 }}>
+                        Service Type
+                      </InfoLabel>
+                      <InfoValue>
+                        {workExp.isGovtService
+                          ? workExp.isGovtService === 'Yes'
+                            ? 'Government'
+                            : 'Private'
+                          : '—'}
+                      </InfoValue>
+                    </InfoItem>
+                  </Box>
+                }
+              />
+            </WorkExperienceListItem>
+          ))}
+        </Box>
+      );
+    }
+
+    const fields = formFields[tabIndex] || [];
+
+    return (
+      <EligibilityCard>
+        <List disablePadding>
+          <EligibilityListItem sx={{ border: 'none', boxShadow: 'none', backgroundColor: colors.secondary }}>
+            <MuiListItemText
+              primary={
+                <Typography
+                  variant="subtitle1"
+                  sx={{ fontWeight: 600, color: colors.textPrimary, mb: 1 }}
+                >
+                  {tabs[tabValue]?.label || 'Details'}
+                </Typography>
+              }
+              secondary={
+                <Box>
+                  {fields.map((field, idx) => (
+                    <InfoItem key={idx} sx={{ mb: 0.5, p: 0 }}>
+                      <InfoLabel variant="body2" sx={{ minWidth: 160 }}>
+                        {field.icon}
+                        {field.label}:
+                      </InfoLabel>
+                      <InfoValue variant="body1">
+                        {person?.[field.name] || '—'}
+                      </InfoValue>
+                    </InfoItem>
+                  ))}
+                </Box>
+              }
+            />
+          </EligibilityListItem>
+        </List>
+      </EligibilityCard>
     );
   };
 
   const renderFormFields = () => {
-    // Special handling for Education tab with sub-tabs
     if (tabValue === 5) {
       return (
         <Box>
@@ -3353,7 +3096,6 @@ const Profile = () => {
             Education Information
           </Typography>
 
-          {/* Add the sub-tabs navigation here */}
           <EducationSubTabs
             value={educationSubTabValue}
             onChange={(e, newValue) => setEducationSubTabValue(newValue)}
@@ -3839,7 +3581,6 @@ const Profile = () => {
       );
     }
 
-    // Special handling for Children tab
     if (tabValue === 6) {
       return (
         <Box>
@@ -3952,7 +3693,6 @@ const Profile = () => {
       );
     }
 
-    // Special handling for Eligibility tab
     if (tabValue === 7) {
       return (
         <Box>
@@ -4091,7 +3831,6 @@ const Profile = () => {
       );
     }
 
-    // Special handling for Learning and Development tab
     if (tabValue === 8) {
       return (
         <Box>
@@ -4229,7 +3968,6 @@ const Profile = () => {
       );
     }
 
-    // Special handling for Other Information tab
     if (tabValue === 9) {
       return (
         <Box>
@@ -4468,8 +4206,8 @@ const Profile = () => {
                           }
                           label="Government Service"
                         >
-                          <MenuItem value="Yes">Yes</MenuItem>
-                          <MenuItem value="No">No</MenuItem>
+                          <MuiMenuItem value="Yes">Yes</MuiMenuItem>
+                          <MuiMenuItem value="No">No</MuiMenuItem>
                         </Select>
                       </FormControl>
                     </Grid>
@@ -4521,121 +4259,136 @@ const Profile = () => {
     );
   };
 
+  const hexToRgb = (hex) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result
+      ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`
+      : '109, 35, 35';
+  };
+
   return (
-    <ProfileContainer ref={profileRef}>
-      <ProfileHeader>
-        <ProfileAvatarContainer>
-          <ProfileAvatar
-            src={
-              profilePicture
-                ? `${API_BASE_URL}${profilePicture}?t=${Date.now()}`
-                : undefined
-            }
-            alt="Profile Picture"
-            onClick={handleImageZoom}
+    <Box
+      ref={profileRef}
+      sx={{
+        py: 4,
+        px: { xs: 1.5, md: 3 },
+        minHeight: '100vh',
+        backgroundColor: colors.background,
+      }}
+    >
+      <Container maxWidth="xl">
+        <Stack spacing={2}>
+          {/* Header: wide, simple, social-profile style */}
+          <GlassCard
+            sx={{
+              px: { xs: 2.5, md: 4 },
+              py: { xs: 2.5, md: 3 },
+              display: 'flex',
+              alignItems: 'center',
+              gap: { xs: 2, md: 3 },
+            }}
           >
-            {!profilePicture && <PersonIcon sx={{ fontSize: 80 }} />}
-          </ProfileAvatar>
-        </ProfileAvatarContainer>
-
-        <ProfileInfo>
-          <ProfileName>
-            {person
-              ? `${person.firstName} ${person.middleName} ${person.lastName} ${
-                  person.nameExtension || ''
-                }`.trim()
-              : 'Employee Profile'}
-          </ProfileName>
-          <ProfileSubtitle>
-            Employee No.: <b>{person?.agencyEmployeeNum || '—'}</b>
-          </ProfileSubtitle>
-        </ProfileInfo>
-
-        <ProfileActions>
-          <Tooltip title="Refresh profile">
-            <IconButton
-              onClick={handleRefresh}
+            <Avatar
+              src={
+                profilePicture
+                  ? `${API_BASE_URL}${profilePicture}?t=${Date.now()}`
+                  : undefined
+              }
+              onClick={handleImageZoom}
               sx={{
-                backgroundColor: alpha(colors.primary, 0.1),
-                color: colors.primary,
-                '&:hover': {
-                  backgroundColor: alpha(colors.primary, 0.2),
-                },
+                width: 96,
+                height: 96,
+                cursor: 'pointer',
+                border: `3px solid ${colors.border}`,
+                bgcolor: alpha(colors.primary, 0.1),
               }}
             >
-              <RefreshIcon />
-            </IconButton>
-          </Tooltip>
+              {!profilePicture && (
+                <PersonIcon sx={{ color: colors.primary, fontSize: 42 }} />
+              )}
+            </Avatar>
 
-          <ActionButton
-            variant="contained"
-            startIcon={<EditIcon />}
-            onClick={handleEditOpen}
-          >
-            Edit Profile
-          </ActionButton>
-        </ProfileActions>
-      </ProfileHeader>
+            <Box flex={1} minWidth={0}>
+              <Typography
+                variant="h5"
+                sx={{ fontWeight: 700, mb: 0.5, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}
+              >
+                {person
+                  ? `${person.firstName} ${person.middleName} ${person.lastName} ${
+                      person.nameExtension || ''
+                    }`.trim()
+                  : 'Employee Profile'}
+              </Typography>
+              <Typography
+                variant="body2"
+                color={colors.textSecondary}
+                sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+              >
+                <BadgeIcon fontSize="small" />
+                Employee No.: <strong>{person?.agencyEmployeeNum || '—'}</strong>
+              </Typography>
+            </Box>
 
-      <SectionPaper>
-        <Box
-          display="flex"
-          justifyContent="space-between"
-          alignItems="center"
-          mb={3}
-        >
-          <SectionTitle>
-            <PersonIcon />
-            Employee Details
-          </SectionTitle>
-          <Box display="flex" alignItems="center">
-            <Typography variant="body2" color={colors.textSecondary} mr={2}>
-              View Mode:
-            </Typography>
-            <ToggleButtonGroup
-              value={viewMode}
-              exclusive
-              onChange={handleViewModeChange}
-              aria-label="view mode"
-              size="small"
+            <Stack
+              direction="row"
+              spacing={1.5}
+              sx={{ flexShrink: 0 }}
             >
-              <ViewToggleButton value="grid" aria-label="grid view">
-                <GridViewIcon />
-              </ViewToggleButton>
-              <ViewToggleButton value="list" aria-label="list view">
-                <ViewListIcon />
-              </ViewToggleButton>
-            </ToggleButtonGroup>
-          </Box>
-        </Box>
+              <Button
+                variant="outlined"
+                startIcon={<RefreshIcon />}
+                onClick={handleRefresh}
+              >
+                Refresh
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<EditIcon />}
+                onClick={handleEditOpen}
+              >
+                Edit Profile
+              </Button>
+            </Stack>
+          </GlassCard>
 
-        <TabContainer>
-          <CustomTabs
-            value={tabValue}
-            onChange={handleTabChange}
-            variant={isMobile ? 'scrollable' : 'standard'}
-            scrollButtons={isMobile ? 'auto' : false}
-          >
-            {tabs.map((tab) => (
-              <CustomTab
-                key={tab.key}
-                label={tab.label}
-                icon={tab.icon}
-                iconPosition="start"
-              />
-            ))}
-          </CustomTabs>
-        </TabContainer>
+          {/* Tabs + content: full-width like a feed */}
+          <GlassCard>
+            <Box
+              sx={{
+                borderBottom: `1px solid ${alpha(colors.primary, 0.12)}`,
+                px: { xs: 1.5, md: 2.5 },
+                pt: 2,
+              }}
+            >
+              <Tabs
+                value={tabValue}
+                onChange={handleTabChange}
+                variant="scrollable"
+                scrollButtons="auto"
+                allowScrollButtonsMobile
+              >
+                {tabs.map((tab) => (
+                  <Tab
+                    key={tab.key}
+                    icon={tab.icon}
+                    iconPosition="start"
+                    label={tab.label}
+                    sx={{
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      minHeight: 46,
+                    }}
+                  />
+                ))}
+              </Tabs>
+            </Box>
 
-        <ContentContainer>
-          <ViewWrapper className={viewMode === 'grid' ? 'active' : ''}>
-            {renderTabContentGrid(tabValue)}
-          </ViewWrapper>
-          <ViewWrapper className={viewMode === 'list' ? 'active' : ''}>
-            {renderTabContentList(tabValue)}
-          </ViewWrapper>
-        </ContentContainer>
-      </SectionPaper>
+            <Box sx={{ px: { xs: 1.5, md: 3 }, py: 2.5 }}>
+              {renderTabContentList(tabValue)}
+            </Box>
+          </GlassCard>
+        </Stack>
+      </Container>
 
       {/* Edit Profile Modal */}
       <Modal
@@ -4938,7 +4691,7 @@ const Profile = () => {
           <KeyboardArrowUpIcon />
         </FloatingButton>
       )}
-    </ProfileContainer>
+    </Box>
   );
 };
 

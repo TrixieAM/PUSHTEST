@@ -34,9 +34,20 @@ router.post('/api/announcements', upload.single('image'), (req, res) => {
     const announcementId = result.insertId;
     const notificationDescription = `New announcement has been posted. Click to see details.`;
     
-    // Fetch all employee numbers from users table and create notifications
+    // Fetch all employee numbers and create notifications
+    // Note: We try to be flexible here and support both `users.employeeNumber`
+    // and `person_table.agencyEmployeeNum` so announcements notify all employees
+    // even if one of these fields is not populated.
     db.query(
-      'SELECT DISTINCT employeeNumber FROM users WHERE employeeNumber IS NOT NULL AND employeeNumber != ""',
+      `
+        SELECT DISTINCT employeeNumber
+        FROM users
+        WHERE employeeNumber IS NOT NULL AND employeeNumber != ""
+        UNION
+        SELECT DISTINCT agencyEmployeeNum AS employeeNumber
+        FROM person_table
+        WHERE agencyEmployeeNum IS NOT NULL AND agencyEmployeeNum != ""
+      `,
       async (userErr, users) => {
         if (userErr) {
           console.error('Error fetching users for notifications:', userErr);

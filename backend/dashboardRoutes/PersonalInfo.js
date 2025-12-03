@@ -21,6 +21,25 @@ router.get('/person_table', (req, res) => {
   });
 });
 
+// GET person by employee number
+router.get('/person_table/:employeeNumber', (req, res) => {
+  const { employeeNumber } = req.params;
+  const query = 'SELECT * FROM person_table WHERE agencyEmployeeNum = ?';
+  
+  db.query(query, [employeeNumber], (err, result) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).send('Internal Server Error');
+    }
+    
+    if (result.length === 0) {
+      return res.status(404).json({ error: 'Employee not found' });
+    }
+    
+    res.status(200).json(result[0]);
+  });
+});
+
 
 
 

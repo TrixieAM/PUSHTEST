@@ -34,6 +34,7 @@ import {
   Backdrop,
   CircularProgress,
   CardHeader,
+  Checkbox,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import {
@@ -150,18 +151,30 @@ const PremiumTableCell = styled(TableCell)(({ theme, isHeader = false }) => ({
   whiteSpace: 'nowrap', // Prevent text wrapping
 }));
 
-// Styled Modal Component
-const StyledModal = ({ open, onClose, title, message, type = 'info', onConfirm, showCancel = false }) => {
+// Styled Modal Component - professional look
+const StyledModal = ({
+  open,
+  onClose,
+  title,
+  message,
+  type = 'info',
+  onConfirm,
+  showCancel = false,
+}) => {
   const getIcon = () => {
+    const baseStyles = {
+      fontSize: 40,
+    };
+
     switch (type) {
       case 'success':
-        return <CheckCircleIcon sx={{ fontSize: 60, color: '#4CAF50' }} />;
+        return <CheckCircleIcon sx={{ ...baseStyles, color: '#2e7d32' }} />;
       case 'warning':
-        return <WarningIcon sx={{ fontSize: 60, color: '#FF9800' }} />;
+        return <WarningIcon sx={{ ...baseStyles, color: '#ed6c02' }} />;
       case 'error':
-        return <ErrorIcon sx={{ fontSize: 60, color: '#f44336' }} />;
+        return <ErrorIcon sx={{ ...baseStyles, color: '#d32f2f' }} />;
       default:
-        return <InfoIcon sx={{ fontSize: 60, color: '#2196F3' }} />;
+        return <InfoIcon sx={{ ...baseStyles, color: '#1976d2' }} />;
     }
   };
 
@@ -173,61 +186,100 @@ const StyledModal = ({ open, onClose, title, message, type = 'info', onConfirm, 
       fullWidth
       PaperProps={{
         sx: {
-          borderRadius: '12px',
-          border: '3px solid #6D2323',
+          borderRadius: 3,
+          boxShadow: '0px 10px 40px rgba(0,0,0,0.18)',
+          border: '1px solid rgba(109, 35, 35, 0.12)',
+          overflow: 'hidden',
         },
       }}
     >
       <DialogTitle
         sx={{
-          backgroundColor: '#6D2323',
-          color: '#FEF9E1',
+          px: 3,
+          pt: 2.5,
+          pb: 1.5,
           display: 'flex',
-          justifyContent: 'space-between',
           alignItems: 'center',
-          padding: '16px 24px',
+          justifyContent: 'space-between',
+          borderBottom: '1px solid rgba(0,0,0,0.08)',
+          backgroundColor: '#FFFFFF',
         }}
       >
-        <Typography variant="h6" component="div" sx={{ fontWeight: 'bold' }}>
+        <Typography
+          variant="subtitle1"
+          sx={{ fontWeight: 700, color: '#6D2323', letterSpacing: 0.3 }}
+        >
           {title}
         </Typography>
         <IconButton
+          size="small"
           onClick={onClose}
           sx={{
-            color: '#FEF9E1',
+            color: '#6D2323',
             '&:hover': {
-              backgroundColor: 'rgba(254, 249, 225, 0.1)',
+              backgroundColor: 'rgba(109, 35, 35, 0.06)',
             },
           }}
         >
-          <CloseIcon />
+          <CloseIcon fontSize="small" />
         </IconButton>
       </DialogTitle>
+
       <DialogContent
         sx={{
-          backgroundColor: '#FEF9E1',
-          padding: '32px 24px',
-          textAlign: 'center',
+          px: 4,
+          pt: 3,
+          pb: 2,
+          backgroundColor: '#FFFFFF',
+          minHeight: 320,
         }}
       >
-        <Box sx={{ mb: 2 }}>{getIcon()}</Box>
-        <Typography
+        <Box
           sx={{
-            color: '#6D2323',
-            fontSize: '16px',
-            whiteSpace: 'pre-line',
-            lineHeight: 1.6,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            textAlign: 'center',
+                gap: 2.5,
           }}
         >
-          {message}
-        </Typography>
+          <Box
+            sx={{
+              width: 72,
+              height: 72,
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+                  backgroundColor: 'rgba(109,35,35,0.06)',
+            }}
+          >
+            {getIcon()}
+          </Box>
+
+          <Typography
+            sx={{
+              color: '#4b1717',
+              fontSize: 15,
+              whiteSpace: 'pre-line',
+              lineHeight: 1.7,
+            }}
+          >
+            {message}
+          </Typography>
+        </Box>
       </DialogContent>
+
       <DialogActions
         sx={{
-          backgroundColor: '#FEF9E1',
-          padding: '16px 24px',
-          justifyContent: 'center',
-          gap: 2,
+          px: 4,
+          py: 3,
+          backgroundColor: '#FFFFFF',
+          borderTop: '1px solid rgba(0,0,0,0.04)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'stretch',
+          gap: 1.5,
         }}
       >
         {showCancel && (
@@ -235,10 +287,10 @@ const StyledModal = ({ open, onClose, title, message, type = 'info', onConfirm, 
             onClick={onClose}
             variant="outlined"
             sx={{
-              borderColor: '#6D2323',
+              width: '100%',
+              borderColor: 'rgba(109,35,35,0.6)',
               color: '#6D2323',
-              fontWeight: 'bold',
-              minWidth: '120px',
+              fontWeight: 600,
             }}
           >
             Cancel
@@ -248,10 +300,13 @@ const StyledModal = ({ open, onClose, title, message, type = 'info', onConfirm, 
           onClick={onConfirm || onClose}
           variant="contained"
           sx={{
-            backgroundColor: '#6D2323',
+            width: '100%',
+            bgcolor: '#6D2323',
             color: '#FEF9E1',
-            fontWeight: 'bold',
-            minWidth: '120px',
+            fontWeight: 600,
+            '&:hover': {
+              bgcolor: '#8B3333',
+            },
           }}
         >
           {showCancel ? 'Confirm' : 'OK'}
@@ -307,6 +362,8 @@ const OverallAttendance = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmittingJO, setIsSubmittingJO] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showRegularConfirm, setShowRegularConfirm] = useState(false);
+  const [confirmRegularChecked, setConfirmRegularChecked] = useState(false);
 
   // Modal state
   const [modal, setModal] = useState({
@@ -1503,7 +1560,7 @@ const OverallAttendance = () => {
                       variant="contained"
                       fullWidth
                       startIcon={<Assignment />}
-                      onClick={submitToPayroll}
+                      onClick={() => setShowRegularConfirm(true)}
                       disabled={isSubmitting}
                       sx={{
                         py: 2,
@@ -1545,6 +1602,189 @@ const OverallAttendance = () => {
         )}
 
         {/* Modal */}
+       {/* Confirmation Modal for Regular Payroll Submission */}
+       <Dialog
+         open={showRegularConfirm}
+         onClose={() => {
+           setShowRegularConfirm(false);
+           setConfirmRegularChecked(false);
+         }}
+         maxWidth="sm"
+         fullWidth
+         PaperProps={{
+           sx: {
+             borderRadius: 3,
+             boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+             border: '2px solid #6D2323',
+             overflow: 'hidden',
+           },
+         }}
+       >
+         <DialogTitle
+           sx={{
+             px: 3,
+           pt: 2.5,
+           pb: 2,
+             display: 'flex',
+             alignItems: 'center',
+             gap: 2,
+             borderBottom: '3px solid #6D2323',
+             backgroundColor: '#FFFFFF',
+           }}
+         >
+           <Avatar
+             sx={{
+               bgcolor: 'rgba(109,35,35,0.08)',
+               color: '#6D2323',
+               width: 52,
+               height: 52,
+             }}
+           >
+             <Assignment sx={{ fontSize: 26 }} />
+           </Avatar>
+           <Box>
+             <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#333' }}>
+               Confirm Regular Payroll Submission
+             </Typography>
+             <Typography variant="body2" sx={{ color: '#666' }}>
+               Final confirmation required before submitting to Regular payroll.
+             </Typography>
+           </Box>
+         </DialogTitle>
+
+         <DialogContent
+           sx={{
+             px: 4,
+             pt: 5,
+             pb: 3,
+             backgroundColor: '#FFFFFF',
+           }}
+         >
+           <Alert
+             severity="info"
+             icon={<InfoIcon />}
+             sx={{
+              mt: 2,
+              mb: 3.5,
+               borderRadius: 2,
+               bgcolor: 'rgba(109,35,35,0.04)',
+               border: '1px solid rgba(109,35,35,0.2)',
+               '& .MuiAlert-icon': {
+                 color: '#6D2323',
+                 fontSize: 24,
+               },
+             }}
+           >
+             <Typography
+               variant="body1"
+               sx={{ fontWeight: 600, mb: 0.5, color: '#333' }}
+             >
+               {attendanceData.length} record(s) will be validated and submitted.
+             </Typography>
+             <Typography variant="body2" sx={{ color: '#555' }}>
+               Please ensure all attendance records are complete and accurate
+               before continuing. This action will forward data to Regular
+               payroll processing.
+             </Typography>
+           </Alert>
+
+           <Box
+             sx={{
+               p: 2.5,
+               bgcolor: '#f9f9f9',
+               borderRadius: 2,
+               border: `2px solid ${
+                 confirmRegularChecked ? '#6D2323' : '#e0e0e0'
+               }`,
+               display: 'flex',
+               alignItems: 'flex-start',
+               gap: 1.5,
+               transition: 'all 0.2s ease',
+               ...(confirmRegularChecked && {
+                 bgcolor: 'rgba(109,35,35,0.04)',
+               }),
+             }}
+           >
+             <Checkbox
+               checked={confirmRegularChecked}
+               onChange={(e) => setConfirmRegularChecked(e.target.checked)}
+               sx={{
+                 color: '#6D2323',
+                 '&.Mui-checked': {
+                   color: '#6D2323',
+                 },
+                 mt: -0.5,
+               }}
+             />
+             <Box>
+               <Typography
+                 variant="body1"
+                 sx={{ fontWeight: 600, color: '#333', mb: 0.5 }}
+               >
+                 I confirm that I have reviewed all Regular payroll records.
+               </Typography>
+               <Typography variant="body2" sx={{ color: '#666' }}>
+                 All information for Regular employees is accurate and ready for
+                 submission to payroll. I understand this action cannot be
+                 undone.
+               </Typography>
+             </Box>
+           </Box>
+         </DialogContent>
+
+         <DialogActions
+           sx={{
+             px: 4,
+             py: 3,
+             backgroundColor: '#FFFFFF',
+             borderTop: '1px solid rgba(0,0,0,0.06)',
+             display: 'flex',
+             justifyContent: 'flex-end',
+             gap: 1.5,
+           }}
+         >
+           <ProfessionalButton
+             variant="outlined"
+             onClick={() => {
+               setShowRegularConfirm(false);
+               setConfirmRegularChecked(false);
+             }}
+             sx={{
+               minWidth: 120,
+               borderColor: '#6D2323',
+               color: '#6D2323',
+               fontWeight: 600,
+             }}
+           >
+             Cancel
+           </ProfessionalButton>
+           <ProfessionalButton
+             variant="contained"
+             disabled={!confirmRegularChecked || isSubmitting}
+             onClick={async () => {
+               setShowRegularConfirm(false);
+               setConfirmRegularChecked(false);
+               await submitToPayroll();
+             }}
+             sx={{
+               minWidth: 160,
+               bgcolor: '#6D2323',
+               color: '#FEF9E1',
+               fontWeight: 600,
+               '&:hover': {
+                 bgcolor: '#8B3333',
+               },
+               '&:disabled': {
+                 bgcolor: 'rgba(0,0,0,0.12)',
+                 color: 'rgba(0,0,0,0.4)',
+               },
+             }}
+           >
+             {isSubmitting ? 'Submitting...' : 'Confirm & Submit'}
+           </ProfessionalButton>
+         </DialogActions>
+       </Dialog>
+
         <StyledModal
           open={modal.open}
           onClose={closeModal}

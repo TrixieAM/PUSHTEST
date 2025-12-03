@@ -335,68 +335,18 @@ const PayslipDistribution = forwardRef(({ employee }, ref) => {
     ];
 
     // 5. Render each of the 3 slots
-    // Create a temporary off-screen container for faster rendering (avoids React re-renders)
-    const tempContainer = document.createElement('div');
-    tempContainer.style.position = 'absolute';
-    tempContainer.style.left = '-9999px';
-    tempContainer.style.top = '-9999px';
-    tempContainer.style.width = '800px';
-    tempContainer.style.backgroundColor = '#fff';
-    document.body.appendChild(tempContainer);
-
     for (let i = 0; i < records.length; i++) {
       const { payroll, label } = records[i];
       let imgData;
 
       if (payroll) {
-        // Update React state for the main display (minimal delay)
+        // Normal payslip
         setDisplayEmployee(payroll);
-        
-        // Wait just one frame for React to update
-        await new Promise((resolve) => {
-          requestAnimationFrame(() => resolve());
-        });
+        await new Promise((resolve) => setTimeout(resolve, 500)); // wait DOM update
 
-        // Clone the payslip element to avoid React re-renders on subsequent iterations
         const input = payslipRef.current;
-        if (!input) {
-          // Fallback: create placeholder
-          const placeholderCanvas = document.createElement('canvas');
-          placeholderCanvas.width = 600;
-          placeholderCanvas.height = 1200;
-          const ctx = placeholderCanvas.getContext('2d');
-          ctx.fillStyle = '#fff';
-          ctx.fillRect(0, 0, placeholderCanvas.width, placeholderCanvas.height);
-          ctx.fillStyle = '#6D2323';
-          ctx.font = 'bold 28px Arial';
-          ctx.textAlign = 'center';
-          ctx.fillText('Loading...', placeholderCanvas.width / 2, 500);
-          imgData = placeholderCanvas.toDataURL('image/png');
-        } else {
-          // Clone the element for off-screen rendering
-          const clone = input.cloneNode(true);
-          clone.style.width = '800px';
-          clone.style.overflow = 'hidden';
-          tempContainer.innerHTML = '';
-          tempContainer.appendChild(clone);
-
-          // Optimized html2canvas settings for faster rendering
-          const canvas = await html2canvas(clone, {
-            scale: 1.0, // Minimum scale for maximum speed while maintaining readability
-            useCORS: true,
-            logging: false,
-            backgroundColor: '#ffffff',
-            removeContainer: false,
-            allowTaint: false,
-            imageTimeout: 0,
-            windowWidth: 800,
-            windowHeight: 1200,
-            // Additional performance optimizations
-            foreignObjectRendering: false,
-            onclone: null,
-          });
-          imgData = canvas.toDataURL('image/png', 0.85); // More compression for faster processing
-        }
+        const canvas = await html2canvas(input, { scale: 2, useCORS: true });
+        imgData = canvas.toDataURL('image/png');
       } else {
         // Missing → create "No Data" placeholder
         const placeholderCanvas = document.createElement('canvas');
@@ -428,9 +378,6 @@ const PayslipDistribution = forwardRef(({ employee }, ref) => {
       );
     }
 
-    // Clean up temporary container
-    document.body.removeChild(tempContainer);
-
     return pdf.output('blob');
   };
 
@@ -442,52 +389,27 @@ const PayslipDistribution = forwardRef(({ employee }, ref) => {
     setLoadingMessage('Generating payslips and sending via Gmail...');
 
     try {
-      // Filter employees first
-      const employees = filteredPayroll.filter((e) =>
-        selectedEmployees.includes(e.employeeNumber)
-      );
-
-      // Process in batches of 3 to avoid overwhelming the browser (reduced for faster per-batch completion)
-      const batchSize = 3;
-      const batches = [];
-      for (let i = 0; i < employees.length; i += batchSize) {
-        batches.push(employees.slice(i, i + batchSize));
-      }
-
       const formData = new FormData();
       let payslipMeta = [];
 
-      // Process batches sequentially, but employees within each batch in parallel
-      for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
-        const batch = batches[batchIndex];
-        
-        // Update loading message for batch progress
-        setLoadingMessage(
-          `Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} employee${batch.length > 1 ? 's' : ''})...`
-        );
+      // Update loading message for processing
+      setLoadingMessage(
+        `Processing ${selectedEmployees.length} employee payslips...`
+      );
 
-        // Process batch in parallel using Promise.all
-        const pdfPromises = batch.map(async (emp) => {
-          // Update loading message for current employee
-          setLoadingMessage(
-            `Batch ${batchIndex + 1}/${batches.length}: Generating payslip for ${emp.name}...`
-          );
-          
-          // Generate 3-month PDF for this employee
-          const pdfBlob = await generate3MonthPDF(emp);
-          return { pdfBlob, emp };
-        });
+      for (const emp of filteredPayroll.filter((e) =>
+        selectedEmployees.includes(e.employeeNumber)
+      )) {
+        // Update loading message for current employee
+        setLoadingMessage(`Generating payslip for ${emp.name}...`);
 
-        // Wait for all PDFs in this batch to be generated
-        const results = await Promise.all(pdfPromises);
+        // Generate 3-month PDF for this employee
+        const pdfBlob = await generate3MonthPDF(emp);
+        formData.append('pdfs', pdfBlob, `${emp.name}_3month_payslip.pdf`);
 
-        // Add all PDFs from this batch to formData
-        results.forEach(({ pdfBlob, emp }) => {
-          formData.append('pdfs', pdfBlob, `${emp.name}_3month_payslip.pdf`);
-          payslipMeta.push({
-            name: emp.name,
-            employeeNumber: emp.employeeNumber,
-          });
+        payslipMeta.push({
+          name: emp.name,
+          employeeNumber: emp.employeeNumber,
         });
       }
 
@@ -556,17 +478,19 @@ const PayslipDistribution = forwardRef(({ employee }, ref) => {
 
   return (
     <>
-      <Box
-        sx={{
-          py: 4,
-          pt: -10,
-          width: '1600px', // Match PayslipOverall fixed width
-          mx: 'auto', // Center horizontally
-          overflow: 'hidden', // Prevent horizontal scroll
-        }}
-      >
-        {/* Container with fixed width (aligned with PayslipOverall) */}
-        <Box sx={{ px: 6 }}>
+    <Box sx={{ 
+      py: 4,
+      borderRadius: '14px',
+      width: '100vw', // Full viewport width
+      mx: 'auto', // Center horizontally
+      maxWidth: '100%', // Ensure it doesn't exceed viewport
+      overflow: 'hidden', // Prevent horizontal scroll
+      position: 'relative',
+      left: '50%',
+      transform: 'translateX(-50%)', // Center the element
+    }}>
+      {/* Wider Container */}
+      <Box sx={{ px: 6, mx: 'auto', maxWidth: '1600px' }}>
         {/* Header */}
         <Fade in timeout={500}>
           <Box sx={{ mb: 4 }}>
@@ -1482,9 +1406,9 @@ const PayslipDistribution = forwardRef(({ employee }, ref) => {
             </Button>
           </DialogActions>
         </Dialog>
-        </Box>
-
       </Box>
+
+    </Box>
 
     {/* Overlays - Outside main container for full screen coverage */}
     {sending && (
@@ -1493,14 +1417,13 @@ const PayslipDistribution = forwardRef(({ employee }, ref) => {
         message={loadingMessage || 'Processing...'}
       />
     )}
-      {successOverlay.open && (
-        <SuccessfulOverlay
-          open={successOverlay.open}
-          action={successOverlay.action}
-          onClose={() => setSuccessOverlay({ open: false, action: '' })}
-          showOkButton={true}
-        />
-      )}
+    {successOverlay.open && (
+      <SuccessfulOverlay
+        open={successOverlay.open}
+        action={successOverlay.action}
+        onClose={() => setSuccessOverlay({ open: false, action: '' })}
+      />
+    )}
     </>
   );
 });

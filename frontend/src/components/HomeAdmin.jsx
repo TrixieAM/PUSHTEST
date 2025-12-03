@@ -79,6 +79,7 @@ import {
   PersonAdd,
   Save,
   Flag,
+  Category as CategoryIcon,
 } from "@mui/icons-material";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
@@ -147,6 +148,37 @@ const getUserRole = () => {
     console.error("Error parsing token:", error);
     return null;
   }
+};
+
+// Helper to build correct base URL for static assets (like /uploads)
+const getStaticBaseUrl = () => {
+  if (!API_BASE_URL) return "";
+
+  // Normalize trailing slashes
+  let base = API_BASE_URL.replace(/\/+$/, "");
+
+  // If API_BASE_URL already includes '/api' at the end (with or without trailing slash), strip it for static files
+  base = base.replace(/\/api$/i, "");
+
+  return base;
+};
+
+// Helper to build image URL from stored path (e.g. '/uploads/filename')
+const buildImageUrl = (imagePath) => {
+  if (!imagePath) return "";
+
+  if (typeof imagePath === "string") {
+    // Already an absolute URL
+    if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+      return imagePath;
+    }
+    // Stored as '/uploads/...'
+    if (imagePath.startsWith("/uploads")) {
+      return `${getStaticBaseUrl()}${imagePath}`;
+    }
+  }
+
+  return imagePath;
 };
 
 const useSystemSettings = () => {
@@ -262,9 +294,9 @@ const QUICK_ACTIONS = (settings) => [
     gradient: `linear-gradient(135deg, ${settings.secondaryColor}, ${settings.primaryColor})`,
   },
   {
-    label: "Leaves",
-    link: "/leave-request",
-    icon: <TransferWithinAStation />,
+    label: "Category",
+    link: "/employee-category",
+    icon: <CategoryIcon />,
     gradient: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
   },
   {
@@ -1131,13 +1163,13 @@ const AnnouncementCarousel = ({
       <Box sx={{ position: "relative", height: 550 }}>
         {Array.isArray(announcements) && announcements.length > 0 ? (
           <>
-            <Box
-              component="img"
-              src={
-                announcements[currentSlide]?.image
-                  ? `${API_BASE_URL}${announcements[currentSlide].image}`
-                  : "/api/placeholder/800/400"
-              }
+                  <Box
+                    component="img"
+                    src={
+                      announcements[currentSlide]?.image
+                        ? buildImageUrl(announcements[currentSlide].image)
+                        : "/api/placeholder/800/400"
+                    }
               alt={announcements[currentSlide]?.title || "Announcement"}
               sx={{
                 width: "100%",
@@ -1998,9 +2030,11 @@ const TaskList = ({ settings }) => {
           flexDirection: "column",
         }}
       >
-        {showSuccess && (
-          <SuccessfulOverlay message="Task added successfully!" />
-        )}
+        <SuccessfulOverlay 
+          open={showSuccess} 
+          action="create" 
+          onClose={() => setShowSuccess(false)} 
+        />
         <CardContent
           sx={{
             p: 2,
@@ -2378,9 +2412,11 @@ const EventsList = ({ settings, employeeNumber }) => {
           flexDirection: "column",
         }}
       >
-        {showSuccess && (
-          <SuccessfulOverlay message="Event added successfully!" />
-        )}
+        <SuccessfulOverlay 
+          open={showSuccess} 
+          action="create" 
+          onClose={() => setShowSuccess(false)} 
+        />
         <CardContent
           sx={{
             p: 2,
@@ -3295,11 +3331,7 @@ const AdminHome = () => {
                 <IconButton onClick={handleMenuOpen} sx={{ p: 0.5 }}>
                   <Avatar
                     alt={username}
-                    src={
-                      profilePicture
-                        ? `${API_BASE_URL}${profilePicture}`
-                        : undefined
-                    }
+                    src={profilePicture ? buildImageUrl(profilePicture) : undefined}
                     sx={{ width: 36, height: 36 }}
                   />
                 </IconButton>
@@ -3433,6 +3465,8 @@ const AdminHome = () => {
                 index={index}
                 stats={stats}
                 loading={loading}
+                hoveredCard={hoveredCard}
+                setHoveredCard={setHoveredCard}
                 settings={settings}
               />
             </Box>
@@ -3513,7 +3547,7 @@ const AdminHome = () => {
                   {selectedAnnouncement.image && (
                     <Box
                       component="img"
-                      src={`${API_BASE_URL}${selectedAnnouncement.image}`}
+                      src={buildImageUrl(selectedAnnouncement.image)}
                       alt={selectedAnnouncement.title}
                       sx={{ width: "100%", height: 350, objectFit: "cover" }}
                     />
@@ -3684,7 +3718,7 @@ const AdminHome = () => {
                             component="img"
                             src={
                               announcement.image
-                                ? `${API_BASE_URL}${announcement.image}`
+                                ? buildImageUrl(announcement.image)
                                 : "/api/placeholder/400/200"
                             }
                             alt={announcement.title}

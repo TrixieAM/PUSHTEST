@@ -434,16 +434,6 @@ const SalaryGradeTable = () => {
                     </Box>
                   </Box>
                   <Box display="flex" alignItems="center" gap={2}>
-                    <Chip 
-                      label="Enterprise Grade" 
-                      size="small" 
-                      sx={{ 
-                        bgcolor: 'rgba(109,35,35,0.15)', 
-                        color: accentColor,
-                        fontWeight: 500,
-                        '& .MuiChip-label': { px: 1 }
-                      }} 
-                    />
                     <Tooltip title="Refresh Data">
                       <IconButton 
                         onClick={() => window.location.reload()}

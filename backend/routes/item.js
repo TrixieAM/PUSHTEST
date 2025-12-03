@@ -37,6 +37,21 @@ router.post('/api/item-table', authenticateToken, (req, res) => {
     effectivityDate,
   } = req.body;
 
+  // Normalize values: convert null/undefined to empty string for NOT NULL fields
+  // salary_grade is NOT NULL in database, so ensure it's never null
+  const normalizedData = {
+    item_description: item_description || null,
+    employeeID: employeeID || null,
+    name: name || null,
+    item_code: item_code || null,
+    salary_grade: salary_grade !== null && salary_grade !== undefined ? salary_grade : '',
+    step: step || null,
+    effectivityDate: effectivityDate || null,
+  };
+
+  // Log the data being inserted for debugging
+  console.log('Inserting item data:', normalizedData);
+
   const sql = `
     INSERT INTO item_table (item_description, employeeID, name, item_code, salary_grade, step, effectivityDate)
     VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -44,18 +59,24 @@ router.post('/api/item-table', authenticateToken, (req, res) => {
   db.query(
     sql,
     [
-      item_description,
-      employeeID,
-      name,
-      item_code,
-      salary_grade,
-      step,
-      effectivityDate,
+      normalizedData.item_description,
+      normalizedData.employeeID,
+      normalizedData.name,
+      normalizedData.item_code,
+      normalizedData.salary_grade,
+      normalizedData.step,
+      normalizedData.effectivityDate,
     ],
     (err, result) => {
       if (err) {
         console.error('Database Insert Error:', err.message);
-        return res.status(500).json({ error: 'Internal Server Error' });
+        console.error('SQL Error Code:', err.code);
+        console.error('SQL Error SQL State:', err.sqlState);
+        return res.status(500).json({ 
+          error: 'Internal Server Error',
+          message: err.message,
+          details: 'Failed to insert item record. Please check the data and try again.'
+        });
       }
 
       try {
@@ -85,6 +106,21 @@ router.put('/api/item-table/:id', authenticateToken, (req, res) => {
     effectivityDate,
   } = req.body;
 
+  // Normalize values: convert null/undefined to empty string for NOT NULL fields
+  // salary_grade is NOT NULL in database, so ensure it's never null
+  const normalizedData = {
+    item_description: item_description || null,
+    employeeID: employeeID || null,
+    name: name || null,
+    item_code: item_code || null,
+    salary_grade: salary_grade !== null && salary_grade !== undefined ? salary_grade : '',
+    step: step || null,
+    effectivityDate: effectivityDate || null,
+  };
+
+  // Log the data being updated for debugging
+  console.log('Updating item data for ID:', id, normalizedData);
+
   const sql = `
     UPDATE item_table SET
       item_description = ?,
@@ -94,25 +130,30 @@ router.put('/api/item-table/:id', authenticateToken, (req, res) => {
       salary_grade = ?,
       step = ?,
       effectivityDate = ?
-   
     WHERE id = ?
   `;
   db.query(
     sql,
     [
-      item_description,
-      employeeID,
-      name,
-      item_code,
-      salary_grade,
-      step,
-      effectivityDate,
+      normalizedData.item_description,
+      normalizedData.employeeID,
+      normalizedData.name,
+      normalizedData.item_code,
+      normalizedData.salary_grade,
+      normalizedData.step,
+      normalizedData.effectivityDate,
       id,
     ],
     (err, result) => {
       if (err) {
         console.error('Database Update Error:', err.message);
-        return res.status(500).json({ error: 'Internal Server Error' });
+        console.error('SQL Error Code:', err.code);
+        console.error('SQL Error SQL State:', err.sqlState);
+        return res.status(500).json({ 
+          error: 'Internal Server Error',
+          message: err.message,
+          details: 'Failed to update item record. Please check the data and try again.'
+        });
       }
       if (result.affectedRows === 0) {
         return res.status(404).json({ error: 'Item not found' });

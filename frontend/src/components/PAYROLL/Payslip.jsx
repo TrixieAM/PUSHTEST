@@ -251,7 +251,7 @@ const Payslip = forwardRef(({ employee }, ref) => {
       pdf.setFont('helvetica', 'normal'); // Arial equivalent in jsPDF
 
       const contentWidth = 3.5;
-      const contentHeight = 7.1;
+      const contentHeight = 9.1;
       const gap = 0.2;
 
       const totalWidth = contentWidth * 3 + gap * 2;
@@ -281,8 +281,47 @@ const Payslip = forwardRef(({ employee }, ref) => {
             continue;
           }
 
+          // Get parent container to remove constraints
+          const parentBox = input.parentElement;
+          
+          // Store original styles
+          const originalInputStyles = {
+            maxWidth: input.style.maxWidth,
+            fontSize: input.style.fontSize,
+            padding: input.style.padding,
+            width: input.style.width,
+            transform: input.style.transform,
+          };
+          
+          const originalParentStyles = parentBox ? {
+            display: parentBox.style.display,
+            justifyContent: parentBox.style.justifyContent,
+            maxWidth: parentBox.style.maxWidth,
+            width: parentBox.style.width,
+          } : null;
+
+          // Apply full-size styles directly to DOM for PDF capture
+          input.style.maxWidth = 'none';
+          input.style.fontSize = '';
+          input.style.padding = '12px';
+          input.style.width = 'auto';
+          input.style.transform = 'none';
+          
+          if (parentBox) {
+            parentBox.style.display = 'block';
+            parentBox.style.justifyContent = 'flex-start';
+            parentBox.style.maxWidth = 'none';
+            parentBox.style.width = 'auto';
+          }
+
+          // Force reflow to ensure styles are applied
+          void input.offsetHeight;
+          await new Promise((resolve) => requestAnimationFrame(resolve));
+          await new Promise((resolve) => setTimeout(resolve, 200));
+
+          // Capture at full size with high resolution for print quality
           const canvas = await html2canvas(input, { 
-            scale: 3, 
+            scale: 4, // Increased from 3 to 4 for better print quality (300+ DPI)
             useCORS: true,
             logging: false,
             letterRendering: true,
@@ -290,8 +329,39 @@ const Payslip = forwardRef(({ employee }, ref) => {
             backgroundColor: '#ffffff',
             windowWidth: input.scrollWidth,
             windowHeight: input.scrollHeight,
+            onclone: (clonedDoc) => {
+              // Ensure crisp font rendering in cloned document
+              const clonedInput = clonedDoc.querySelector('body > *') || clonedDoc.body;
+              if (clonedInput) {
+                clonedInput.style.webkitFontSmoothing = 'antialiased';
+                clonedInput.style.mozOsxFontSmoothing = 'grayscale';
+                clonedInput.style.textRendering = 'optimizeLegibility';
+                // Apply to all elements
+                const allElements = clonedDoc.querySelectorAll('*');
+                allElements.forEach((el) => {
+                  el.style.webkitFontSmoothing = 'antialiased';
+                  el.style.mozOsxFontSmoothing = 'grayscale';
+                  el.style.textRendering = 'optimizeLegibility';
+                });
+              }
+            },
           });
+          // Use maximum quality (1.0) for PNG
           imgData = canvas.toDataURL('image/png', 1.0);
+
+          // Restore original styles
+          input.style.maxWidth = originalInputStyles.maxWidth;
+          input.style.fontSize = originalInputStyles.fontSize;
+          input.style.padding = originalInputStyles.padding;
+          input.style.width = originalInputStyles.width;
+          input.style.transform = originalInputStyles.transform;
+          
+          if (parentBox && originalParentStyles) {
+            parentBox.style.display = originalParentStyles.display;
+            parentBox.style.justifyContent = originalParentStyles.justifyContent;
+            parentBox.style.maxWidth = originalParentStyles.maxWidth;
+            parentBox.style.width = originalParentStyles.width;
+          }
         } else {
           // No Data placeholder - maintain same aspect ratio as content
           const placeholderAspectRatio = contentHeight / contentWidth;
@@ -439,19 +509,17 @@ const Payslip = forwardRef(({ employee }, ref) => {
   //ACCESSING END2
 
   return (
-    <Box sx={{ 
-      py: 4,
-      borderRadius: '14px',
-      width: '100vw', // Full viewport width
-      mx: 'auto', // Center horizontally
-      maxWidth: '100%', // Ensure it doesn't exceed viewport
-      overflow: 'hidden', // Prevent horizontal scroll
-      position: 'relative',
-      left: '50%',
-      transform: 'translateX(-50%)', // Center the element
-    }}>
-      {/* Wider Container */}
-      <Box sx={{ px: 6, mx: 'auto', maxWidth: '1600px' }}>
+    <Box
+      sx={{
+        py: 4,
+        pt: -10,
+        width: '1600px', // Match PayslipOverall fixed width
+        mx: 'auto', // Center horizontally
+        overflow: 'hidden', // Prevent horizontal scroll
+      }}
+    >
+      {/* Container with fixed width (aligned with PayslipOverall) */}
+      <Box sx={{ px: 6 }}>
         {/* Header */}
         <Fade in timeout={500}>
           <Box sx={{ mb: 4 }}>
@@ -577,7 +645,7 @@ const Payslip = forwardRef(({ employee }, ref) => {
           </Fade>
         )}
 
-        {/* Controls */}
+        {/* Controls - Single column layout to match PayslipOverall */}
         <Fade in timeout={700}>
           <GlassCard sx={{ 
             mb: 4,
@@ -590,7 +658,7 @@ const Payslip = forwardRef(({ employee }, ref) => {
           }}>
             <CardContent sx={{ p: 4 }}>
               <Grid container spacing={4}>
-                <Grid item xs={12} md={12}>
+                <Grid item xs={12} md={6}>
                   <ModernTextField
                     fullWidth
                     label="Employee Number"
@@ -663,43 +731,46 @@ const Payslip = forwardRef(({ employee }, ref) => {
           </GlassCard>
         </Fade>
 
+        {/* Payslip Display - Full width like PayslipOverall */}
         {displayEmployee ? (
           <Fade in={!loading} timeout={500}>
             <GlassCard sx={{ 
-            mb: 4,
-            background: `rgba(${hexToRgb(primaryColor)}, 0.95)`,
-            boxShadow: `0 8px 40px ${alpha(accentColor, 0.08)}`,
-            border: `1px solid ${alpha(accentColor, 0.1)}`,
-            '&:hover': {
-              boxShadow: `0 12px 48px ${alpha(accentColor, 0.15)}`,
-            },
-          }}>
+              background: `rgba(${hexToRgb(primaryColor)}, 0.95)`,
+              boxShadow: `0 8px 40px ${alpha(accentColor, 0.08)}`,
+              border: `1px solid ${alpha(accentColor, 0.1)}`,
+              '&:hover': {
+                boxShadow: `0 12px 48px ${alpha(accentColor, 0.15)}`,
+              },
+            }}>
               <Box sx={{ 
-                p: 4, 
+                p: 2, 
                 background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`, 
                 color: accentColor,
                 display: 'flex',
                 justifyContent: 'space-between',
-                alignItems: 'center'
+                alignItems: 'center',
+                maxWidth: '100%',
               }}>
-                <Box>
-                  <Typography variant="body2" sx={{ opacity: 0.8, mb: 1, textTransform: 'uppercase', letterSpacing: '0.1em', color: accentDark }}>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography variant="body2" sx={{ opacity: 0.8, mb: 0.5, textTransform: 'uppercase', letterSpacing: '0.1em', color: accentDark, fontSize: '0.7rem' }}>
                     Payslip Summary
                   </Typography>
-                  <Typography variant="h4" sx={{ fontWeight: 600, mb: 1, color: accentColor }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5, color: accentColor, fontSize: '1rem' }}>
                     {displayEmployee.name}
                   </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 1, flexWrap: 'wrap' }}>
                     <Chip 
                       label={`Employee #${displayEmployee.employeeNumber}`}
                       size="small"
                       sx={{ 
                         bgcolor: 'rgba(109,35,35,0.15)', 
                         color: textPrimaryColor,
-                        fontWeight: 500
+                        fontWeight: 500,
+                        fontSize: '0.7rem',
+                        height: '24px'
                       }} 
                     />
-                    <Typography variant="body2" sx={{ opacity: 0.8, color: accentDark }}>
+                    <Typography variant="body2" sx={{ opacity: 0.8, color: accentDark, fontSize: '0.75rem' }}>
                       {(() => {
                         if (!displayEmployee.startDate || !displayEmployee.endDate) return '—';
                         const start = new Date(displayEmployee.startDate);
@@ -713,33 +784,57 @@ const Payslip = forwardRef(({ employee }, ref) => {
                 <Avatar 
                   sx={{ 
                     bgcolor: 'rgba(109,35,35,0.15)', 
-                    width: 80, 
-                    height: 80,
-                    fontSize: '2rem',
+                    width: 50, 
+                    height: 50,
+                    fontSize: '1.2rem',
                     fontWeight: 600,
-                    color: textPrimaryColor
+                    color: textPrimaryColor,
+                    ml: 2,
+                    flexShrink: 0
                   }}
                 >
                   {displayEmployee.name ? displayEmployee.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'E'}
                 </Avatar>
               </Box>
 
-              <Paper
-                ref={payslipRef}
-                elevation={4}
-                sx={{
-                  p: 3,
-                  mt: 2,
-                  borderRadius: 1,
-                  backgroundColor: '#fff',
-                  fontFamily: 'Arial, "Helvetica Neue", Helvetica, sans-serif !important',
-                  position: 'relative', // ✅ important for watermark positioning
-                  overflow: 'hidden',
-                  '& *': {
-                    fontFamily: 'Arial, "Helvetica Neue", Helvetica, sans-serif !important',
-                  },
+              <Box 
+                sx={{ 
+                  mt: 2, 
+                  display: 'flex', 
+                  justifyContent: 'center',
+                  '&.pdf-mode': {
+                    justifyContent: 'flex-start',
+                  }
                 }}
+                className={sending ? 'pdf-mode' : ''}
               >
+                <Paper
+                  ref={payslipRef}
+                  elevation={4}
+                  sx={{
+                    p: sending ? 3 : 2,
+                    borderRadius: 1,
+                    backgroundColor: '#fff',
+                    fontFamily: 'Arial, "Helvetica Neue", Helvetica, sans-serif !important',
+                    position: 'relative', // ✅ important for watermark positioning
+                    overflow: 'hidden',
+                    maxWidth: sending ? 'none' : '90%',
+                    fontSize: sending ? '1rem' : '0.9rem', // Full size for PDF, smaller for display
+                    // Improve font rendering for print quality
+                    WebkitFontSmoothing: 'antialiased',
+                    MozOsxFontSmoothing: 'grayscale',
+                    textRendering: 'optimizeLegibility',
+                    '& *': {
+                      fontFamily: 'Arial, "Helvetica Neue", Helvetica, sans-serif !important',
+                      WebkitFontSmoothing: 'antialiased',
+                      MozOsxFontSmoothing: 'grayscale',
+                      textRendering: 'optimizeLegibility',
+                    },
+                    '& .MuiTypography-root': {
+                      fontSize: sending ? 'inherit' : 'inherit',
+                    },
+                  }}
+                >
                 <Box
                   component="img"
                   src={hrisLogo}
@@ -760,10 +855,11 @@ const Payslip = forwardRef(({ employee }, ref) => {
                   display="flex"
                   alignItems="center"
                   justifyContent="space-between"
-                  mb={2}
+                  mb={sending ? 2 : 1.5}
                   sx={{
                     background: 'linear-gradient(to right, #6d2323, #a31d1d)',
                     borderRadius: '3px',
+                    py: sending ? 1 : 0.5,
                   }}
                 >
                   {/* Left Logo */}
@@ -771,28 +867,28 @@ const Payslip = forwardRef(({ employee }, ref) => {
                     <img
                       src={logo}
                       alt="Logo"
-                      style={{ width: '60px', marginLeft: '10px' }}
+                      style={{ width: sending ? '60px' : '50px', marginLeft: sending ? '10px' : '8px' }}
                     />
                   </Box>
 
                   {/* Center Text */}
                   <Box textAlign="center" flex={1} sx={{ color: 'white' }}>
-                    <Typography variant="subtitle2" sx={{ fontStyle: 'italic', fontFamily: 'Arial, sans-serif' }}>
+                    <Typography variant="subtitle2" sx={{ fontStyle: 'italic', fontFamily: 'Arial, sans-serif', fontSize: sending ? '0.875rem' : '0.75rem' }}>
                       Republic of the Philippines
                     </Typography>
                     <Typography
                       variant="subtitle5"
                       fontWeight="bold"
-                      sx={{ ml: '25px', fontFamily: 'Arial, sans-serif' }}
+                      sx={{ ml: sending ? '25px' : '20px', fontFamily: 'Arial, sans-serif', fontSize: sending ? '0.8rem' : '0.7rem' }}
                     >
                       EULOGIO "AMANG" RODRIGUEZ INSTITUTE OF SCIENCE AND TECHNOLOGY
                     </Typography>
-                    <Typography variant="body2" sx={{ fontFamily: 'Arial, sans-serif' }}>Nagtahan, Sampaloc Manila</Typography>
+                    <Typography variant="body2" sx={{ fontFamily: 'Arial, sans-serif', fontSize: sending ? '0.875rem' : '0.7rem' }}>Nagtahan, Sampaloc Manila</Typography>
                   </Box>
 
                   {/* Right Logo */}
                   <Box>
-                    <img src={hrisLogo} alt="HRIS Logo" style={{ width: '80px' }} />
+                    <img src={hrisLogo} alt="HRIS Logo" style={{ width: sending ? '80px' : '65px' }} />
                   </Box>
                 </Box>
 
@@ -823,20 +919,20 @@ const Payslip = forwardRef(({ employee }, ref) => {
                     {
                       label: 'EMPLOYEE NUMBER:',
                       value: (
-                        <Typography sx={{ color: 'red', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }}>
+                        <Box component="span" sx={{ color: 'red', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }}>
                           {displayEmployee.employeeNumber &&
                           parseFloat(displayEmployee.employeeNumber) !== 0
                             ? `${parseFloat(displayEmployee.employeeNumber)}`
                             : ''}
-                        </Typography>
+                        </Box>
                       ),
                     },
                     {
                       label: 'NAME:',
                       value: (
-                        <Typography sx={{ color: 'red', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }}>
+                        <Box component="span" sx={{ color: 'red', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }}>
                           {displayEmployee.name ? `${displayEmployee.name}` : ''}
-                        </Typography>
+                        </Box>
                       ),
                     },
 
@@ -848,20 +944,6 @@ const Payslip = forwardRef(({ employee }, ref) => {
                           ? `₱${parseFloat(
                               displayEmployee.grossSalary
                             ).toLocaleString()}`
-                          : '',
-                    },
-                    {
-                      label: 'Rendered Days:',
-                      value:
-                        displayEmployee.rh && parseFloat(displayEmployee.rh) !== 0
-                          ? (() => {
-                              const totalHours = Number(displayEmployee.rh);
-                              const days = Math.floor(totalHours / 8);
-                              const hours = totalHours % 8;
-                              return `${days} days${
-                                hours > 0 ? ` & ${hours} hrs` : ''
-                              }`;
-                            })()
                           : '',
                     },
 
@@ -1118,19 +1200,19 @@ const Payslip = forwardRef(({ employee }, ref) => {
                       }}
                     >
                       {/* Left column (label) */}
-                      <Box sx={{ p: 1, width: '25%' }}>
-                        <Typography fontWeight="bold" sx={{ fontFamily: 'Arial, sans-serif' }}>{row.label}</Typography>
+                      <Box sx={{ p: sending ? 1 : 0.75, width: '25%' }}>
+                        <Typography fontWeight="bold" sx={{ fontFamily: 'Arial, sans-serif', fontSize: sending ? '1rem' : '0.85rem' }}>{row.label}</Typography>
                       </Box>
 
                       {/* Right column (value with left border) */}
                       <Box
                         sx={{
                           flex: 1,
-                          p: 1,
+                          p: sending ? 1 : 0.75,
                           borderLeft: '1px solid black',
                         }}
                       >
-                        <Typography sx={{ fontFamily: 'Arial, sans-serif' }}>{row.value}</Typography>
+                        <Box component="span" sx={{ fontFamily: 'Arial, sans-serif', fontSize: sending ? '1rem' : '0.85rem' }}>{row.value}</Box>
                       </Box>
                     </Box>
                   ))}
@@ -1141,37 +1223,37 @@ const Payslip = forwardRef(({ employee }, ref) => {
                   display="flex"
                   justifyContent="space-between"
                   alignItems="center"
-                  mt={2}
-                  sx={{ fontSize: '0.85rem' }}
+                  mt={sending ? 2 : 1.5}
+                  sx={{ fontSize: sending ? '0.85rem' : '0.75rem' }}
                 >
-                  <Typography sx={{ fontFamily: 'Arial, sans-serif' }}>Certified Correct:</Typography>
+                  <Typography sx={{ fontFamily: 'Arial, sans-serif', fontSize: sending ? '0.85rem' : '0.75rem' }}>Certified Correct:</Typography>
                 </Box>
 
                 <Box
                   display="flex"
                   justifyContent="space-between"
                   alignItems="center"
-                  mt={2}
+                  mt={sending ? 2 : 1.5}
                 >
-                  <Typography sx={{ fontSize: '0.85rem', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }}>
+                  <Typography sx={{ fontSize: sending ? '0.85rem' : '0.75rem', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }}>
                     GIOVANNI L. AHUNIN
                   </Typography>
                 </Box>
-                <Typography sx={{ fontFamily: 'Arial, sans-serif' }}>Director, Administrative Services</Typography>
+                <Typography sx={{ fontFamily: 'Arial, sans-serif', fontSize: sending ? '0.85rem' : '0.75rem' }}>Director, Administrative Services</Typography>
               </Paper>
+              </Box>
             </GlassCard>
           </Fade>
         ) : selectedMonth ? (
           <Fade in timeout={500}>
             <GlassCard sx={{ 
-            mb: 4,
-            background: `rgba(${hexToRgb(primaryColor)}, 0.95)`,
-            boxShadow: `0 8px 40px ${alpha(accentColor, 0.08)}`,
-            border: `1px solid ${alpha(accentColor, 0.1)}`,
-            '&:hover': {
-              boxShadow: `0 12px 48px ${alpha(accentColor, 0.15)}`,
-            },
-          }}>
+              background: `rgba(${hexToRgb(primaryColor)}, 0.95)`,
+              boxShadow: `0 8px 40px ${alpha(accentColor, 0.08)}`,
+              border: `1px solid ${alpha(accentColor, 0.1)}`,
+              '&:hover': {
+                boxShadow: `0 12px 48px ${alpha(accentColor, 0.15)}`,
+              },
+            }}>
               <CardContent sx={{ p: 4, textAlign: 'center' }}>
                 <Avatar 
                   sx={{ 
@@ -1199,14 +1281,13 @@ const Payslip = forwardRef(({ employee }, ref) => {
         ) : hasSearched ? (
           <Fade in timeout={500}>
             <GlassCard sx={{ 
-            mb: 4,
-            background: `rgba(${hexToRgb(primaryColor)}, 0.95)`,
-            boxShadow: `0 8px 40px ${alpha(accentColor, 0.08)}`,
-            border: `1px solid ${alpha(accentColor, 0.1)}`,
-            '&:hover': {
-              boxShadow: `0 12px 48px ${alpha(accentColor, 0.15)}`,
-            },
-          }}>
+              background: `rgba(${hexToRgb(primaryColor)}, 0.95)`,
+              boxShadow: `0 8px 40px ${alpha(accentColor, 0.08)}`,
+              border: `1px solid ${alpha(accentColor, 0.1)}`,
+              '&:hover': {
+                boxShadow: `0 12px 48px ${alpha(accentColor, 0.15)}`,
+              },
+            }}>
               <CardContent sx={{ p: 4, textAlign: 'center' }}>
                 <Avatar 
                   sx={{ 
@@ -1233,7 +1314,7 @@ const Payslip = forwardRef(({ employee }, ref) => {
           </Fade>
         ) : null}
 
-        {/* Download Button */}
+        {/* Download Button - Full width action card like PayslipOverall */}
         {displayEmployee && (
           <Fade in timeout={900}>
             <GlassCard sx={{

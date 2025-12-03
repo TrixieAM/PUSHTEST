@@ -544,17 +544,37 @@ const PayrollProcessed = () => {
   const handleDelete = async (rowId) => {
     setOverlayLoading(true);
     try {
+      // Find the record to be deleted
+      const recordToDelete = finalizedData.find((item) => item.id === rowId);
+      
       // First update UI immediately
       setFinalizedData((prev) => prev.filter((item) => item.id !== rowId));
       setFilteredFinalizedData((prev) =>
         prev.filter((item) => item.id !== rowId)
       );
 
-      // Then make API call
+      // Delete from finalized-payroll
       await axios.delete(
         `${API_BASE_URL}/PayrollRoute/finalized-payroll/${rowId}`,
         getAuthHeaders()
       );
+
+      // Update status in payroll-with-remittance from Processed to Unprocessed
+      try {
+        if (recordToDelete && recordToDelete.employeeNumber) {
+          await axios.put(
+            `${API_BASE_URL}/PayrollRoute/payroll-with-remittance/${recordToDelete.employeeNumber}`,
+            {
+              ...recordToDelete,
+              status: "Unprocessed",
+            },
+            getAuthHeaders()
+          );
+        }
+      } catch (updateError) {
+        console.error("Error updating payroll status:", updateError);
+        // Continue even if status update fails - the deletion was successful
+      }
 
       // Show loading for 2-3 seconds, then success overlay
       setTimeout(() => {
@@ -678,6 +698,12 @@ const PayrollProcessed = () => {
               prev.filter((item) => !deletableIds.includes(item.id))
             );
 
+            // Get records to be deleted for status update
+            const recordsToDelete = deletableIds.map((id) =>
+              filteredFinalizedData.find((item) => item.id === id)
+            ).filter(Boolean);
+
+            // Delete from finalized-payroll
             await Promise.all(
               deletableIds.map((id) =>
                 axios.delete(
@@ -686,6 +712,28 @@ const PayrollProcessed = () => {
                 )
               )
             );
+
+            // Update status in payroll-with-remittance from Processed to Unprocessed
+            try {
+              await Promise.all(
+                recordsToDelete.map((record) => {
+                  if (record.employeeNumber) {
+                    return axios.put(
+                      `${API_BASE_URL}/PayrollRoute/payroll-with-remittance/${record.employeeNumber}`,
+                      {
+                        ...record,
+                        status: "Unprocessed",
+                      },
+                      getAuthHeaders()
+                    );
+                  }
+                  return Promise.resolve();
+                })
+              );
+            } catch (updateError) {
+              console.error("Error updating payroll status:", updateError);
+              // Continue even if status update fails - the deletion was successful
+            }
 
             // Show loading for 2-3 seconds, then success overlay
             setTimeout(() => {
@@ -712,6 +760,7 @@ const PayrollProcessed = () => {
               prev.filter((item) => item.id !== selectedRow.id)
             );
 
+            // Delete from finalized-payroll
             await axios.delete(
               `${API_BASE_URL}/PayrollRoute/finalized-payroll/${selectedRow.id}`,
               {
@@ -722,6 +771,23 @@ const PayrollProcessed = () => {
                 },
               }
             );
+
+            // Update status in payroll-with-remittance from Processed to Unprocessed
+            try {
+              if (selectedRow.employeeNumber) {
+                await axios.put(
+                  `${API_BASE_URL}/PayrollRoute/payroll-with-remittance/${selectedRow.employeeNumber}`,
+                  {
+                    ...selectedRow,
+                    status: "Unprocessed",
+                  },
+                  getAuthHeaders()
+                );
+              }
+            } catch (updateError) {
+              console.error("Error updating payroll status:", updateError);
+              // Continue even if status update fails - the deletion was successful
+            }
 
             // Show loading for 2-3 seconds, then success overlay
             setTimeout(() => {
@@ -2020,12 +2086,6 @@ const PayrollProcessed = () => {
                             >
                               Date Submitted
                             </PremiumTableCell>
-                            <PremiumTableCell
-                              isHeader
-                              sx={{ color: textPrimaryColor }}
-                            >
-                              Actions
-                            </PremiumTableCell>
                           </TableRow>
                         </TableHead>
 
@@ -2613,53 +2673,13 @@ const PayrollProcessed = () => {
                                         row.dateCreated
                                       ).toLocaleString()}
                                     </ExcelTableCell>
-                                    <ExcelTableCell>
-                                      <Box
-                                        sx={{
-                                          display: "flex",
-                                          justifyContent: "center",
-                                          gap: 0.5,
-                                        }}
-                                      >
-                                        <Tooltip title="Delete Record">
-                                          <IconButton
-                                            size="small"
-                                            onClick={() => {
-                                              if (isSelected) {
-                                                initiateDelete(selectedRows);
-                                              } else {
-                                                initiateDelete(row);
-                                              }
-                                            }}
-                                            disabled={shouldDisable}
-                                            sx={{
-                                              color: shouldDisable
-                                                ? "#ccc"
-                                                : "#d32f2f",
-                                              backgroundColor: shouldDisable
-                                                ? "#f5f5f5"
-                                                : "white",
-                                              border: "1px solid #d32f2f",
-                                              "&:hover": {
-                                                backgroundColor: shouldDisable
-                                                  ? "#f5f5f5"
-                                                  : "rgba(211, 47, 47, 0.1)",
-                                              },
-                                              padding: "4px",
-                                            }}
-                                          >
-                                            <DeleteIcon fontSize="small" />
-                                          </IconButton>
-                                        </Tooltip>
-                                      </Box>
-                                    </ExcelTableCell>
                                   </TableRow>
                                 );
                               })
                           ) : (
                             <TableRow>
                               <PremiumTableCell
-                                colSpan={50}
+                                colSpan={49}
                                 align="center"
                                 sx={{ py: 8 }}
                               >
@@ -2695,6 +2715,145 @@ const PayrollProcessed = () => {
                         </TableBody>
                       </Table>
                     </PremiumTableContainer>
+                  </Box>
+
+                  {/* Fixed Actions Column */}
+                  <Box
+                    sx={{
+                      width: "120px",
+                      minWidth: "120px",
+                      borderLeft: `2px solid ${alpha(accentColor, 0.2)}`,
+                      backgroundColor: alpha(primaryColor, 0.3),
+                      position: "sticky",
+                      right: 0,
+                      zIndex: 1,
+                      boxShadow: `-2px 0 5px ${alpha(accentColor, 0.1)}`,
+                    }}
+                  >
+                    <Table
+                      size="small"
+                      sx={{ tableLayout: "fixed", width: "100%" }}
+                    >
+                      <TableHead>
+                        <TableRow>
+                          <TableCell
+                            sx={{
+                              backgroundColor: alpha(primaryColor, 0.7),
+                              fontWeight: "bold",
+                              textAlign: "center",
+                              borderBottom: `1px solid ${alpha(accentColor, 0.1)}`,
+                              padding: "8px",
+                              position: "sticky",
+                              paddingTop: 3.5,
+                              paddingBottom: 3.5,
+                              zIndex: 2,
+                              color: textPrimaryColor,
+                            }}
+                          >
+                            Actions
+                          </TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {filteredFinalizedData.length > 0 ? (
+                          filteredFinalizedData
+                            .slice(
+                              page * rowsPerPage,
+                              page * rowsPerPage + rowsPerPage
+                            )
+                            .map((row, index) => {
+                              const key = getRecordKey(row);
+                              const isRowReleased = releasedIdSet.has(key);
+                              const isSelected = selectedRows.includes(row.id);
+                              const shouldDisable = isRowReleased;
+
+                              return (
+                                <TableRow
+                                  key={`actions-${row.id}`}
+                                  sx={{
+                                    "&:nth-of-type(even)": {
+                                      bgcolor: alpha(primaryColor, 0.3),
+                                    },
+                                    "&:hover": {
+                                      backgroundColor:
+                                        alpha(accentColor, 0.05) +
+                                        " !important",
+                                    },
+                                    transition: "all 0.2s ease",
+                                  }}
+                                >
+                                  <TableCell
+                                    sx={{
+                                      padding: "8px",
+                                      textAlign: "center",
+                                      borderBottom: `1px solid ${alpha(
+                                        accentColor,
+                                        0.06
+                                      )}`,
+                                    }}
+                                  >
+                                    <Box
+                                      sx={{
+                                        display: "flex",
+                                        justifyContent: "center",
+                                        gap: 0.5,
+                                        paddingTop: 2,
+                                        paddingBottom: 2,
+                                      }}
+                                    >
+                                      <Tooltip title="Delete Record">
+                                        <IconButton
+                                          size="small"
+                                          onClick={() => {
+                                            if (isSelected) {
+                                              initiateDelete(selectedRows);
+                                            } else {
+                                              initiateDelete(row);
+                                            }
+                                          }}
+                                          disabled={shouldDisable}
+                                          sx={{
+                                            color: shouldDisable
+                                              ? "#ccc"
+                                              : "#d32f2f",
+                                            backgroundColor: shouldDisable
+                                              ? "#f5f5f5"
+                                              : "white",
+                                            border: "1px solid #d32f2f",
+                                            "&:hover": {
+                                              backgroundColor: shouldDisable
+                                                ? "#f5f5f5"
+                                                : "rgba(211, 47, 47, 0.1)",
+                                            },
+                                            padding: "4px",
+                                          }}
+                                        >
+                                          <DeleteIcon fontSize="small" />
+                                        </IconButton>
+                                      </Tooltip>
+                                    </Box>
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })
+                        ) : (
+                          <TableRow>
+                            <TableCell
+                              sx={{
+                                textAlign: "center",
+                                borderBottom: `1px solid ${alpha(
+                                  accentColor,
+                                  0.06
+                                )}`,
+                                padding: "8px",
+                              }}
+                            >
+                              No actions
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
                   </Box>
                 </Box>
 
@@ -2806,8 +2965,32 @@ const PayrollProcessed = () => {
           </ProfessionalButton>
         </Box>
 
-        <Modal open={openConfirm} onClose={() => setOpenConfirm(false)}>
+        <Modal
+          open={openConfirm}
+          onClose={() => setOpenConfirm(false)}
+          BackdropProps={{
+            sx: {
+              backgroundColor: "rgba(0, 0, 0, 0.7)",
+              backdropFilter: "blur(4px)",
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 1300,
+            },
+          }}
+          sx={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 1300,
+          }}
+        >
           <Box
+            onClick={(e) => e.stopPropagation()}
             sx={{
               position: "absolute",
               top: "50%",
@@ -2820,6 +3003,7 @@ const PayrollProcessed = () => {
               boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
               overflow: "hidden",
               border: `2px solid ${accentColor}`,
+              zIndex: 1301,
             }}
           >
             {/* Clean White Header with Accent */}

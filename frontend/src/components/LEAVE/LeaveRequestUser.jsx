@@ -29,7 +29,7 @@ import {
 } from "@mui/icons-material";
 
 import LoadingOverlay from '../LoadingOverlay';
-import SuccessfullOverlay from '../SuccessfulOverlay';
+import SuccessfulOverlay from '../SuccessfulOverlay';
 import LeaveDatePickerModal from './LeaveDatePicker';
 
 const LeaveRequestUser = () => {
@@ -310,7 +310,7 @@ const mapStatus = (status) => {
       <LoadingOverlay open={loading} message="Submitting leave request..." />
       
       {/* Success Overlay */}
-      <SuccessfullOverlay open={successOpen} action={successAction} />
+      <SuccessfulOverlay open={successOpen} action={successAction} onClose={() => setSuccessOpen(false)} />
 
       <Box
         sx={{

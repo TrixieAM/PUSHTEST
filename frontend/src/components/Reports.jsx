@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Grid,
@@ -11,6 +11,7 @@ import {
   Tab,
   CircularProgress,
   Alert,
+  Divider,
 } from '@mui/material';
 import {
   PieChart,
@@ -29,40 +30,69 @@ import {
   AreaChart,
   Area,
 } from 'recharts';
-import { Description as FileText, Error as AlertCircle, Refresh as RefreshIcon, TrendingUp as TrendingUpIcon, People as PeopleIcon, AccountBalance as AccountBalanceIcon } from '@mui/icons-material';
+import { 
+  Description as FileText, 
+  Error as AlertCircle, 
+  Refresh as RefreshIcon, 
+  Download as DownloadIcon,
+  Dashboard as DashboardIcon,
+  Event as EventIcon,
+  AccountBalance as AccountBalanceIcon,
+  People as PeopleIcon,
+  BeachAccess as BeachAccessIcon,
+  BarChart as BarChartIcon,
+  TrendingUp as TrendingUpIcon,
+  CheckCircle as CheckCircleIcon,
+  HourglassEmpty as HourglassEmptyIcon
+} from '@mui/icons-material';
 import API_BASE_URL from '../apiConfig';
 import axios from 'axios';
 import { useSystemSettings } from '../contexts/SystemSettingsContext';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
-// Professional color scheme for reports
+// Report color scheme constrained to the official palette
+// Palette: #6d2323, #fef9e1, #ffffff, #000000, #a31d1d
 const reportColors = {
-  primary: '#6d2323',      // deep maroon
-  primaryLight: '#8a2e2e',
-  primaryDark: '#4a1818',
-  secondary: '#f5f5dc',   // cream
+  // Core brand colors
+  primary: '#6d2323',
+  primaryLight: '#a31d1d',
+  primaryDark: '#000000',
+
+  // Surfaces / backgrounds
+  secondary: '#fef9e1',
   secondaryLight: '#ffffff',
-  secondaryDark: '#e6e6c7',
-  accent: '#333333',       // dark gray/black
-  accentLight: '#555555',
-  accentDark: '#000000',
-  textPrimary: '#000000',
-  textSecondary: '#555555',
-  textLight: '#ffffff',
-  neutralBg: '#f9f9f9',
+  secondaryDark: '#fef9e1',
+  neutralBg: '#fef9e1',
   surface: '#ffffff',
-  border: '#e0e0e0',
-  success: '#4caf50',
-  warning: '#ff9800',
-  error: '#f44336',
-  info: '#2196f3',
-  background: '#ffffff',   // White
-  gradientPrimary: 'linear-gradient(135deg, #6d2323 0%, #8a2e2e 100%)',
-  gradientSecondary: 'linear-gradient(135deg, #f5f5dc 0%, #ffffff 100%)',
-  gradientAccent: 'linear-gradient(135deg, #333333 0%, #555555 100%)',
-  gradientSuccess: 'linear-gradient(135deg, #4caf50 0%, #66bb6a 100%)',
-  gradientWarning: 'linear-gradient(135deg, #ff9800 0%, #ffb74d 100%)',
-  gradientError: 'linear-gradient(135deg, #f44336 0%, #ef5350 100%)',
-  gradientInfo: 'linear-gradient(135deg, #2196f3 0%, #42a5f5 100%)'
+  // Main page background (set to pure white as requested)
+  background: '#ffffff',
+  border: '#6d2323',
+
+  // Accent
+  accent: '#a31d1d',
+  accentLight: '#6d2323',
+  accentDark: '#000000',
+
+  // Text
+  textPrimary: '#000000',
+  textSecondary: '#6d2323',
+  textLight: '#ffffff',
+
+  // Semantic states mapped into palette
+  success: '#6d2323',
+  warning: '#a31d1d',
+  error: '#000000',
+  info: '#6d2323',
+
+  // Gradients
+  gradientPrimary: 'linear-gradient(135deg, #6d2323 0%, #a31d1d 100%)',
+  gradientSecondary: 'linear-gradient(135deg, #ffffff 0%, #fef9e1 100%)',
+  gradientAccent: 'linear-gradient(135deg, #000000 0%, #6d2323 100%)',
+  gradientSuccess: 'linear-gradient(135deg, #6d2323 0%, #a31d1d 100%)',
+  gradientWarning: 'linear-gradient(135deg, #a31d1d 0%, #6d2323 100%)',
+  gradientError: 'linear-gradient(135deg, #000000 0%, #6d2323 100%)',
+  gradientInfo: 'linear-gradient(135deg, #6d2323 0%, #a31d1d 100%)'
 };
 
 // Shadow styles
@@ -108,6 +138,11 @@ const Reports = () => {
   const [attendancePrediction, setAttendancePrediction] = useState(null);
   const [payrollForecast, setPayrollForecast] = useState(null);
   const [departmentEfficiency, setDepartmentEfficiency] = useState(null);
+  const [downloadingPDF, setDownloadingPDF] = useState(false);
+
+  // Refs for PDF generation
+  const reportContentRef = useRef(null);
+  const statsContentRef = useRef(null);
 
   // Get auth token
   const getAuthToken = () => {
@@ -477,6 +512,89 @@ const Reports = () => {
     });
   };
 
+  // Download Report as PDF (Stats and Counts Only)
+  const handleDownloadPDF = async () => {
+    try {
+      setDownloadingPDF(true);
+      setToast({
+        message: 'Generating PDF report...',
+        type: 'info',
+      });
+
+      // Capture the full analytics + summary area for the PDF
+      const element = reportContentRef.current || statsContentRef.current;
+      if (!element) {
+        throw new Error('Report content not found. Please generate reports first.');
+      }
+
+      // Capture the element as canvas
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pdfWidth - 20; // 10mm margin on each side
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      // Add header
+      const period = getCurrentPeriod();
+      const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December',
+      ];
+      
+      pdf.setFillColor(109, 35, 35); // Primary color
+      pdf.rect(0, 0, pdfWidth, 25, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(20);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('HRIS System Reports', 10, 15);
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`${monthNames[period.month - 1]} ${period.year}`, pdfWidth - 10, 15, { align: 'right' });
+      
+      pdf.setTextColor(0, 0, 0);
+      let heightLeft = imgHeight;
+      let position = 35; // Start after header
+
+      // Add first page
+      pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+      heightLeft -= (pdfHeight - 35);
+
+      // Add additional pages if content is longer than one page
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight + 35;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+        heightLeft -= pdfHeight;
+      }
+
+      const fileName = `HRIS_Report_${monthNames[period.month - 1]}_${period.year}.pdf`;
+      
+      pdf.save(fileName);
+
+      setToast({
+        message: 'PDF report downloaded successfully!',
+        type: 'success',
+      });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      setToast({
+        message: error.message || 'Error generating PDF report',
+        type: 'error',
+      });
+    } finally {
+      setDownloadingPDF(false);
+    }
+  };
+
   // Reset report
   const handleResetReport = async (reportType) => {
     try {
@@ -700,24 +818,28 @@ const Reports = () => {
     'December',
   ];
 
+  const hasAnyReportGenerated = Object.values(reportsGenerated).some(val => val);
+
   return (
     <Box
       sx={{
         padding: '20px',
         minHeight: '100vh',
         paddingTop: '5px',
+        backgroundColor: reportColors.background,
       }}
     >
+      {/* Header Section */}
       <Box
         sx={{
           marginBottom: '30px',
           padding: '30px',
           borderRadius: '12px',
-          border: `1px solid #6d2323`,
+          border: `1px solid ${reportColors.primary}`,
           boxShadow: shadowColored,
         }}
       >
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
           <Box>
             <Typography
               variant="h4"
@@ -737,46 +859,271 @@ const Reports = () => {
               Comprehensive analytics and visualizations - {monthNames[period.month - 1]} {period.year}
             </Typography>
           </Box>
-        </Box>
-      </Box>
-
-      {/* Charts Section - Only show if reports are generated */}
-      {(reportsGenerated.dashboard ||
-        reportsGenerated.attendance ||
-        reportsGenerated.payroll) && (
-        <>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography
-              variant="h5"
-              sx={{
-                fontWeight: 700,
-                color: reportColors.textPrimary,
-                fontSize: { xs: '20px', sm: '24px' },
-              }}
-            >
-              Analytics & Statistics
-            </Typography>
+          {hasAnyReportGenerated && (
             <Button
-              variant="outlined"
-              startIcon={<RefreshIcon />}
-              onClick={() => {
-                const activeReports = Object.keys(reportsGenerated).filter(key => reportsGenerated[key]);
-                if (activeReports.length > 0) {
-                  activeReports.forEach(reportType => handleResetReport(reportType));
-                }
-              }}
+              variant="contained"
+              startIcon={downloadingPDF ? <CircularProgress size={20} color="inherit" /> : <DownloadIcon />}
+              onClick={handleDownloadPDF}
+              disabled={downloadingPDF}
               sx={{
-                borderColor: reportColors.primary,
-                color: reportColors.primary,
+                backgroundColor: reportColors.primary,
+                color: 'white',
                 textTransform: 'none',
+                fontWeight: 600,
+                px: 3,
                 '&:hover': {
-                  borderColor: reportColors.secondary,
-                  backgroundColor: `${reportColors.primary}10`,
+                  backgroundColor: reportColors.primaryDark,
+                },
+                '&:disabled': {
+                  backgroundColor: reportColors.textSecondary,
                 },
               }}
             >
-              Reset All Reports
+              {downloadingPDF ? 'Generating PDF...' : 'Download as PDF'}
             </Button>
+          )}
+        </Box>
+      </Box>
+
+      {/* Report Generation Section - Now at the top */}
+      <Typography
+        variant="h5"
+        sx={{
+          fontWeight: 700,
+          color: reportColors.textPrimary,
+          mb: 3,
+          fontSize: { xs: '20px', sm: '24px' },
+        }}
+      >
+        Generate Reports
+      </Typography>
+
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        {[
+          { 
+            type: 'dashboard', 
+            label: 'Dashboard Statistics', 
+            description: 'View overall system statistics and metrics', 
+            icon: DashboardIcon,
+            color: reportColors.primary,
+            bgGradient: reportColors.gradientSecondary
+          },
+          { 
+            type: 'attendance', 
+            label: 'Attendance Report', 
+            description: 'Review attendance trends and department distribution', 
+            icon: EventIcon,
+            color: reportColors.primary,
+            bgGradient: reportColors.gradientSecondary
+          },
+          { 
+            type: 'payroll', 
+            label: 'Payroll Report', 
+            description: 'Check payroll processing status and summaries', 
+            icon: AccountBalanceIcon,
+            color: reportColors.primary,
+            bgGradient: reportColors.gradientSecondary
+          },
+          { 
+            type: 'employee', 
+            label: 'Employee Report', 
+            description: 'View employee demographics and growth statistics', 
+            icon: PeopleIcon,
+            color: reportColors.primary,
+            bgGradient: reportColors.gradientSecondary
+          },
+          { 
+            type: 'leave', 
+            label: 'Leave Report', 
+            description: 'Review leave requests and approval statistics', 
+            icon: BeachAccessIcon,
+            color: reportColors.primary,
+            bgGradient: reportColors.gradientSecondary
+          },
+        ].map((report) => {
+          const IconComponent = report.icon;
+          return (
+          <Grid item xs={12} sm={6} md={4} key={report.type}>
+            <Card
+              sx={{
+                height: '100%',
+                backgroundColor: reportColors.surface,
+                boxShadow: reportsGenerated[report.type] ? shadowColored : shadowCard,
+                borderRadius: '16px',
+                display: 'flex',
+                flexDirection: 'column',
+                border: reportsGenerated[report.type] 
+                  ? `2px solid ${reportColors.success}`
+                  : `1px solid ${reportColors.border}`,
+                transition: 'all 0.3s ease',
+                overflow: 'hidden',
+                position: 'relative',
+                '&:hover': {
+                  boxShadow: shadowMedium,
+                  transform: 'translateY(-6px)',
+                },
+                '&::before': reportsGenerated[report.type] ? {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: '4px',
+                  background: reportColors.gradientSuccess,
+                } : {},
+              }}
+            >
+              <Box
+                sx={{
+                  // Soft, light header using the cream + white gradient
+                  background: report.bgGradient,
+                  p: 3,
+                  pb: 2,
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Box
+                    sx={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: '12px',
+                      background: reportsGenerated[report.type]
+                        ? reportColors.gradientSuccess
+                        : `linear-gradient(135deg, ${report.color} 0%, ${report.color}dd 100%)`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      mr: 2,
+                      boxShadow: `0 4px 12px ${report.color}40`,
+                    }}
+                  >
+                    <IconComponent sx={{ fontSize: 28, color: 'white' }} />
+                  </Box>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 700,
+                      color: reportColors.textPrimary,
+                      fontSize: '18px',
+                      flex: 1,
+                    }}
+                  >
+                    {report.label}
+                  </Typography>
+                </Box>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: reportColors.textSecondary,
+                    mb: 3,
+                    flexGrow: 1,
+                    fontSize: '14px',
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {report.description}
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1.5 }}>
+                  <Button
+                    variant="contained"
+                    onClick={() => handleGenerateReport(report.type)}
+                    disabled={reportsGenerated[report.type]}
+                    fullWidth
+                    sx={{
+                      background: reportsGenerated[report.type]
+                        ? reportColors.gradientPrimary
+                        : reportColors.gradientPrimary,
+                      color: 'white',
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      py: 1.5,
+                      borderRadius: '8px',
+                      boxShadow: reportsGenerated[report.type]
+                        ? `0 4px 12px ${reportColors.success}40`
+                        : `0 4px 12px ${reportColors.primary}40`,
+                      '&:hover': {
+                        background: reportColors.gradientPrimary,
+                        boxShadow: reportsGenerated[report.type]
+                          ? `0 6px 16px ${reportColors.success}60`
+                          : `0 6px 16px ${reportColors.primary}60`,
+                        transform: 'translateY(-2px)',
+                      },
+                      '&:disabled': {
+                        background: reportColors.gradientPrimary,
+                        color: 'white',
+                        opacity: 0.95,
+                      },
+                    }}
+                    startIcon={reportsGenerated[report.type] ? (
+                      <CheckCircleIcon sx={{ fontSize: 20 }} />
+                    ) : (
+                      <FileText sx={{ fontSize: 18 }} />
+                    )}
+                  >
+                    {reportsGenerated[report.type] ? 'Generated' : 'Generate Report'}
+                  </Button>
+                  {reportsGenerated[report.type] && (
+                    <Button
+                      variant="outlined"
+                      onClick={() => handleResetReport(report.type)}
+                      sx={{
+                        borderColor: reportColors.error,
+                        color: reportColors.error,
+                        textTransform: 'none',
+                        minWidth: 'auto',
+                        px: 2.5,
+                        borderRadius: '8px',
+                        '&:hover': {
+                          borderColor: reportColors.error,
+                          backgroundColor: `${reportColors.error}10`,
+                          transform: 'scale(1.05)',
+                        },
+                      }}
+                    >
+                      <RefreshIcon sx={{ fontSize: 20 }} />
+                    </Button>
+                  )}
+                </Box>
+              </Box>
+            </Card>
+          </Grid>
+          );
+        })}
+      </Grid>
+
+      <Divider sx={{ my: 4 }} />
+
+      {/* Charts Section - Now at the bottom, shown after report generation */}
+      {hasAnyReportGenerated && (
+        <Box ref={reportContentRef}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box
+                sx={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: '12px',
+                  backgroundColor: reportColors.surface,
+                  border: `1px solid ${reportColors.border}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: shadowCard,
+                }}
+              >
+                <TrendingUpIcon sx={{ fontSize: 28, color: reportColors.primary }} />
+              </Box>
+              <Typography
+                variant="h5"
+                sx={{
+                  fontWeight: 700,
+                  color: reportColors.textPrimary,
+                  fontSize: { xs: '20px', sm: '24px' },
+                }}
+              >
+                Analytics & Statistics
+              </Typography>
+            </Box>
           </Box>
 
           <Tabs
@@ -786,35 +1133,37 @@ const Reports = () => {
               mb: 3,
               '& .MuiTab-root': {
                 color: reportColors.textSecondary,
+                fontWeight: 600,
+                textTransform: 'none',
+                fontSize: '15px',
+                minHeight: 48,
                 '&.Mui-selected': {
                   color: reportColors.primary,
                 },
               },
               '& .MuiTabs-indicator': {
                 backgroundColor: reportColors.primary,
+                height: 3,
+                borderRadius: '3px 3px 0 0',
               },
             }}
           >
-            <Tab
+            <Tab 
+              icon={<BarChartIcon sx={{ fontSize: 20, mb: 0.5 }} />}
+              iconPosition="start"
               label="Overview"
-              sx={{
-                fontSize: '0.875rem',
-                fontWeight: 600,
-                textTransform: 'none',
-              }}
+              sx={{ gap: 1 }}
             />
-            <Tab
-              label="Analytics"
-              sx={{
-                fontSize: '0.875rem',
-                fontWeight: 600,
-                textTransform: 'none',
-              }}
+            <Tab 
+              icon={<TrendingUpIcon sx={{ fontSize: 20, mb: 0.5 }} />}
+              iconPosition="start"
+              label="Trends & Analytics"
+              sx={{ gap: 1 }}
             />
           </Tabs>
 
           {tabValue === 0 && (
-            <Grid container spacing={2} sx={{ mb: 4 }}>
+            <Grid container spacing={3} sx={{ mb: 4 }}>
               {reportsGenerated.attendance && (
                 <>
                   <Grid item xs={12} md={6}>
@@ -1373,285 +1722,178 @@ const Reports = () => {
             </Grid>
           )}
 
-          {/* Algorithm Recommendations Section - Implemented */}
-          {(reportsGenerated.dashboard || reportsGenerated.attendance || reportsGenerated.payroll) && (
-            <Box sx={{ mt: 4, mb: 4 }}>
-              <Typography
-                variant="h5"
-                sx={{
-                  fontWeight: 700,
-                  color: reportColors.textPrimary,
-                  mb: 3,
-                  fontSize: { xs: '20px', sm: '24px' },
-                }}
-              >
-                <TrendingUpIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-                Algorithm Analysis & Predictions
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12} md={4}>
-                  <Card
-                    sx={{
-                      backgroundColor: reportColors.background,
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                      borderRadius: '8px',
-                      border: `1px solid ${reportColors.border}`,
-                      height: '100%',
-                      cursor: 'pointer',
-                      '&:hover': {
-                        boxShadow: shadowMedium,
-                      },
-                    }}
-                    onClick={() => calculateAttendancePrediction()}
-                  >
-                    <CardContent>
-                      <Typography
-                        variant="h6"
+          {/* Summary Statistics Section - PDF Capture Target */}
+          {hasAnyReportGenerated && (
+            <Box 
+              ref={statsContentRef}
+              sx={{ 
+                mt: 4, 
+                p: 4, 
+                background: `linear-gradient(135deg, ${reportColors.neutralBg} 0%, ${reportColors.background} 100%)`,
+                borderRadius: '16px',
+                border: `1px solid ${reportColors.border}`,
+                boxShadow: shadowCard,
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                <Box
+                  sx={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: '10px',
+                    background: reportColors.gradientPrimary,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    mr: 2,
+                    boxShadow: shadowColored,
+                  }}
+                >
+                  <BarChartIcon sx={{ fontSize: 24, color: 'white' }} />
+                </Box>
+                <Typography variant="h5" sx={{ fontWeight: 700, color: reportColors.textPrimary }}>
+                  Report Summary & Statistics
+                </Typography>
+              </Box>
+              <Grid container spacing={3}>
+                {reportsGenerated.attendance && weeklyAttendanceData.length > 0 && (
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Card
+                      sx={{
+                        background: `linear-gradient(135deg, ${reportColors.primary}15 0%, ${reportColors.primary}05 100%)`,
+                        border: `2px solid ${reportColors.primary}30`,
+                        borderRadius: '12px',
+                        p: 3,
+                        textAlign: 'center',
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                          transform: 'translateY(-4px)',
+                          boxShadow: `0 8px 24px ${reportColors.primary}30`,
+                          borderColor: reportColors.primary,
+                        },
+                      }}
+                    >
+                      <EventIcon sx={{ fontSize: 32, color: reportColors.primary, mb: 1 }} />
+                      <Typography variant="caption" sx={{ color: reportColors.textSecondary, display: 'block', mb: 1, fontWeight: 600 }}>
+                        Total Present (Week)
+                      </Typography>
+                      <Typography variant="h4" sx={{ fontWeight: 700, color: reportColors.primary }}>
+                        {weeklyAttendanceData.reduce((sum, day) => sum + (day.present || 0), 0)}
+                      </Typography>
+                    </Card>
+                  </Grid>
+                )}
+                {reportsGenerated.payroll && payrollStatusData.length > 0 && (
+                  <>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <Card
                         sx={{
-                          fontWeight: 600,
-                          color: reportColors.textPrimary,
-                          mb: 1,
-                          fontSize: '16px',
+                          background: `linear-gradient(135deg, ${reportColors.warning}15 0%, ${reportColors.warning}05 100%)`,
+                          border: `2px solid ${reportColors.warning}30`,
+                          borderRadius: '12px',
+                          p: 3,
+                          textAlign: 'center',
+                          transition: 'all 0.3s ease',
+                          '&:hover': {
+                            transform: 'translateY(-4px)',
+                            boxShadow: `0 8px 24px ${reportColors.warning}30`,
+                            borderColor: reportColors.warning,
+                          },
                         }}
                       >
-                        Attendance Prediction
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        sx={{ color: reportColors.textSecondary, mb: 2 }}
-                      >
-                        Predicts next week's attendance based on historical patterns and trends.
-                      </Typography>
-                      {attendancePrediction && (
-                        <Box sx={{ mt: 2, p: 2, bgcolor: `${reportColors.primary}10`, borderRadius: 2 }}>
-                          <Typography variant="body2" sx={{ color: reportColors.textPrimary, fontWeight: 600, mb: 1 }}>
-                            Next Week Prediction:
-                          </Typography>
-                          <Typography variant="h6" sx={{ color: reportColors.primary }}>
-                            {attendancePrediction.predictedAttendance}% expected attendance
-                          </Typography>
-                          <Typography variant="caption" sx={{ color: reportColors.textSecondary }}>
-                            Based on {attendancePrediction.dataPoints} data points
-                          </Typography>
-                        </Box>
-                      )}
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        sx={{ mt: 2, borderColor: reportColors.primary, color: reportColors.primary }}
-                      >
-                        Calculate Prediction
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </Grid>
-                <Grid item xs={12} md={4}>
-                  <Card
-                    sx={{
-                      backgroundColor: reportColors.background,
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                      borderRadius: '8px',
-                      border: `1px solid ${reportColors.border}`,
-                      height: '100%',
-                      cursor: 'pointer',
-                      '&:hover': {
-                        boxShadow: shadowMedium,
-                      },
-                    }}
-                    onClick={() => calculatePayrollForecast()}
-                  >
-                    <CardContent>
-                      <Typography
-                        variant="h6"
+                        <HourglassEmptyIcon sx={{ fontSize: 32, color: reportColors.warning, mb: 1 }} />
+                        <Typography variant="caption" sx={{ color: reportColors.textSecondary, display: 'block', mb: 1, fontWeight: 600 }}>
+                          Processing
+                        </Typography>
+                        <Typography variant="h4" sx={{ fontWeight: 700, color: reportColors.warning }}>
+                          {payrollStatusData[0]?.value || 0}
+                        </Typography>
+                      </Card>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <Card
                         sx={{
-                          fontWeight: 600,
-                          color: reportColors.textPrimary,
-                          mb: 1,
-                          fontSize: '16px',
+                          background: `linear-gradient(135deg, ${reportColors.primary}15 0%, ${reportColors.primary}05 100%)`,
+                          border: `2px solid ${reportColors.primary}30`,
+                          borderRadius: '12px',
+                          p: 3,
+                          textAlign: 'center',
+                          transition: 'all 0.3s ease',
+                          '&:hover': {
+                            transform: 'translateY(-4px)',
+                            boxShadow: `0 8px 24px ${reportColors.primary}30`,
+                            borderColor: reportColors.primary,
+                          },
                         }}
                       >
-                        Payroll Forecasting
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        sx={{ color: reportColors.textSecondary, mb: 2 }}
-                      >
-                        Forecasts next month's payroll costs based on current trends.
-                      </Typography>
-                      {payrollForecast && (
-                        <Box sx={{ mt: 2, p: 2, bgcolor: `${reportColors.secondary}10`, borderRadius: 2 }}>
-                          <Typography variant="body2" sx={{ color: reportColors.textPrimary, fontWeight: 600, mb: 1 }}>
-                            Next Month Forecast:
-                          </Typography>
-                          <Typography variant="h6" sx={{ color: reportColors.secondary }}>
-                            ₱{payrollForecast.forecastedAmount.toLocaleString()}
-                          </Typography>
-                          <Typography variant="caption" sx={{ color: reportColors.textSecondary }}>
-                            {payrollForecast.changePercent >= 0 ? '+' : ''}{payrollForecast.changePercent.toFixed(2)}% vs current
-                          </Typography>
-                        </Box>
-                      )}
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        sx={{ mt: 2, borderColor: reportColors.secondary, color: reportColors.secondary }}
-                      >
-                        Calculate Forecast
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </Grid>
-                <Grid item xs={12} md={4}>
-                  <Card
-                    sx={{
-                      backgroundColor: reportColors.background,
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                      borderRadius: '8px',
-                      border: `1px solid ${reportColors.border}`,
-                      height: '100%',
-                      cursor: 'pointer',
-                      '&:hover': {
-                        boxShadow: shadowMedium,
-                      },
-                    }}
-                    onClick={() => calculateDepartmentEfficiency()}
-                  >
-                    <CardContent>
-                      <Typography
-                        variant="h6"
+                        <CheckCircleIcon sx={{ fontSize: 32, color: reportColors.primary, mb: 1 }} />
+                        <Typography variant="caption" sx={{ color: reportColors.textSecondary, display: 'block', mb: 1, fontWeight: 600 }}>
+                          Processed
+                        </Typography>
+                        <Typography variant="h4" sx={{ fontWeight: 700, color: reportColors.primary }}>
+                          {payrollStatusData[1]?.value || 0}
+                        </Typography>
+                      </Card>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <Card
                         sx={{
-                          fontWeight: 600,
-                          color: reportColors.textPrimary,
-                          mb: 1,
-                          fontSize: '16px',
+                          background: `linear-gradient(135deg, ${reportColors.success}15 0%, ${reportColors.success}05 100%)`,
+                          border: `2px solid ${reportColors.success}30`,
+                          borderRadius: '12px',
+                          p: 3,
+                          textAlign: 'center',
+                          transition: 'all 0.3s ease',
+                          '&:hover': {
+                            transform: 'translateY(-4px)',
+                            boxShadow: `0 8px 24px ${reportColors.success}30`,
+                            borderColor: reportColors.success,
+                          },
                         }}
                       >
-                        Department Efficiency
+                        <DownloadIcon sx={{ fontSize: 32, color: reportColors.success, mb: 1 }} />
+                        <Typography variant="caption" sx={{ color: reportColors.textSecondary, display: 'block', mb: 1, fontWeight: 600 }}>
+                          Released
+                        </Typography>
+                        <Typography variant="h4" sx={{ fontWeight: 700, color: reportColors.success }}>
+                          {payrollStatusData[2]?.value || 0}
+                        </Typography>
+                      </Card>
+                    </Grid>
+                  </>
+                )}
+                {reportsGenerated.employee && departmentEmployeeData.length > 0 && (
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Card
+                      sx={{
+                        background: `linear-gradient(135deg, ${reportColors.info}15 0%, ${reportColors.info}05 100%)`,
+                        border: `2px solid ${reportColors.info}30`,
+                        borderRadius: '12px',
+                        p: 3,
+                        textAlign: 'center',
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                          transform: 'translateY(-4px)',
+                          boxShadow: `0 8px 24px ${reportColors.info}30`,
+                          borderColor: reportColors.info,
+                        },
+                      }}
+                    >
+                      <PeopleIcon sx={{ fontSize: 32, color: reportColors.info, mb: 1 }} />
+                      <Typography variant="caption" sx={{ color: reportColors.textSecondary, display: 'block', mb: 1, fontWeight: 600 }}>
+                        Total Departments
                       </Typography>
-                      <Typography
-                        variant="body2"
-                        sx={{ color: reportColors.textSecondary, mb: 2 }}
-                      >
-                        Analyzes department performance and identifies optimization opportunities.
+                      <Typography variant="h4" sx={{ fontWeight: 700, color: reportColors.info }}>
+                        {departmentEmployeeData.length}
                       </Typography>
-                      {departmentEfficiency && (
-                        <Box sx={{ mt: 2, p: 2, bgcolor: `${reportColors.success}10`, borderRadius: 2 }}>
-                          <Typography variant="body2" sx={{ color: reportColors.textPrimary, fontWeight: 600, mb: 1 }}>
-                            Top Performer:
-                          </Typography>
-                          <Typography variant="h6" sx={{ color: reportColors.success }}>
-                            {departmentEfficiency.topDepartment}
-                          </Typography>
-                          <Typography variant="caption" sx={{ color: reportColors.textSecondary }}>
-                            Efficiency: {departmentEfficiency.efficiencyScore}%
-                          </Typography>
-                        </Box>
-                      )}
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        sx={{ mt: 2, borderColor: reportColors.success, color: reportColors.success }}
-                      >
-                        Analyze Efficiency
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </Grid>
+                    </Card>
+                  </Grid>
+                )}
               </Grid>
             </Box>
           )}
-        </>
+        </Box>
       )}
-
-      {/* Report Generation Section */}
-      <Typography
-        variant="h5"
-        sx={{
-          fontWeight: 700,
-          color: reportColors.textPrimary,
-          mb: 3,
-          fontSize: { xs: '20px', sm: '24px' },
-        }}
-      >
-        Report Generation
-      </Typography>
-
-      <Grid container spacing={2} sx={{ mb: 4 }}>
-        {[
-          { type: 'dashboard', label: 'Dashboard Statistics', description: 'View overall system statistics and metrics' },
-          { type: 'attendance', label: 'Attendance Report', description: 'Review attendance trends and department distribution' },
-          { type: 'payroll', label: 'Payroll Report', description: 'Check payroll processing status and summaries' },
-          { type: 'employee', label: 'Employee Report', description: 'View employee demographics and growth statistics' },
-          { type: 'leave', label: 'Leave Report', description: 'Review leave requests and approval statistics' },
-        ].map((report) => (
-          <Grid item xs={12} sm={6} md={4} key={report.type}>
-            <Card
-              sx={{
-                height: '100%',
-                backgroundColor: reportColors.background,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                borderRadius: '8px',
-                display: 'flex',
-                flexDirection: 'column',
-                border: `1px solid ${reportColors.border}`,
-                '&:hover': {
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                },
-              }}
-            >
-              <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                <Typography
-                  variant="h6"
-                  sx={{
-                    fontWeight: 600,
-                    color: reportColors.textPrimary,
-                    mb: 1,
-                    fontSize: '18px',
-                  }}
-                >
-                  {report.label}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: reportColors.textSecondary,
-                    mb: 2,
-                    flexGrow: 1,
-                    fontSize: '14px',
-                  }}
-                >
-                  {report.description}
-                </Typography>
-                <Button
-                  variant="contained"
-                  onClick={() => handleGenerateReport(report.type)}
-                  disabled={reportsGenerated[report.type]}
-                  sx={{
-                    backgroundColor: reportsGenerated[report.type]
-                      ? reportColors.textSecondary
-                      : reportColors.primary,
-                    color: 'white',
-                    textTransform: 'none',
-                    fontWeight: 500,
-                    '&:hover': {
-                      backgroundColor: reportsGenerated[report.type]
-                        ? reportColors.textSecondary
-                        : reportColors.secondary,
-                    },
-                    '&:disabled': {
-                      backgroundColor: reportColors.textSecondary,
-                      color: 'white',
-                    },
-                  }}
-                  startIcon={<FileText sx={{ fontSize: 18 }} />}
-                >
-                  {reportsGenerated[report.type] ? 'Report Generated' : 'Generate Report'}
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
 
       {/* Toast Notification */}
       {toast && (

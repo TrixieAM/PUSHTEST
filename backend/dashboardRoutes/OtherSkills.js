@@ -14,6 +14,20 @@ router.get("/other-information", (req, res) => {
   });
 });
 
+// GET other information by person_id
+router.get('/other-information-by-person/:person_id', (req, res) => {
+  const { person_id } = req.params;
+  const sql = `SELECT * FROM other_information_table WHERE person_id = ?`;
+  db.query(sql, [person_id], (err, results) => {
+    if (err) {
+      console.error('Error fetching other information by person_id:', err);
+      res.status(500).json({ error: 'Failed to fetch other information' });
+    } else {
+      res.json(results);
+    }
+  });
+});
+
 router.post("/other-information", (req, res) => {
   const { specialSkills, nonAcademicDistinctions, membershipInAssociation, person_id } = req.body;
   const query = "INSERT INTO other_information_table (specialSkills, nonAcademicDistinctions, membershipInAssociation, person_id) VALUES (?, ?, ?, ?)";

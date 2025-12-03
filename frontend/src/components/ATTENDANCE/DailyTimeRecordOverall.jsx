@@ -16,7 +16,9 @@ import {
   alpha,
 } from "@mui/material";
 import axios from 'axios';
-import { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 import API_BASE_URL from '../../apiConfig';
 import earistLogo from '../../assets/earistLogo.jpg';
 import { useSystemSettings } from '../../hooks/useSystemSettings';
@@ -86,6 +88,7 @@ const DailyTimeRecordFaculty = () => {
   const [endDate, setEndDate] = useState("");
   const [records, setRecords] = useState([]);
   const [employeeName, setEmployeeName] = useState("");
+  const dtrRef = useRef(null);
   
   // Get colors from system settings
   const primaryColor = settings.accentColor || '#FEF9E1'; // Cards color
@@ -147,19 +150,39 @@ const DailyTimeRecordFaculty = () => {
     }
   };
 
-  const printPage = () => {
-    const elementsToHide = document.querySelectorAll(".no-print");
-    const sidebar = document.querySelector(".MuiDrawer-root");
-    const header = document.querySelector(".header");
+  const printPage = async () => {
+    if (!dtrRef.current) return;
 
-    if (sidebar) sidebar.style.display = "none";
-    if (header) header.style.display = "none";
+    try {
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'in',
+        format: 'a4',
+      });
 
-    elementsToHide.forEach((el) => (el.style.display = "none"));
-    window.print();
-    elementsToHide.forEach((el) => (el.style.display = ""));
-    if (sidebar) sidebar.style.display = "";
-    if (header) header.style.display = "";
+      const canvas = await html2canvas(dtrRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const dtrWidth = 7;
+      const dtrHeight = 7.5;
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const baselineX = (pageWidth - dtrWidth) / 2;
+      const yOffset = (pageHeight - dtrHeight) / 2;
+      const adjustLeft = 0.2;
+      const xOffset = baselineX + adjustLeft;
+
+      pdf.addImage(imgData, 'PNG', xOffset, yOffset, dtrWidth, dtrHeight);
+      pdf.autoPrint();
+      const blobUrl = pdf.output('bloburl');
+      window.open(blobUrl, '_blank');
+    } catch (error) {
+      console.error('Error generating print view:', error);
+    }
   };
 
   const formatDate = (dateString) => {
@@ -229,57 +252,83 @@ const DailyTimeRecordFaculty = () => {
     <Container maxWidth="xl" sx={{ py: 4, mt: -5 }}>
       <style>
         {`
+          @page {
+            size: A4;
+            margin: 0;
+          }
+
           @media print {
             .no-print { 
               display: none !important;
             }
 
-            .header { 
-              display: none !important; 
-            }
-
-            .table-wrapper { 
-              display: flex; 
-              justify-content: center; 
-              width: 100%; 
-              margin-top: -22rem; 
-              transform: scale(0.7);
-              height: 100vh;
-            }
-            
-            .table { 
-              width: 50%;
-              border: 1px solid black; 
-              border-collapse: collapse; 
-            }
-
-            .header, .top-banner, .page-banner, header, footer {
+            .header, .top-banner, .page-banner, header, footer, 
+            .MuiDrawer-root, .MuiAppBar-root {
               display: none !important;
               visibility: hidden !important;
               height: 0 !important;
               overflow: hidden !important;
             }
-               @media print {
-            .print-visible {
-              display: block !important;
-              page-break-before: avoid;
-              margin-bottom: 0;
-              margin-top: 0;
 
-            }
-              @media print {
-              .header, .top-banner, .page-banner, header, footer {
-                display: none !important;
-                visibility: hidden !important;
-                height: 0 !important;
-                overflow: hidden !important;
-              }
-            }
-              body {
+            html, body {
+              width: 21cm;
+              height: 29.7cm;
               margin: 0;
               padding: 0;
-              box-sizing: border-box;
-            }  
+              background: white;
+            }
+
+            .MuiContainer-root {
+              max-width: 100% !important;
+              width: 21cm !important;
+              margin: 0 auto !important;
+              padding: 0 !important;
+              display: flex !important;
+              justify-content: center !important;
+              align-items: center !important;
+              background: white !important;
+            }
+
+            .MuiPaper-root, .MuiBox-root, .MuiCard-root {
+              background: transparent !important;
+              box-shadow: none !important;
+              margin: 0 !important;
+            }
+
+            .table-container {
+              width: 100% !important;
+              height: auto !important;
+              margin: 0 auto !important;
+              padding: 0 !important;
+              display: block !important;
+              background: transparent !important;
+            }
+
+            .table-wrapper {
+              width: 100% !important;
+              height: auto !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              display: flex !important;
+              justify-content: center !important;
+              align-items: flex-start !important;
+              box-sizing: border-box !important;
+            }
+
+            table {
+              page-break-inside: avoid !important;
+              table-layout: fixed !important;
+              background: white !important;
+            }
+
+            table td, table th {
+              background: white !important;
+              font-family: Arial, "Times New Roman", serif !important;
+            }
+
+            table tbody tr:last-child td {
+              padding-bottom: 20px !important;
+            }
           }
         `}
       </style>
@@ -287,7 +336,7 @@ const DailyTimeRecordFaculty = () => {
       <Box sx={{ px: { xs: 2, sm: 4, md: 6 } }}>
         {/* Header */}
         <Fade in timeout={500}>
-          <Box sx={{ mb: 4 }}>
+          <Box sx={{ mb: 4 }} className="no-print">
             <GlassCard sx={{ border: `1px solid ${alpha(accentColor, 0.1)}`}}>
               <Box
                 sx={{
@@ -375,7 +424,7 @@ const DailyTimeRecordFaculty = () => {
 
         {/* Search Section */}
         <Fade in timeout={700}>
-          <GlassCard sx={{ mb: 4, border: `1px solid ${alpha(accentColor, 0.1)}` }}>
+          <GlassCard className="no-print" sx={{ mb: 4, border: `1px solid ${alpha(accentColor, 0.1)}` }}>
             <Box
               sx={{
                 p: 4,
@@ -494,14 +543,21 @@ const DailyTimeRecordFaculty = () => {
            
 
             <Box sx={{ p: 5, overflowX: 'auto' }}>
-              <div className="table-container">
+              <div className="table-container" ref={dtrRef}>
                 <div className="table-wrapper">
-                  <div>
+                  <div
+                    style={{
+                      width: '8.5in',
+                      minWidth: '8.5in',
+                      margin: '0 auto',
+                      backgroundColor: 'white',
+                    }}
+                  >
                     <table
                       style={{
                         border: "1px solid black",
                         borderCollapse: "collapse",
-                        width: "52rem",
+                        width: "100%",
                       }}
                       className="table side-by-side"
                     >

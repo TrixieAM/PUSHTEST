@@ -33,6 +33,20 @@ router.get("/vocational-table", (req, res) => {
   });
 });
 
+// GET vocational by person_id
+router.get('/vocational-by-person/:person_id', (req, res) => {
+  const { person_id } = req.params;
+  const sql = `SELECT * FROM vocational_table WHERE person_id = ?`;
+  db.query(sql, [person_id], (err, results) => {
+    if (err) {
+      console.error('Error fetching vocational by person_id:', err);
+      res.status(500).json({ error: 'Failed to fetch vocational records' });
+    } else {
+      res.json(results);
+    }
+  });
+});
+
 router.post("/vocational-table", (req, res) => {
   const { vocationalNameOfSchool, vocationalDegree, vocationalPeriodFrom, vocationalPeriodTo, vocationalHighestAttained, vocationalYearGraduated, person_id } = req.body;
   const query = "INSERT INTO vocational_table (vocationalNameOfSchool, vocationalDegree, vocationalPeriodFrom, vocationalPeriodTo, vocationalHighestAttained, vocationalYearGraduated, person_id) VALUES (?, ?, ?, ?, ?, ?, ?)";

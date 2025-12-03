@@ -1,13 +1,11 @@
-import API_BASE_URL from '../../apiConfig';
 import React, { useState, useEffect } from 'react';
 import Typography from '@mui/material/Typography';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import PrintIcon from '@mui/icons-material/Print';
 import { Box, Container, CircularProgress } from '@mui/material';
 import AccessDenied from '../AccessDenied';
-import { getAuthHeaders } from '../../utils/auth';
 import usePageAccess from '../../hooks/usePageAccess';
+import useProfileSections from '../../hooks/useProfileSections';
 
 const PDS2 = () => {
   const navigate = useNavigate();
@@ -15,16 +13,13 @@ const PDS2 = () => {
   const [employeeNumber, setEmployeeNumber] = useState('');
   const [eligibilityInfo, setEligibilityInfo] = useState([]);
   const [workexperience, setWorkExperienceInfo] = useState([]);
+  const { sections, loading: sectionsLoading } = useProfileSections();
 
-  //ACCESSING
-  // Dynamic page access control using component identifier
-  // The identifier 'pds1' should match the component_identifier in the pages table
   const {
     hasAccess,
     loading: accessLoading,
     error: accessError,
   } = usePageAccess('pds2');
-  // ACCESSING END
 
   useEffect(() => {
     const storedRole = localStorage.getItem('role');
@@ -42,45 +37,15 @@ const PDS2 = () => {
   }, [navigate]);
 
   useEffect(() => {
-    if (employeeNumber) {
-      const fetchEligibilityData = async () => {
-        try {
-          const requests = Array.from({ length: 7 }, (_, i) =>
-            axios.get(
-              `${API_BASE_URL}/eligibilityRoute/eligibility${
-                i + 1
-              }/${employeeNumber}`
-            )
-          );
-          const responses = await Promise.all(requests);
-          setEligibilityInfo(responses.map((res) => res.data || null));
-        } catch (error) {
-          console.error('Error loading eligibility data:', error);
-        }
-      };
+    if (!sections) return;
 
-      const fetchWorkExperienceData = async () => {
-        try {
-          const requests = Array.from({ length: 26 }, (_, i) =>
-            axios.get(
-              `${API_BASE_URL}/WorkExperienceRoute/work-experience-table${
-                i + 1
-              }/${employeeNumber}`
-            )
-          );
-          const responses = await Promise.all(requests);
-          setWorkExperienceInfo(responses.map((res) => res.data || null));
-        } catch (error) {
-          console.error('Error loading work experience data:', error);
-        }
-      };
+    const eligibilities = sections.eligibilities || [];
+    setEligibilityInfo(eligibilities);
 
-      fetchEligibilityData();
-      fetchWorkExperienceData();
-    }
-  }, [employeeNumber]);
+    const work = sections.workExperiences || [];
+    setWorkExperienceInfo(work);
+  }, [sections]);
 
-  // Normalize data
   const normalizedEligibility = [...eligibilityInfo.filter((e) => e !== null)];
   while (normalizedEligibility.length < 7) normalizedEligibility.push(null);
 
@@ -90,9 +55,7 @@ const PDS2 = () => {
   while (normalizedWorkExperience.length < 26)
     normalizedWorkExperience.push(null);
 
-  // ACCESSING 2
-  // Loading state
-  if (accessLoading) {
+  if (accessLoading || sectionsLoading) {
     return (
       <Container maxWidth="md" sx={{ py: 8 }}>
         <Box
