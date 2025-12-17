@@ -419,6 +419,7 @@ const DepartmentAssignment = () => {
   const [selectedDepartment, setSelectedDepartment] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [departmentModalOpen, setDepartmentModalOpen] = useState(false);
+  const [departmentEmployeeDetails, setDepartmentEmployeeDetails] = useState({});
 
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -614,9 +615,33 @@ const DepartmentAssignment = () => {
     }
   };
 
-  const handleOpenDepartmentModal = (department) => {
+  const handleOpenDepartmentModal = async (department) => {
     setSelectedDepartment(department);
     setDepartmentModalOpen(true);
+    
+    // Fetch employee details for all employees in this department
+    const employeeDetailsMap = {};
+    const fetchPromises = department.employees.map(async (assignment) => {
+      if (assignment.employeeNumber) {
+        try {
+          const response = await axios.get(
+            `${API_BASE_URL}/Remittance/employees/${assignment.employeeNumber}`,
+            getAuthHeaders()
+          );
+          employeeDetailsMap[assignment.employeeNumber] = response.data;
+        } catch (error) {
+          console.error(`Error fetching employee ${assignment.employeeNumber}:`, error);
+          // Set a fallback if fetch fails
+          employeeDetailsMap[assignment.employeeNumber] = {
+            employeeNumber: assignment.employeeNumber,
+            name: assignment.name || 'Unknown Employee'
+          };
+        }
+      }
+    });
+    
+    await Promise.all(fetchPromises);
+    setDepartmentEmployeeDetails(employeeDetailsMap);
   };
 
   const handleCloseModal = () => {
@@ -630,6 +655,7 @@ const DepartmentAssignment = () => {
   const handleCloseDepartmentModal = () => {
     setSelectedDepartment(null);
     setDepartmentModalOpen(false);
+    setDepartmentEmployeeDetails({});
   };
 
   const handleStartEdit = () => {
@@ -1600,7 +1626,7 @@ const DepartmentAssignment = () => {
                                 mb={0.5}
                                 noWrap
                               >
-                                {employee.name || 'No Name'}
+                                {departmentEmployeeDetails[employee.employeeNumber]?.name || employee.name || 'No Name'}
                               </Typography>
 
                               <Box
@@ -1685,7 +1711,7 @@ const DepartmentAssignment = () => {
                                     fontWeight="bold"
                                     color="#333"
                                   >
-                                    {employee.name || 'No Name'}
+                                    {departmentEmployeeDetails[employee.employeeNumber]?.name || employee.name || 'No Name'}
                                   </Typography>
                                   <Typography
                                     variant="caption"

@@ -289,8 +289,38 @@ const PayslipDistribution = forwardRef(({ employee }, ref) => {
     }
   };
 
+  const formatCurrency = (value) => {
+    const num = parseFloat(value);
+    return !isNaN(num) && num !== 0 ? `₱${num.toLocaleString()}` : '';
+  };
+
+  const formatRenderedDays = (value) => {
+    const totalHours = Number(value);
+    if (!isNaN(totalHours) && totalHours > 0) {
+      const days = Math.floor(totalHours / 8);
+      const hours = totalHours % 8;
+      return `${days} days${hours > 0 ? ` & ${hours} hrs` : ''}`;
+    }
+    return '';
+  };
+
   // Helper function to generate 3-month PDF for an employee
   const generate3MonthPDF = async (employee) => {
+    // Hide any overlays during PDF generation
+    const overlays = document.querySelectorAll('[class*="overlay"], [class*="backdrop"], [class*="MuiBackdrop"]');
+    const originalStyles = [];
+    overlays.forEach((overlay) => {
+      originalStyles.push({
+        element: overlay,
+        display: overlay.style.display,
+        visibility: overlay.style.visibility,
+        opacity: overlay.style.opacity,
+      });
+      overlay.style.display = 'none';
+      overlay.style.visibility = 'hidden';
+      overlay.style.opacity = '0';
+    });
+
     // 1. Identify current month/year from employee
     const currentStart = new Date(employee.startDate);
     const currentMonth = currentStart.getMonth(); // 0-11
@@ -377,6 +407,12 @@ const PayslipDistribution = forwardRef(({ employee }, ref) => {
           const clone = input.cloneNode(true);
           clone.style.width = '800px';
           clone.style.overflow = 'hidden';
+          clone.style.boxShadow = 'none';
+          clone.style.filter = 'none';
+          // Remove any gray overlay appearance
+          if (clone.style.backgroundColor && clone.style.backgroundColor.includes('rgba')) {
+            clone.style.backgroundColor = '#ffffff';
+          }
           tempContainer.innerHTML = '';
           tempContainer.appendChild(clone);
 
@@ -393,7 +429,44 @@ const PayslipDistribution = forwardRef(({ employee }, ref) => {
             windowHeight: 1200,
             // Additional performance optimizations
             foreignObjectRendering: false,
-            onclone: null,
+            onclone: (clonedDoc) => {
+              // Hide any overlays in the cloned document
+              const clonedOverlays = clonedDoc.querySelectorAll('[class*="overlay"], [class*="backdrop"], [class*="MuiBackdrop"]');
+              clonedOverlays.forEach((overlay) => {
+                overlay.style.display = 'none';
+                overlay.style.visibility = 'hidden';
+                overlay.style.opacity = '0';
+              });
+              
+              // Remove any shadows or gray overlays from the payslip Paper element
+              const paperElement = clonedDoc.querySelector('[class*="MuiPaper-root"]');
+              if (paperElement) {
+                paperElement.style.boxShadow = 'none';
+                paperElement.style.filter = 'none';
+              }
+              
+              // Ensure clean white background
+              const allElements = clonedDoc.querySelectorAll('*');
+              allElements.forEach((el) => {
+                const computedStyle = window.getComputedStyle(el);
+                if (computedStyle.backgroundColor && computedStyle.backgroundColor !== 'rgba(0, 0, 0, 0)' && computedStyle.backgroundColor !== 'transparent') {
+                  const bgColor = computedStyle.backgroundColor;
+                  // If it's a gray overlay-like color, make it transparent
+                  if (bgColor.includes('rgba') && bgColor.includes('0.') && !bgColor.includes('255')) {
+                    el.style.backgroundColor = 'transparent';
+                  }
+                }
+              });
+            },
+            ignoreElements: (element) => {
+              // Ignore overlay elements
+              const classList = element.className || '';
+              return typeof classList === 'string' && (
+                classList.includes('overlay') ||
+                classList.includes('backdrop') ||
+                classList.includes('MuiBackdrop')
+              );
+            },
           });
           imgData = canvas.toDataURL('image/png', 0.85); // More compression for faster processing
         }
@@ -431,6 +504,13 @@ const PayslipDistribution = forwardRef(({ employee }, ref) => {
     // Clean up temporary container
     document.body.removeChild(tempContainer);
 
+    // Restore overlays
+    originalStyles.forEach(({ element, display, visibility, opacity }) => {
+      element.style.display = display;
+      element.style.visibility = visibility;
+      element.style.opacity = opacity;
+    });
+
     return pdf.output('blob');
   };
 
@@ -460,7 +540,7 @@ const PayslipDistribution = forwardRef(({ employee }, ref) => {
       // Process batches sequentially, but employees within each batch in parallel
       for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
         const batch = batches[batchIndex];
-        
+
         // Update loading message for batch progress
         setLoadingMessage(
           `Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} employee${batch.length > 1 ? 's' : ''})...`
@@ -1013,25 +1093,27 @@ const PayslipDistribution = forwardRef(({ employee }, ref) => {
           </Fade>
         )}
 
-        {/* Hidden Payslip Renderer - Updated with new layout */}
+        {/* Hidden Payslip Renderer - Mirrored from PayslipOverall */}
         {displayEmployee && (
           <Paper
             ref={payslipRef}
-            elevation={4}
+            elevation={6}
             sx={{
-              p: 3,
+              p: 5,
               position: 'absolute',
               top: '-9999px',
               left: '-9999px',
-              mt: 2,
-              border: '2px solid black',
               borderRadius: 1,
               backgroundColor: '#fff',
               fontFamily: 'Arial, sans-serif',
               overflow: 'hidden',
+              width: '100%',
+              maxWidth: '100%',
+              margin: '0 auto',
+              fontSize: '1.1rem',
+              boxSizing: 'border-box',
             }}
           >
-            {/* Watermark */}
             <Box
               component="img"
               src={hrisLogo}
@@ -1048,61 +1130,59 @@ const PayslipDistribution = forwardRef(({ employee }, ref) => {
               }}
             />
 
-            {/* Header - Updated with gradient background and dual logos */}
+            {/* Header */}
             <Box
               display="flex"
               alignItems="center"
               justifyContent="space-between"
-              mb={2}
+              mb={3}
               sx={{
                 background: 'linear-gradient(to right, #6d2323, #a31d1d)',
-                borderRadius: '2px',
-                p: 1,
+                borderRadius: '3px',
+                p: 2,
               }}
             >
-              {/* Left Logo */}
               <Box>
                 <img
                   src={logo}
                   alt="Logo"
-                  style={{ width: '60px', marginLeft: '10px' }}
+                  style={{ width: '80px', marginLeft: '15px' }}
                 />
               </Box>
-
-              {/* Center Text */}
               <Box textAlign="center" flex={1} sx={{ color: 'white' }}>
-                <Typography variant="subtitle2" sx={{ fontStyle: 'italic' }}>
+                <Typography variant="h5" sx={{ fontStyle: 'italic', fontSize: '16px' }}>
                   Republic of the Philippines
                 </Typography>
                 <Typography
-                  variant="subtitle5"
+                  variant="h4"
                   fontWeight="bold"
-                  sx={{ ml: '25px' }}
+                  sx={{ fontSize: '18px', lineHeight: 1.3 }}
                 >
                   EULOGIO "AMANG" RODRIGUEZ INSTITUTE OF SCIENCE AND TECHNOLOGY
                 </Typography>
-                <Typography variant="body2">Nagtahan, Sampaloc Manila</Typography>
+                <Typography variant="h6" sx={{ fontSize: '14px' }}>
+                  Nagtahan, Sampaloc Manila
+                </Typography>
               </Box>
-
-              {/* Right Logo */}
               <Box>
-                <img src={hrisLogo} alt="HRIS Logo" style={{ width: '80px' }} />
+                <img src={hrisLogo} alt="HRIS Logo" style={{ width: '100px' }} />
               </Box>
             </Box>
 
-            {/* Rows */}
-            <Box sx={{ border: '2px solid black', borderBottom: '0px' }}>
-              {/* Row template */}
-              {[
-                {
-                  label: 'PERIOD:',
-                  value: (
-                    <span style={{ fontWeight: 'bold' }}>
+            {/* Employee Information Section */}
+            <Box sx={{ border: '1px solid black', borderRadius: '3px', mb: 3 }}>
+              <Box sx={{ backgroundColor: '#6D2323', color: 'white', p: 2, textAlign: 'center', fontWeight: 'bold', fontSize: '18px' }}>
+                EMPLOYEE INFORMATION
+              </Box>
+              <Box sx={{ p: 3 }}>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={6}>
+                    <Typography sx={{ fontSize: '16px', fontWeight: 'bold', mb: 1, color: accentColor }}>
+                      PERIOD:
+                    </Typography>
+                    <Typography sx={{ fontSize: '16px', fontWeight: 'bold' }}>
                       {(() => {
-                        if (
-                          !displayEmployee.startDate ||
-                          !displayEmployee.endDate
-                        )
+                        if (!displayEmployee.startDate || !displayEmployee.endDate)
                           return '—';
                         const start = new Date(displayEmployee.startDate);
                         const end = new Date(displayEmployee.endDate);
@@ -1111,345 +1191,157 @@ const PayslipDistribution = forwardRef(({ employee }, ref) => {
                           .toUpperCase();
                         return `${month} ${start.getDate()}-${end.getDate()} ${end.getFullYear()}`;
                       })()}
-                    </span>
-                  ),
-                },
-                {
-                  label: 'EMPLOYEE NUMBER:',
-                  value: (
-                    <Typography sx={{ color: 'red', fontWeight: 'bold' }}>
-                      {displayEmployee.employeeNumber &&
-                      parseFloat(displayEmployee.employeeNumber) !== 0
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <Typography sx={{ fontSize: '16px', fontWeight: 'bold', mb: 1, color: accentColor }}>
+                      EMPLOYEE NUMBER:
+                    </Typography>
+                    <Typography sx={{ fontSize: '16px', color: 'red', fontWeight: 'bold' }}>
+                      {displayEmployee.employeeNumber
                         ? `${parseFloat(displayEmployee.employeeNumber)}`
                         : ''}
                     </Typography>
-                  ),
-                },
-                {
-                  label: 'NAME:',
-                  value: (
-                    <Typography sx={{ color: 'red', fontWeight: 'bold' }}>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <Typography sx={{ fontSize: '16px', fontWeight: 'bold', mb: 1, color: accentColor }}>
+                      NAME:
+                    </Typography>
+                    <Typography sx={{ fontSize: '16px', color: 'red', fontWeight: 'bold' }}>
                       {displayEmployee.name ? `${displayEmployee.name}` : ''}
                     </Typography>
-                  ),
-                },
-                {
-                  label: 'GROSS SALARY:',
-                  value:
-                    displayEmployee.grossSalary &&
-                    parseFloat(displayEmployee.grossSalary) !== 0
-                      ? `₱${parseFloat(
-                          displayEmployee.grossSalary
-                        ).toLocaleString()}`
-                      : '',
-                },
-                {
-                  label: 'Rendered Days:',
-                  value:
-                    displayEmployee.rh && parseFloat(displayEmployee.rh) !== 0
-                      ? (() => {
-                          const totalHours = Number(displayEmployee.rh);
-                          const days = Math.floor(totalHours / 8);
-                          const hours = totalHours % 8;
-                          return `${days} days${
-                            hours > 0 ? ` & ${hours} hrs` : ''
-                          }`;
-                        })()
-                      : '',
-                },
-                {
-                  label: 'ABS:',
-                  value:
-                    displayEmployee.abs && parseFloat(displayEmployee.abs) !== 0
-                      ? `₱${parseFloat(displayEmployee.abs).toLocaleString()}`
-                      : '',
-                },
-                {
-                  label: 'WITHHOLDING TAX:',
-                  value:
-                    displayEmployee.withholdingTax &&
-                    parseFloat(displayEmployee.withholdingTax) !== 0
-                      ? `₱${parseFloat(
-                          displayEmployee.withholdingTax
-                        ).toLocaleString()}`
-                      : '',
-                },
-                {
-                  label: 'L.RET:',
-                  value:
-                    displayEmployee.personalLifeRetIns &&
-                    parseFloat(displayEmployee.personalLifeRetIns) !== 0
-                      ? `₱${parseFloat(
-                          displayEmployee.personalLifeRetIns
-                        ).toLocaleString()}`
-                      : '',
-                },
-                {
-                  label: 'GSIS SALARY LOAN:',
-                  value:
-                    displayEmployee.gsisSalaryLoan &&
-                    parseFloat(displayEmployee.gsisSalaryLoan) !== 0
-                      ? `₱${parseFloat(
-                          displayEmployee.gsisSalaryLoan
-                        ).toLocaleString()}`
-                      : '',
-                },
-                {
-                  label: 'POLICY:',
-                  value:
-                    displayEmployee.gsisPolicyLoan &&
-                    parseFloat(displayEmployee.gsisPolicyLoan) !== 0
-                      ? `₱${parseFloat(
-                          displayEmployee.gsisPolicyLoan
-                        ).toLocaleString()}`
-                      : '',
-                },
-                {
-                  label: 'HOUSING LOAN:',
-                  value:
-                    displayEmployee.gsisHousingLoan &&
-                    parseFloat(displayEmployee.gsisHousingLoan) !== 0
-                      ? `₱${parseFloat(
-                          displayEmployee.gsisHousingLoan
-                        ).toLocaleString()}`
-                      : '',
-                },
-                {
-                  label: 'GSIS ARREARS:',
-                  value:
-                    displayEmployee.gsisArrears &&
-                    parseFloat(displayEmployee.gsisArrears) !== 0
-                      ? `₱${parseFloat(
-                          displayEmployee.gsisArrears
-                        ).toLocaleString()}`
-                      : '',
-                },
-                {
-                  label: 'GFAL:',
-                  value:
-                    displayEmployee.gfal && parseFloat(displayEmployee.gfal) !== 0
-                      ? `₱${parseFloat(displayEmployee.gfal).toLocaleString()}`
-                      : '',
-                },
-                {
-                  label: 'CPL:',
-                  value:
-                    displayEmployee.cpl && parseFloat(displayEmployee.cpl) !== 0
-                      ? `₱${parseFloat(displayEmployee.cpl).toLocaleString()}`
-                      : '',
-                },
-                {
-                  label: 'MPL:',
-                  value:
-                    displayEmployee.mpl && parseFloat(displayEmployee.mpl) !== 0
-                      ? `₱${parseFloat(displayEmployee.mpl).toLocaleString()}`
-                      : '',
-                },
-                {
-                  label: 'MPL LITE:',
-                  value:
-                    displayEmployee.mplLite &&
-                    parseFloat(displayEmployee.mplLite) !== 0
-                      ? `₱${parseFloat(
-                          displayEmployee.mplLite
-                        ).toLocaleString()}`
-                      : '',
-                },
-                {
-                  label: 'SSS:',
-                  value:
-                    displayEmployee.sss && parseFloat(displayEmployee.sss) !== 0
-                      ? `₱${parseFloat(displayEmployee.sss).toLocaleString()}`
-                      : '',
-                },
-                {
-                  label: 'ELA:',
-                  value:
-                    displayEmployee.ela && parseFloat(displayEmployee.ela) !== 0
-                      ? `₱${parseFloat(displayEmployee.ela).toLocaleString()}`
-                      : '',
-                },
-                {
-                  label: 'PAG-IBIG:',
-                  value:
-                    displayEmployee.pagibigFundCont &&
-                    parseFloat(displayEmployee.pagibigFundCont) !== 0
-                      ? `₱${parseFloat(
-                          displayEmployee.pagibigFundCont
-                        ).toLocaleString()}`
-                      : '',
-                },
-                {
-                  label: 'MPL:',
-                  value:
-                    displayEmployee.mpl && parseFloat(displayEmployee.mpl) !== 0
-                      ? `₱${parseFloat(displayEmployee.mpl).toLocaleString()}`
-                      : '',
-                },
-                {
-                  label: 'PHILHEALTH:',
-                  value:
-                    displayEmployee.PhilHealthContribution &&
-                    parseFloat(displayEmployee.PhilHealthContribution) !== 0
-                      ? `₱${parseFloat(
-                          displayEmployee.PhilHealthContribution
-                        ).toLocaleString()}`
-                      : '',
-                },
-                {
-                  label: "PHILHEALTH (DIFF'L):",
-                  value:
-                    displayEmployee.philhealthDiff &&
-                    parseFloat(displayEmployee.philhealthDiff) !== 0
-                      ? `₱${parseFloat(
-                          displayEmployee.philhealthDiff
-                        ).toLocaleString()}`
-                      : '',
-                },
-                {
-                  label: 'PAG-IBIG 2:',
-                  value:
-                    displayEmployee.pagibig2 &&
-                    parseFloat(displayEmployee.pagibig2) !== 0
-                      ? `₱${parseFloat(
-                          displayEmployee.pagibig2
-                        ).toLocaleString()}`
-                      : '',
-                },
-                {
-                  label: 'LBP LOAN:',
-                  value:
-                    displayEmployee.lbpLoan &&
-                    parseFloat(displayEmployee.lbpLoan) !== 0
-                      ? `₱${parseFloat(displayEmployee.lbpLoan).toLocaleString()}`
-                      : '',
-                },
-                {
-                  label: 'MTSLAI:',
-                  value:
-                    displayEmployee.mtslai &&
-                    parseFloat(displayEmployee.mtslai) !== 0
-                      ? `₱${parseFloat(displayEmployee.mtslai).toLocaleString()}`
-                      : '',
-                },
-                {
-                  label: 'ECC:',
-                  value:
-                    displayEmployee.ecc && parseFloat(displayEmployee.ecc) !== 0
-                      ? `₱${parseFloat(displayEmployee.ecc).toLocaleString()}`
-                      : '',
-                },
-                {
-                  label: 'TO BE REFUNDED:',
-                  value:
-                    displayEmployee.toBeRefunded &&
-                    parseFloat(displayEmployee.toBeRefunded) !== 0
-                      ? `₱${parseFloat(
-                          displayEmployee.toBeRefunded
-                        ).toLocaleString()}`
-                      : '',
-                },
-                {
-                  label: 'FEU:',
-                  value:
-                    displayEmployee.feu && parseFloat(displayEmployee.feu) !== 0
-                      ? `₱${parseFloat(displayEmployee.feu).toLocaleString()}`
-                      : '',
-                },
-                {
-                  label: 'ESLAI:',
-                  value:
-                    displayEmployee.eslai &&
-                    parseFloat(displayEmployee.eslai) !== 0
-                      ? `₱${parseFloat(displayEmployee.eslai).toLocaleString()}`
-                      : '',
-                },
-                {
-                  label: 'TOTAL DEDUCTIONS:',
-                  value:
-                    displayEmployee.totalDeductions &&
-                    parseFloat(displayEmployee.totalDeductions) !== 0
-                      ? `₱${parseFloat(
-                          displayEmployee.totalDeductions
-                        ).toLocaleString()}`
-                      : '',
-                },
-                {
-                  label: 'NET SALARY:',
-                  value:
-                    displayEmployee.netSalary &&
-                    parseFloat(displayEmployee.netSalary) !== 0
-                      ? `₱${parseFloat(
-                          displayEmployee.netSalary
-                        ).toLocaleString()}`
-                      : '',
-                },
-                {
-                  label: '1ST QUINCENA:',
-                  value:
-                    displayEmployee.pay1st &&
-                    parseFloat(displayEmployee.pay1st) !== 0
-                      ? `₱${parseFloat(displayEmployee.pay1st).toLocaleString()}`
-                      : '',
-                },
-                {
-                  label: '2ND QUINCENA:',
-                  value:
-                    displayEmployee.pay2nd &&
-                    parseFloat(displayEmployee.pay2nd) !== 0
-                      ? `₱${parseFloat(displayEmployee.pay2nd).toLocaleString()}`
-                      : '',
-                },
-              ].map((row, index) => (
-                <Box
-                  key={index}
-                  sx={{
-                    display: 'flex',
-                    borderBottom: '1px solid black',
-                  }}
-                >
-                  {/* Left column (label) */}
-                  <Box sx={{ p: 1, width: '25%' }}>
-                    <Typography fontWeight="bold">{row.label}</Typography>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <Typography sx={{ fontSize: '16px', fontWeight: 'bold', mb: 1, color: accentColor }}>
+                      RENDERED DAYS:
+                    </Typography>
+                    <Typography sx={{ fontSize: '16px' }}>
+                      {formatRenderedDays(displayEmployee.rh)}
+                    </Typography>
+                  </Grid>
+                </Grid>
+              </Box>
                   </Box>
 
-                  {/* Right column (value with left border) */}
-                  <Box
-                    sx={{
-                      flex: 1,
-                      p: 1,
-                      borderLeft: '1px solid black',
-                    }}
-                  >
-                    <Typography>{row.value}</Typography>
+            {/* Salary Section */}
+            <Box sx={{ border: '1px solid black', borderRadius: '3px', mb: 3 }}>
+              <Box sx={{ backgroundColor: '#6D2323', color: 'white', p: 2, textAlign: 'center', fontWeight: 'bold', fontSize: '18px' }}>
+                SALARY DETAILS
                   </Box>
+              <Box sx={{ p: 3 }}>
+                <Grid container spacing={3}>
+                  <Grid item xs={12} md={4}>
+                    <Typography sx={{ fontSize: '16px', fontWeight: 'bold', mb: 1, color: accentColor }}>
+                      GROSS SALARY:
+                    </Typography>
+                    <Typography sx={{ fontSize: '16px' }}>
+                      {formatCurrency(displayEmployee.grossSalary)}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <Typography sx={{ fontSize: '16px', fontWeight: 'bold', mb: 1, color: accentColor }}>
+                      TOTAL DEDUCTIONS:
+                    </Typography>
+                    <Typography sx={{ fontSize: '16px' }}>
+                      {formatCurrency(displayEmployee.totalDeductions)}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <Box sx={{ border: '1px solid #6d2323', borderRadius: 3, p: 2, textAlign: 'center', background: 'rgba(109, 35, 35, 0.05)' }}>
+                      <Typography sx={{ fontSize: '18px', fontWeight: 'bold', mb: 1, color: accentColor }}>
+                        NET SALARY:
+                      </Typography>
+                      <Typography sx={{ fontSize: '20px', fontWeight: 'bold', color: '#6d2323' }}>
+                        {formatCurrency(displayEmployee.netSalary)}
+                      </Typography>
                 </Box>
-              ))}
+                  </Grid>
+                </Grid>
+              </Box>
+            </Box>
+
+            {/* Deductions Section */}
+            <Box sx={{ border: '1px solid black', borderRadius: '3px', mb: 3 }}>
+              <Box sx={{ backgroundColor: '#6D2323', color: 'white', p: 2, textAlign: 'center', fontWeight: 'bold', fontSize: '18px' }}>
+                DEDUCTIONS BREAKDOWN
+              </Box>
+              <Box sx={{ p: 3 }}>
+                <Grid container spacing={2}>
+                  {[
+                    { label: 'Withholding Tax', value: displayEmployee.withholdingTax },
+                    { label: 'Life & Retirement', value: displayEmployee.personalLifeRetIns },
+                    { label: 'GSIS Salary Loan', value: displayEmployee.gsisSalaryLoan },
+                    { label: 'Policy Loan', value: displayEmployee.gsisPolicyLoan },
+                    { label: 'Housing Loan', value: displayEmployee.gsisHousingLoan },
+                    { label: 'GSIS Arrears', value: displayEmployee.gsisArrears },
+                    { label: 'GFAL', value: displayEmployee.gfal },
+                    { label: 'CPL', value: displayEmployee.cpl },
+                    { label: 'MPL', value: displayEmployee.mpl },
+                    { label: 'MPL Lite', value: displayEmployee.mplLite },
+                    { label: 'ELA', value: displayEmployee.ela },
+                    { label: 'SSS', value: displayEmployee.sss },
+                    { label: 'Pag-IBIG', value: displayEmployee.pagibigFundCont },
+                    { label: 'PhilHealth', value: displayEmployee.PhilHealthContribution },
+                    { label: 'PhilHealth Diff', value: displayEmployee.philhealthDiff },
+                    { label: 'Pag-IBIG 2', value: displayEmployee.pagibig2 },
+                    { label: 'LBP Loan', value: displayEmployee.lbpLoan },
+                    { label: 'MTSLAI', value: displayEmployee.mtslai },
+                    { label: 'ECC', value: displayEmployee.ecc },
+                    { label: 'To Be Refunded', value: displayEmployee.toBeRefunded },
+                    { label: 'FEU', value: displayEmployee.feu },
+                    { label: 'ESLAI', value: displayEmployee.eslai },
+                    { label: 'ABS', value: displayEmployee.abs },
+                  ].map((item, index) => (
+                    <Grid item xs={12} sm={6} md={4} key={index}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', borderBottom: '1px solid #e0e0e0', pb: 1, mb: 1 }}>
+                        <Typography sx={{ fontWeight: 600 }}>{item.label}:</Typography>
+                        <Typography>{formatCurrency(item.value)}</Typography>
+                      </Box>
+                    </Grid>
+                  ))}
+                </Grid>
+              </Box>
+            </Box>
+
+            {/* Payment Section */}
+            <Box sx={{ border: '1px solid black', borderRadius: '3px', mb: 3 }}>
+              <Box sx={{ backgroundColor: '#6D2323', color: 'white', p: 2, textAlign: 'center', fontWeight: 'bold', fontSize: '18px' }}>
+                PAYMENT BREAKDOWN
+              </Box>
+              <Box sx={{ p: 3 }}>
+                <Grid container spacing={3}>
+                  <Grid item xs={12} md={6}>
+                    <Typography sx={{ fontSize: '16px', fontWeight: 'bold', mb: 1, color: accentColor }}>
+                      1st Quincena:
+                    </Typography>
+                    <Typography sx={{ fontSize: '16px' }}>
+                      {formatCurrency(displayEmployee.pay1st)}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <Typography sx={{ fontSize: '16px', fontWeight: 'bold', mb: 1, color: accentColor }}>
+                      2nd Quincena:
+                    </Typography>
+                    <Typography sx={{ fontSize: '16px' }}>
+                      {formatCurrency(displayEmployee.pay2nd)}
+                    </Typography>
+                  </Grid>
+                </Grid>
+              </Box>
             </Box>
 
             {/* Footer */}
-            <Box
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-              mt={2}
-              sx={{ fontSize: '0.85rem' }}
-            >
-              <Typography>Certified Correct:</Typography>
-              <Typography>plus PERA — 2,000.00</Typography>
-            </Box>
-
-            <Box
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-              mt={2}
-            >
-              <Typography sx={{ fontSize: '0.85rem', fontWeight: 'bold' }}>
+            <Box textAlign="center" mt={4} p={3}>
+              <Typography sx={{ fontSize: '16px', fontWeight: 'bold', mb: 2 }}>
+                Certified Correct:
+              </Typography>
+              <Typography sx={{ fontSize: '18px', fontWeight: 'bold', mb: 1 }}>
                 GIOVANNI L. AHUNIN
               </Typography>
+              <Typography sx={{ fontSize: '14px' }}>
+                Director, Administrative Services
+              </Typography>
             </Box>
-            <Typography>Director, Administrative Services</Typography>
           </Paper>
         )}
 
