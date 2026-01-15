@@ -64,7 +64,7 @@ app.use(express.urlencoded({ extended: true }));
 // CORS configuration
 const allowedOrigins = [
   'http://localhost:5137',
-  'http://192.168.20.16:5137',
+  'http://192.168.50.106:5137',
   'http://192.168.50.45:5137',
   'http://136.239.248.42:5137',
   'http://192.168.50.97:5137',
@@ -186,8 +186,6 @@ app.use('/', reportsRoutes);
 app.use('/', settingsExtendedRoutes);
 app.use('/', confidentialPasswordRoutes);
 app.use('/', PayrollFormulas);
-
-
 
 // Server startup
 const PORT = process.env.WEB_PORT || 5000;

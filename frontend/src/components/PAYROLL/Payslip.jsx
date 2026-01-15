@@ -49,7 +49,12 @@ import AccessDenied from '../AccessDenied';
 // Helper function to convert hex to rgb
 const hexToRgb = (hex) => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '109, 35, 35';
+  return result
+    ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(
+        result[3],
+        16
+      )}`
+    : '109, 35, 35';
 };
 
 // Professional styled components - colors will be applied via sx prop
@@ -63,23 +68,29 @@ const GlassCard = styled(Card)(({ theme }) => ({
   },
 }));
 
-const ProfessionalButton = styled(Button)(({ theme, variant, color = 'primary' }) => ({
-  borderRadius: 12,
-  fontWeight: 600,
-  padding: '12px 24px',
-  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-  textTransform: 'none',
-  fontSize: '0.95rem',
-  letterSpacing: '0.025em',
-  boxShadow: variant === 'contained' ? '0 4px 14px rgba(254, 249, 225, 0.25)' : 'none',
-  '&:hover': {
-    transform: 'translateY(-2px)',
-    boxShadow: variant === 'contained' ? '0 6px 20px rgba(254, 249, 225, 0.35)' : 'none',
-  },
-  '&:active': {
-    transform: 'translateY(0)',
-  },
-}));
+const ProfessionalButton = styled(Button)(
+  ({ theme, variant, color = 'primary' }) => ({
+    borderRadius: 12,
+    fontWeight: 600,
+    padding: '12px 24px',
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    textTransform: 'none',
+    fontSize: '0.95rem',
+    letterSpacing: '0.025em',
+    boxShadow:
+      variant === 'contained' ? '0 4px 14px rgba(254, 249, 225, 0.25)' : 'none',
+    '&:hover': {
+      transform: 'translateY(-2px)',
+      boxShadow:
+        variant === 'contained'
+          ? '0 6px 20px rgba(254, 249, 225, 0.35)'
+          : 'none',
+    },
+    '&:active': {
+      transform: 'translateY(0)',
+    },
+  })
+);
 
 const ModernTextField = styled(TextField)(({ theme }) => ({
   '& .MuiOutlinedInput-root': {
@@ -136,7 +147,7 @@ const Payslip = forwardRef(({ employee }, ref) => {
   ];
 
   const { settings } = useSystemSettings();
-  
+
   // Get colors from system settings
   const primaryColor = settings.accentColor || '#FEF9E1'; // Cards color
   const secondaryColor = settings.backgroundColor || '#FFF8E7'; // Background
@@ -261,17 +272,17 @@ const Payslip = forwardRef(({ employee }, ref) => {
     const pdf = new jsPDF('l', 'mm', 'a4'); // Landscape orientation, mm units
     const pageWidth = pdf.internal.pageSize.getWidth(); // ~297mm for A4 landscape
     const pageHeight = pdf.internal.pageSize.getHeight(); // ~210mm for A4 landscape
-    
+
     // Calculate dimensions for 3 payslips side by side with proper margins
     const margin = 10; // 10mm margin on each side
     const gap = 5; // 5mm gap between payslips
-    const payslipWidth = (pageWidth - (2 * margin) - (2 * gap)) / 3; // Divide remaining width by 3
-    const payslipHeight = pageHeight - (2 * margin); // Use full height with margins
+    const payslipWidth = (pageWidth - 2 * margin - 2 * gap) / 3; // Divide remaining width by 3
+    const payslipHeight = pageHeight - 2 * margin; // Use full height with margins
 
     const positions = [
       margin, // First payslip position
       margin + payslipWidth + gap, // Second payslip position
-      margin + (2 * payslipWidth) + (2 * gap) // Third payslip position
+      margin + 2 * payslipWidth + 2 * gap, // Third payslip position
     ];
 
     // Create a temporary container for proper rendering
@@ -289,7 +300,7 @@ const Payslip = forwardRef(({ employee }, ref) => {
       if (payroll) {
         setDisplayEmployee(payroll);
         await new Promise((resolve) => setTimeout(resolve, 300));
-        
+
         // Clone the payslip element for rendering
         const input = payslipRef.current;
         const clone = input.cloneNode(true);
@@ -297,8 +308,8 @@ const Payslip = forwardRef(({ employee }, ref) => {
         clone.style.overflow = 'hidden';
         tempContainer.innerHTML = '';
         tempContainer.appendChild(clone);
-        
-        const canvas = await html2canvas(clone, { 
+
+        const canvas = await html2canvas(clone, {
           scale: 2, // Adjusted scale for better quality
           useCORS: true,
           width: 1200,
@@ -314,17 +325,17 @@ const Payslip = forwardRef(({ employee }, ref) => {
         placeholderCanvas.width = 1200;
         placeholderCanvas.height = 1700;
         const ctx = placeholderCanvas.getContext('2d');
-        
+
         ctx.fillStyle = '#fff';
         ctx.fillRect(0, 0, placeholderCanvas.width, placeholderCanvas.height);
-        
+
         ctx.fillStyle = '#6D2323';
         ctx.font = 'bold 48px Arial';
         ctx.textAlign = 'center';
         ctx.fillText('No Data', placeholderCanvas.width / 2, 750);
         ctx.font = '32px Arial';
         ctx.fillText(`for ${label}`, placeholderCanvas.width / 2, 820);
-        
+
         imgData = placeholderCanvas.toDataURL('image/png');
       }
 
@@ -344,7 +355,10 @@ const Payslip = forwardRef(({ employee }, ref) => {
 
     // Generate filename: Surname - Period/Month
     const surname = getSurname(displayEmployee.name);
-    const period = formatPeriod(displayEmployee.startDate, displayEmployee.endDate);
+    const period = formatPeriod(
+      displayEmployee.startDate,
+      displayEmployee.endDate
+    );
     const filename = `${surname}_${period}.pdf`;
 
     // Save file
@@ -467,26 +481,30 @@ const Payslip = forwardRef(({ employee }, ref) => {
   //ACCESSING END2
 
   return (
-    <Box sx={{ 
-      py: 4,
-      pt: -10,
-      width: '1200px', // Reduced width for better readability
-      mx: 'auto', // Center horizontally
-      overflow: 'hidden', // Prevent horizontal scroll
-    }}>
+    <Box
+      sx={{
+        py: 4,
+        pt: -10,
+        width: '1200px', // Reduced width for better readability
+        mx: 'auto', // Center horizontally
+        overflow: 'hidden', // Prevent horizontal scroll
+      }}
+    >
       {/* Container with fixed width */}
       <Box sx={{ px: 6 }}>
         {/* Header */}
         <Fade in timeout={500}>
           <Box sx={{ mb: 4 }}>
-            <GlassCard sx={{
-              background: `rgba(${hexToRgb(primaryColor)}, 0.95)`,
-              boxShadow: `0 8px 40px ${alpha(accentColor, 0.08)}`,
-              border: `1px solid ${alpha(accentColor, 0.1)}`,
-              '&:hover': {
-                boxShadow: `0 12px 48px ${alpha(accentColor, 0.15)}`,
-              },
-            }}>
+            <GlassCard
+              sx={{
+                background: `rgba(${hexToRgb(primaryColor)}, 0.95)`,
+                boxShadow: `0 8px 40px ${alpha(accentColor, 0.08)}`,
+                border: `1px solid ${alpha(accentColor, 0.1)}`,
+                '&:hover': {
+                  boxShadow: `0 12px 48px ${alpha(accentColor, 0.15)}`,
+                },
+              }}
+            >
               <Box
                 sx={{
                   p: 5,
@@ -504,7 +522,8 @@ const Payslip = forwardRef(({ employee }, ref) => {
                     right: -50,
                     width: 200,
                     height: 200,
-                    background: 'radial-gradient(circle, rgba(109,35,35,0.1) 0%, rgba(109,35,35,0) 70%)',
+                    background:
+                      'radial-gradient(circle, rgba(109,35,35,0.1) 0%, rgba(109,35,35,0) 70%)',
                   }}
                 />
                 <Box
@@ -514,38 +533,61 @@ const Payslip = forwardRef(({ employee }, ref) => {
                     left: '30%',
                     width: 150,
                     height: 150,
-                    background: 'radial-gradient(circle, rgba(109,35,35,0.08) 0%, rgba(109,35,35,0) 70%)',
+                    background:
+                      'radial-gradient(circle, rgba(109,35,35,0.08) 0%, rgba(109,35,35,0) 70%)',
                   }}
                 />
-                
-                <Box display="flex" alignItems="center" justifyContent="space-between" position="relative" zIndex={1}>
+
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="space-between"
+                  position="relative"
+                  zIndex={1}
+                >
                   <Box display="flex" alignItems="center">
-                    <Avatar 
-                      sx={{ 
-                        bgcolor: 'rgba(109,35,35,0.15)', 
-                        mr: 4, 
+                    <Avatar
+                      sx={{
+                        bgcolor: 'rgba(109,35,35,0.15)',
+                        mr: 4,
                         width: 64,
                         height: 64,
-                        boxShadow: '0 8px 24px rgba(109,35,35,0.15)'
+                        boxShadow: '0 8px 24px rgba(109,35,35,0.15)',
                       }}
                     >
-                      <WorkIcon sx={{color: accentColor, fontSize: 32 }} />
+                      <WorkIcon sx={{ color: accentColor, fontSize: 32 }} />
                     </Avatar>
                     <Box>
-                      <Typography variant="h4" component="h1" sx={{ fontWeight: 700, mb: 1, lineHeight: 1.2, color: accentColor }}>
+                      <Typography
+                        variant="h4"
+                        component="h1"
+                        sx={{
+                          fontWeight: 700,
+                          mb: 1,
+                          lineHeight: 1.2,
+                          color: accentColor,
+                        }}
+                      >
                         Employee Payslip Record
                       </Typography>
-                      <Typography variant="body1" sx={{ opacity: 0.8, fontWeight: 400, color: accentDark }}>
+                      <Typography
+                        variant="body1"
+                        sx={{
+                          opacity: 0.8,
+                          fontWeight: 400,
+                          color: accentDark,
+                        }}
+                      >
                         View and download employee payslip
                       </Typography>
                     </Box>
                   </Box>
                   <Box display="flex" alignItems="center" gap={2}>
                     <Tooltip title="Refresh Data">
-                      <IconButton 
+                      <IconButton
                         onClick={() => window.location.reload()}
-                        sx={{ 
-                          bgcolor: 'rgba(109,35,35,0.1)', 
+                        sx={{
+                          bgcolor: 'rgba(109,35,35,0.1)',
                           '&:hover': { bgcolor: 'rgba(109,35,35,0.2)' },
                           color: accentColor,
                           width: 48,
@@ -564,7 +606,10 @@ const Payslip = forwardRef(({ employee }, ref) => {
 
         {/* Loading Backdrop */}
         <Backdrop
-          sx={{ color: primaryColor, zIndex: (theme) => theme.zIndex.drawer + 1 }}
+          sx={{
+            color: primaryColor,
+            zIndex: (theme) => theme.zIndex.drawer + 1,
+          }}
           open={loading}
         >
           <Box sx={{ textAlign: 'center' }}>
@@ -572,27 +617,27 @@ const Payslip = forwardRef(({ employee }, ref) => {
             <Typography variant="h6" sx={{ mt: 2, color: primaryColor }}>
               Initializing Payroll System...
             </Typography>
-            <LinearProgress 
-              sx={{ 
-                width: 400, 
+            <LinearProgress
+              sx={{
+                width: 400,
                 mt: 3,
                 height: 8,
                 borderRadius: 4,
-                backgroundColor: alpha(accentColor, 0.2)
-              }} 
+                backgroundColor: alpha(accentColor, 0.2),
+              }}
             />
           </Box>
         </Backdrop>
 
         {error && (
           <Fade in timeout={400}>
-            <Alert 
-              severity="error" 
-              sx={{ 
-                mb: 4, 
+            <Alert
+              severity="error"
+              sx={{
+                mb: 4,
                 borderRadius: 4,
                 fontSize: '1.1rem',
-                '& .MuiAlert-message': { fontWeight: 600 }
+                '& .MuiAlert-message': { fontWeight: 600 },
               }}
             >
               {error}
@@ -601,42 +646,57 @@ const Payslip = forwardRef(({ employee }, ref) => {
         )}
 
         {/* Two Column Layout */}
-        <Grid container spacing={4}>
+        <Grid container spacing={4} alignItems="stretch">
           {/* Left Column - Controls and Download */}
-          <Grid item xs={12} md={4}>
-        <Fade in timeout={700}>
+          <Grid item xs={12} md={4} sx={{ display: 'flex' }}>
+            <Fade in timeout={700}>
               <Box sx={{ position: 'sticky', top: 20 }}>
-                <GlassCard sx={{ mb: 3, border: `1px solid ${alpha(accentColor, 0.1)}` }}>
+                <GlassCard
+                  sx={{
+                    mb: 3,
+                    border: `1px solid ${alpha(accentColor, 0.1)}`,
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                >
                   <CardContent sx={{ p: 5 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: accentColor }}>
+                    <Typography
+                      variant="h6"
+                      sx={{ fontWeight: 600, mb: 2, color: accentColor }}
+                    >
                       Employee Information
                     </Typography>
-                  <ModernTextField
-                    fullWidth
-                    label="Employee Number"
-                    value={personID}
-                    disabled
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                            <Search sx={{ color: textPrimaryColor, fontSize: 28 }} />
-                        </InputAdornment>
-                      ),
-                    }}
-                    sx={{
+                    <ModernTextField
+                      fullWidth
+                      label="Employee Number"
+                      value={personID}
+                      disabled
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <Search
+                              sx={{ color: textPrimaryColor, fontSize: 28 }}
+                            />
+                          </InputAdornment>
+                        ),
+                      }}
+                      sx={{
                         mb: 4,
-                      '& .MuiInputBase-input': {
+                        '& .MuiInputBase-input': {
                           fontSize: '1.2rem',
                           py: 2.5,
                           fontWeight: 500,
                         },
                         '& .MuiInputLabel-root': {
-                        fontSize: '1.1rem',
-                      }
-                    }}
-                  />
+                          fontSize: '1.1rem',
+                        },
+                      }}
+                    />
 
-                    <Divider sx={{ my: 3, borderColor: 'rgba(109,35,35,0.1)' }} />
+                    <Divider
+                      sx={{ my: 3, borderColor: 'rgba(109,35,35,0.1)' }}
+                    />
 
                     {/* Month Selection */}
                     <Box sx={{ mb: 2 }}>
@@ -645,8 +705,8 @@ const Payslip = forwardRef(({ employee }, ref) => {
                         gutterBottom
                         sx={{
                           color: accentColor,
-                          display: "flex",
-                          alignItems: "center",
+                          display: 'flex',
+                          alignItems: 'center',
                           mb: 2,
                         }}
                       >
@@ -655,30 +715,41 @@ const Payslip = forwardRef(({ employee }, ref) => {
                       </Typography>
                       <Box
                         sx={{
-                          display: "grid",
-                          gridTemplateColumns: "repeat(3, 1fr)",
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(3, 1fr)',
                           gap: 3,
                         }}
                       >
                         {months.map((month) => (
                           <ProfessionalButton
                             key={month}
-                            variant={month === selectedMonth ? 'contained' : 'outlined'}
+                            variant={
+                              month === selectedMonth ? 'contained' : 'outlined'
+                            }
                             size="small"
                             fullWidth
                             onClick={() => handleMonthSelect(month)}
                             sx={{
                               borderColor: accentColor,
                               borderWidth: 2,
-                              color: month === selectedMonth ? primaryColor : accentColor,
-                              minWidth: "auto",
-                              fontSize: "0.95rem",
+                              color:
+                                month === selectedMonth
+                                  ? primaryColor
+                                  : accentColor,
+                              minWidth: 'auto',
+                              fontSize: '0.95rem',
                               fontWeight: 600,
                               py: 2.5,
                               px: 3,
-                              backgroundColor: month === selectedMonth ? accentColor : 'transparent',
-                              "&:hover": {
-                                backgroundColor: month === selectedMonth ? accentDark : alpha(accentColor, 0.1),
+                              backgroundColor:
+                                month === selectedMonth
+                                  ? accentColor
+                                  : 'transparent',
+                              '&:hover': {
+                                backgroundColor:
+                                  month === selectedMonth
+                                    ? accentDark
+                                    : alpha(accentColor, 0.1),
                                 borderWidth: 2,
                               },
                             }}
@@ -694,12 +765,23 @@ const Payslip = forwardRef(({ employee }, ref) => {
                 {/* Download Button */}
                 {displayEmployee && (
                   <Fade in timeout={1100}>
-                    <GlassCard sx={{border: `1px solid ${alpha(accentColor, 0.1)}`}}>
+                    <GlassCard
+                      sx={{ border: `1px solid ${alpha(accentColor, 0.1)}` }}
+                    >
                       <CardContent sx={{ p: 5 }}>
                         <ProfessionalButton
                           variant="contained"
                           fullWidth
-                          startIcon={sending ? <CircularProgress size={28} sx={{ color: primaryColor }} /> : <Download sx={{ fontSize: 28 }} />}
+                          startIcon={
+                            sending ? (
+                              <CircularProgress
+                                size={28}
+                                sx={{ color: primaryColor }}
+                              />
+                            ) : (
+                              <Download sx={{ fontSize: 28 }} />
+                            )
+                          }
                           onClick={downloadPDF}
                           disabled={sending}
                           sx={{
@@ -709,474 +791,995 @@ const Payslip = forwardRef(({ employee }, ref) => {
                             fontSize: '1.2rem',
                             '&:hover': {
                               backgroundColor: accentDark,
-                            }
+                            },
                           }}
                         >
                           {sending ? 'Processing...' : 'Download PDF Document'}
                         </ProfessionalButton>
-            </CardContent>
-          </GlassCard>
-        </Fade>
+                      </CardContent>
+                    </GlassCard>
+                  </Fade>
                 )}
               </Box>
             </Fade>
           </Grid>
 
           {/* Right Column - Payslip Display */}
-          <Grid item xs={12} md={8}>
-        {/* Payslip Display - EXACT COPY from PayslipOverall */}
-        {displayEmployee ? (
-          <Fade in timeout={900}>
-            <GlassCard sx={{ mb: 4, border: `1px solid ${alpha(accentColor, 0.1)}` }}>
-              <Box sx={{ 
-                p: 4, 
-                background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`, 
-                color: accentColor,
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}>
-                <Box>
-                  <Typography variant="body2" sx={{ opacity: 0.8, mb: 1, textTransform: 'uppercase', letterSpacing: '0.1em', color: accentDark }}>
-                    Employee Payslip Record
-                  </Typography>
-                  <Typography variant="h4" sx={{ fontWeight: 600, mb: 1, color: accentColor }}>
-                    {displayEmployee.name}
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 2 }}>
-                    <Chip 
-                      label={`ID: ${displayEmployee.employeeNumber}`}
-                      size="small"
-                      sx={{ 
-                        bgcolor: 'rgba(109,35,35,0.15)', 
-                        color: accentColor,
-                        fontWeight: 500
-                      }} 
-                    />
-                    <Chip 
-                      label={(() => {
-                        if (!displayEmployee.startDate || !displayEmployee.endDate) return '—';
-                        const start = new Date(displayEmployee.startDate);
-                        const end = new Date(displayEmployee.endDate);
-                        const month = start.toLocaleString('en-US', { month: 'short' }).toUpperCase();
-                        return `${month} ${start.getDate()}-${end.getDate()}`;
-                      })()}
-                      size="small"
-                      sx={{ 
-                        bgcolor: 'rgba(109,35,35,0.15)', 
-                        color: accentColor,
-                        fontWeight: 500
-                      }} 
-                    />
-                  </Box>
-                </Box>
-                <Avatar 
-                  sx={{ 
-                    bgcolor: 'rgba(109,35,35,0.15)', 
-                    width: 80, 
-                    height: 80,
-                    fontSize: '2rem',
-                    fontWeight: 600,
-                    color: accentColor
+          <Grid item xs={12} md={8} sx={{ display: 'flex' }}>
+            {/* Payslip Display - EXACT COPY from PayslipOverall */}
+            {displayEmployee ? (
+              <Fade in timeout={900}>
+                <GlassCard
+                  sx={{
+                    mb: 4,
+                    border: `1px solid ${alpha(accentColor, 0.1)}`,
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
                   }}
                 >
-                  {displayEmployee.name ? displayEmployee.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'E'}
-                </Avatar>
-              </Box>
-
-              <Paper
-                ref={payslipRef}
-                elevation={6}
-                sx={{
-                  p: 5,
-                  mt: 3,
-                  borderRadius: 1,
-                  backgroundColor: '#fff',
-                  fontFamily: '"Poppins", sans-serif',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  // Much larger for frontend display
-                  width: '100%',
-                  maxWidth: '100%',
-                  margin: '0 auto',
-                  fontSize: '1rem',
-                  boxSizing: 'border-box', // Added to prevent overflow
-                }}
-              >
-                <Box
-                  component="img"
-                  src={hrisLogo}
-                  alt="Watermark"
-                  sx={{
-                    position: 'absolute',
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    opacity: 0.07,
-                    width: '100%',
-                    pointerEvents: 'none',
-                    userSelect: 'none',
-                  }}
-                />
-                
-                {/* Header */}
-                <Box
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="space-between"
-                  mb={3}
-                  sx={{
-                    background: 'linear-gradient(to right, #6d2323, #a31d1d)',
-                    borderRadius: '3px',
-                    p: 2,
-                  }}
-                >
-                  <Box>
-                    <img
-                      src={logo}
-                      alt="Logo"
-                      style={{ width: '80px', marginLeft: '15px' }}
-                    />
-                  </Box>
-                  <Box textAlign="center" flex={1} sx={{ color: 'white' }}>
-                    <Typography variant="h5" sx={{ fontStyle: 'italic', fontSize: '16px' }}>
-                      Republic of the Philippines
-                    </Typography>
-                    <Typography
-                      variant="h4"
-                      fontWeight="bold"
-                      sx={{ fontSize: '18px', lineHeight: 1.3 }}
+                  <Box
+                    sx={{
+                      p: 4,
+                      background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
+                      color: accentColor,
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Box>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          opacity: 0.8,
+                          mb: 1,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.1em',
+                          color: accentDark,
+                        }}
+                      >
+                        Employee Payslip Record
+                      </Typography>
+                      <Typography
+                        variant="h4"
+                        sx={{ fontWeight: 600, mb: 1, color: accentColor }}
+                      >
+                        {displayEmployee.name}
+                      </Typography>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 2,
+                          mt: 2,
+                        }}
+                      >
+                        <Chip
+                          label={`ID: ${displayEmployee.employeeNumber}`}
+                          size="small"
+                          sx={{
+                            bgcolor: 'rgba(109,35,35,0.15)',
+                            color: accentColor,
+                            fontWeight: 500,
+                          }}
+                        />
+                        <Chip
+                          label={(() => {
+                            if (
+                              !displayEmployee.startDate ||
+                              !displayEmployee.endDate
+                            )
+                              return '—';
+                            const start = new Date(displayEmployee.startDate);
+                            const end = new Date(displayEmployee.endDate);
+                            const month = start
+                              .toLocaleString('en-US', { month: 'short' })
+                              .toUpperCase();
+                            return `${month} ${start.getDate()}-${end.getDate()}`;
+                          })()}
+                          size="small"
+                          sx={{
+                            bgcolor: 'rgba(109,35,35,0.15)',
+                            color: accentColor,
+                            fontWeight: 500,
+                          }}
+                        />
+                      </Box>
+                    </Box>
+                    <Avatar
+                      sx={{
+                        bgcolor: 'rgba(109,35,35,0.15)',
+                        width: 80,
+                        height: 80,
+                        fontSize: '2rem',
+                        fontWeight: 600,
+                        color: accentColor,
+                      }}
                     >
-                      EULOGIO "AMANG" RODRIGUEZ INSTITUTE OF SCIENCE AND TECHNOLOGY
-                    </Typography>
-                    <Typography variant="h6" sx={{ fontSize: '14px' }}>
-                      Nagtahan, Sampaloc Manila
-                    </Typography>
+                      {displayEmployee.name
+                        ? displayEmployee.name
+                            .split(' ')
+                            .map((n) => n[0])
+                            .join('')
+                            .toUpperCase()
+                        : 'E'}
+                    </Avatar>
                   </Box>
-                  <Box>
-                    <img src={hrisLogo} alt="HRIS Logo" style={{ width: '100px' }} />
-                  </Box>
-                </Box>
 
-                {/* Check if JO Employee - Render Simplified Layout */}
-                {(() => {
-                  const employmentCategory = displayEmployee.employmentCategory ?? -1;
-                  const isJO = employmentCategory === 0;
+                  <Paper
+                    ref={payslipRef}
+                    elevation={6}
+                    sx={{
+                      p: 5,
+                      mt: 3,
+                      borderRadius: 1,
+                      backgroundColor: '#fff',
+                      fontFamily: '"Poppins", sans-serif',
+                      position: 'relative',
+                      overflow: 'hidden',
+                      // Much larger for frontend display
+                      width: '100%',
+                      maxWidth: '100%',
+                      margin: '0 auto',
+                      fontSize: '1rem',
+                      boxSizing: 'border-box', // Added to prevent overflow
+                    }}
+                  >
+                    <Box
+                      component="img"
+                      src={hrisLogo}
+                      alt="Watermark"
+                      sx={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        opacity: 0.07,
+                        width: '100%',
+                        pointerEvents: 'none',
+                        userSelect: 'none',
+                      }}
+                    />
 
-                  if (isJO) {
-                    // Simplified JO Payslip Layout
-                    return (
-                      <>
-                        {/* Employee Information Section - JO */}
-                        <Box sx={{ border: '1px solid black', borderRadius: '3px', mb: 3 }}>
-                          <Box sx={{ backgroundColor: '#6D2323', color: 'white', p: 2, textAlign: 'center', fontWeight: 'bold', fontSize: '18px' }}>
-                            EMPLOYEE INFORMATION
-                          </Box>
-                          <Box sx={{ p: 3 }}>
-                            <Grid container spacing={2}>
-                              <Grid item xs={12} md={6}>
-                                <Typography sx={{ fontSize: '16px', fontWeight: 'bold', mb: 1, color: accentColor }}>
-                                  EMPLOYEE NUMBER:
-                                </Typography>
-                                <Typography sx={{ fontSize: '16px', color: 'red', fontWeight: 'bold' }}>
-                                  {displayEmployee.employeeNumber
-                                    ? `${parseFloat(displayEmployee.employeeNumber)}`
-                                    : '—'}
-                                </Typography>
-                              </Grid>
-                              <Grid item xs={12} md={6}>
-                                <Typography sx={{ fontSize: '16px', fontWeight: 'bold', mb: 1, color: accentColor }}>
-                                  NAME:
-                                </Typography>
-                                <Typography sx={{ fontSize: '16px', color: 'red', fontWeight: 'bold' }}>
-                                  {displayEmployee.name ? `${displayEmployee.name}` : '—'}
-                                </Typography>
-                              </Grid>
-                              <Grid item xs={12} md={6}>
-                                <Typography sx={{ fontSize: '16px', fontWeight: 'bold', mb: 1, color: accentColor }}>
-                                  PERIOD:
-                                </Typography>
-                                <Typography sx={{ fontSize: '16px', fontWeight: 'bold' }}>
-                                  {(() => {
-                                    if (!displayEmployee.startDate || !displayEmployee.endDate)
-                                      return '—';
-                                    const start = new Date(displayEmployee.startDate);
-                                    const end = new Date(displayEmployee.endDate);
-                                    const month = start
-                                      .toLocaleString('en-US', { month: 'long' })
-                                      .toUpperCase();
-                                    return `${month} ${start.getDate()}-${end.getDate()} ${end.getFullYear()}`;
-                                  })() || '—'}
-                                </Typography>
-                              </Grid>
-                              <Grid item xs={12} md={6}>
-                                <Typography sx={{ fontSize: '16px', fontWeight: 'bold', mb: 1, color: accentColor }}>
-                                  RENDERED DAYS:
-                                </Typography>
-                                <Typography sx={{ fontSize: '16px' }}>
-                                  {formatRenderedDays(displayEmployee.rh) || '—'}
-                                </Typography>
-                              </Grid>
-                            </Grid>
-                          </Box>
-                        </Box>
-
-                        {/* Salary Section - JO */}
-                        <Box sx={{ border: '1px solid black', borderRadius: '3px', mb: 3 }}>
-                          <Box sx={{ backgroundColor: '#6D2323', color: 'white', p: 2, textAlign: 'center', fontWeight: 'bold', fontSize: '18px' }}>
-                            SALARY DETAILS
-                          </Box>
-                          <Box sx={{ p: 3 }}>
-                            <Grid container spacing={3}>
-                              <Grid item xs={12}>
-                                <Typography sx={{ fontSize: '16px', fontWeight: 'bold', mb: 1, color: accentColor }}>
-                                  GROSS SALARY:
-                                </Typography>
-                                <Typography sx={{ fontSize: '16px' }}>
-                                  {formatCurrency(displayEmployee.grossSalary) || '—'}
-                                </Typography>
-                              </Grid>
-                              <Grid item xs={12}>
-                                <Typography sx={{ fontSize: '16px', fontWeight: 'bold', mb: 2, color: accentColor }}>
-                                  TOTAL DEDUCTIONS:
-                                </Typography>
-                                <Box sx={{ pl: 2, mb: 2 }}>
-                                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5, fontSize: '16px' }}>
-                                    <Typography sx={{ fontWeight: 600 }}>SSS:</Typography>
-                                    <Typography>{formatCurrency(displayEmployee.sss) || '—'}</Typography>
-                                  </Box>
-                                  <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px' }}>
-                                    <Typography sx={{ fontWeight: 600 }}>PAGIBIG:</Typography>
-                                    <Typography>{formatCurrency(displayEmployee.pagibigFundCont) || '—'}</Typography>
-                                  </Box>
-                                </Box>
-                                <Typography sx={{ fontSize: '16px', fontWeight: 'bold' }}>
-                                  {formatCurrency(displayEmployee.totalDeductions) || '—'}
-                                </Typography>
-                              </Grid>
-                              <Grid item xs={12}>
-                                <Box sx={{ border: '1px solid #6d2323', borderRadius: 3, p: 2, textAlign: 'center', background: 'rgba(109, 35, 35, 0.05)' }}>
-                                  <Typography sx={{ fontSize: '18px', fontWeight: 'bold', mb: 1, color: accentColor }}>
-                                    NET AMOUNT:
-                                  </Typography>
-                                  <Typography sx={{ fontSize: '20px', fontWeight: 'bold', color: '#6d2323' }}>
-                                    {formatCurrency(displayEmployee.netSalary) || '—'}
-                                  </Typography>
-                                </Box>
-                              </Grid>
-                            </Grid>
-                          </Box>
-                        </Box>
-
-                        {/* Footer - Same as payslip */}
-                        <Box textAlign="center" mt={4} p={3}>
-                          <Typography sx={{ fontSize: '16px', fontWeight: 'bold', mb: 2 }}>
-                            Certified Correct:
-                          </Typography>
-                          <Typography sx={{ fontSize: '18px', fontWeight: 'bold', mb: 1 }}>
-                            GIOVANNI L. AHUNIN
-                          </Typography>
-                          <Typography sx={{ fontSize: '14px' }}>
-                            Director, Administrative Services
-                          </Typography>
-                        </Box>
-                      </>
-                    );
-                  }
-
-                  // Regular Employee - Full Detailed Layout
-                  return (
-                    <>
-                      {/* Employee Information Section */}
-                      <Box sx={{ border: '1px solid black', borderRadius: '3px', mb: 3 }}>
-                        <Box sx={{ backgroundColor: '#6D2323', color: 'white', p: 2, textAlign: 'center', fontWeight: 'bold', fontSize: '18px' }}>
-                          EMPLOYEE INFORMATION
-                        </Box>
-                        <Box sx={{ p: 3 }}>
-                          <Grid container spacing={2}>
-                            <Grid item xs={12} md={6}>
-                              <Typography sx={{ fontSize: '16px', fontWeight: 'bold', mb: 1, color: accentColor }}>
-                                PERIOD:
-                              </Typography>
-                              <Typography sx={{ fontSize: '16px', fontWeight: 'bold' }}>
-                                {(() => {
-                                  if (!displayEmployee.startDate || !displayEmployee.endDate)
-                                    return '—';
-                                  const start = new Date(displayEmployee.startDate);
-                                  const end = new Date(displayEmployee.endDate);
-                                  const month = start
-                                    .toLocaleString('en-US', { month: 'long' })
-                                    .toUpperCase();
-                                  return `${month} ${start.getDate()}-${end.getDate()} ${end.getFullYear()}`;
-                                })() || '—'}
-                              </Typography>
-                            </Grid>
-                            <Grid item xs={12} md={6}>
-                              <Typography sx={{ fontSize: '16px', fontWeight: 'bold', mb: 1, color: accentColor }}>
-                                EMPLOYEE NUMBER:
-                              </Typography>
-                              <Typography sx={{ fontSize: '16px', color: 'red', fontWeight: 'bold' }}>
-                                {displayEmployee.employeeNumber
-                                  ? `${parseFloat(displayEmployee.employeeNumber)}`
-                                  : '—'}
-                              </Typography>
-                            </Grid>
-                            <Grid item xs={12} md={6}>
-                              <Typography sx={{ fontSize: '16px', fontWeight: 'bold', mb: 1, color: accentColor }}>
-                                NAME:
-                              </Typography>
-                              <Typography sx={{ fontSize: '16px', color: 'red', fontWeight: 'bold' }}>
-                                {displayEmployee.name ? `${displayEmployee.name}` : '—'}
-                              </Typography>
-                            </Grid>
-                          </Grid>
-                        </Box>
+                    {/* Header */}
+                    <Box
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="space-between"
+                      mb={3}
+                      sx={{
+                        background:
+                          'linear-gradient(to right, #6d2323, #a31d1d)',
+                        borderRadius: '3px',
+                        p: 2,
+                      }}
+                    >
+                      <Box>
+                        <img
+                          src={logo}
+                          alt="Logo"
+                          style={{ width: '80px', marginLeft: '15px' }}
+                        />
                       </Box>
+                      <Box textAlign="center" flex={1} sx={{ color: 'white' }}>
+                        <Typography
+                          variant="h5"
+                          sx={{ fontStyle: 'italic', fontSize: '16px' }}
+                        >
+                          Republic of the Philippines
+                        </Typography>
+                        <Typography
+                          variant="h4"
+                          fontWeight="bold"
+                          sx={{ fontSize: '18px', lineHeight: 1.3 }}
+                        >
+                          EULOGIO "AMANG" RODRIGUEZ INSTITUTE OF SCIENCE AND
+                          TECHNOLOGY
+                        </Typography>
+                        <Typography variant="h6" sx={{ fontSize: '14px' }}>
+                          Nagtahan, Sampaloc Manila
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <img
+                          src={hrisLogo}
+                          alt="HRIS Logo"
+                          style={{ width: '100px' }}
+                        />
+                      </Box>
+                    </Box>
 
-                      {/* Salary Section */}
-                      <Box sx={{ border: '1px solid black', borderRadius: '3px', mb: 3 }}>
-                        <Box sx={{ backgroundColor: '#6D2323', color: 'white', p: 2, textAlign: 'center', fontWeight: 'bold', fontSize: '18px' }}>
-                          SALARY DETAILS
-                        </Box>
-                        <Box sx={{ p: 3 }}>
-                          <Grid container spacing={3}>
-                            <Grid item xs={12} md={4}>
-                              <Typography sx={{ fontSize: '16px', fontWeight: 'bold', mb: 1, color: accentColor }}>
-                                GROSS SALARY:
-                              </Typography>
-                              <Typography sx={{ fontSize: '16px' }}>
-                                {formatCurrency(displayEmployee.grossSalary) || '—'}
-                              </Typography>
-                            </Grid>
-                            <Grid item xs={12} md={4}>
-                              <Typography sx={{ fontSize: '16px', fontWeight: 'bold', mb: 1, color: accentColor }}>
-                                TOTAL DEDUCTIONS:
-                              </Typography>
-                              <Typography sx={{ fontSize: '16px' }}>
-                                {formatCurrency(displayEmployee.totalDeductions) || '—'}
-                              </Typography>
-                            </Grid>
-                            <Grid item xs={12} md={4}>
-                              <Box sx={{ border: '1px solid #6d2323', borderRadius: 3, p: 2, textAlign: 'center', background: 'rgba(109, 35, 35, 0.05)' }}>
-                                <Typography sx={{ fontSize: '18px', fontWeight: 'bold', mb: 1, color: accentColor }}>
-                                  NET SALARY:
-                                </Typography>
-                                <Typography sx={{ fontSize: '20px', fontWeight: 'bold', color: '#6d2323' }}>
-                                  {formatCurrency(displayEmployee.netSalary) || '—'}
-                                </Typography>
+                    {/* Check if JO Employee - Render Simplified Layout */}
+                    {(() => {
+                      const employmentCategory =
+                        displayEmployee.employmentCategory ?? -1;
+                      const isJO = employmentCategory === 0;
+
+                      if (isJO) {
+                        // Simplified JO Payslip Layout
+                        return (
+                          <>
+                            {/* Employee Information Section - JO */}
+                            <Box
+                              sx={{
+                                border: '1px solid black',
+                                borderRadius: '3px',
+                                mb: 3,
+                              }}
+                            >
+                              <Box
+                                sx={{
+                                  backgroundColor: '#6D2323',
+                                  color: 'white',
+                                  p: 2,
+                                  textAlign: 'center',
+                                  fontWeight: 'bold',
+                                  fontSize: '18px',
+                                }}
+                              >
+                                EMPLOYEE INFORMATION
                               </Box>
-                            </Grid>
-                          </Grid>
-                        </Box>
-                      </Box>
+                              <Box sx={{ p: 3 }}>
+                                <Grid container spacing={2}>
+                                  <Grid item xs={12} md={6}>
+                                    <Typography
+                                      sx={{
+                                        fontSize: '16px',
+                                        fontWeight: 'bold',
+                                        mb: 1,
+                                        color: accentColor,
+                                      }}
+                                    >
+                                      EMPLOYEE NUMBER:
+                                    </Typography>
+                                    <Typography
+                                      sx={{
+                                        fontSize: '16px',
+                                        color: 'red',
+                                        fontWeight: 'bold',
+                                      }}
+                                    >
+                                      {displayEmployee.employeeNumber
+                                        ? `${parseFloat(
+                                            displayEmployee.employeeNumber
+                                          )}`
+                                        : '—'}
+                                    </Typography>
+                                  </Grid>
+                                  <Grid item xs={12} md={6}>
+                                    <Typography
+                                      sx={{
+                                        fontSize: '16px',
+                                        fontWeight: 'bold',
+                                        mb: 1,
+                                        color: accentColor,
+                                      }}
+                                    >
+                                      NAME:
+                                    </Typography>
+                                    <Typography
+                                      sx={{
+                                        fontSize: '16px',
+                                        color: 'red',
+                                        fontWeight: 'bold',
+                                      }}
+                                    >
+                                      {displayEmployee.name
+                                        ? `${displayEmployee.name}`
+                                        : '—'}
+                                    </Typography>
+                                  </Grid>
+                                  <Grid item xs={12} md={6}>
+                                    <Typography
+                                      sx={{
+                                        fontSize: '16px',
+                                        fontWeight: 'bold',
+                                        mb: 1,
+                                        color: accentColor,
+                                      }}
+                                    >
+                                      PERIOD:
+                                    </Typography>
+                                    <Typography
+                                      sx={{
+                                        fontSize: '16px',
+                                        fontWeight: 'bold',
+                                      }}
+                                    >
+                                      {(() => {
+                                        if (
+                                          !displayEmployee.startDate ||
+                                          !displayEmployee.endDate
+                                        )
+                                          return '—';
+                                        const start = new Date(
+                                          displayEmployee.startDate
+                                        );
+                                        const end = new Date(
+                                          displayEmployee.endDate
+                                        );
+                                        const month = start
+                                          .toLocaleString('en-US', {
+                                            month: 'long',
+                                          })
+                                          .toUpperCase();
+                                        return `${month} ${start.getDate()}-${end.getDate()} ${end.getFullYear()}`;
+                                      })() || '—'}
+                                    </Typography>
+                                  </Grid>
+                                  <Grid item xs={12} md={6}>
+                                    <Typography
+                                      sx={{
+                                        fontSize: '16px',
+                                        fontWeight: 'bold',
+                                        mb: 1,
+                                        color: accentColor,
+                                      }}
+                                    >
+                                      RENDERED DAYS:
+                                    </Typography>
+                                    <Typography sx={{ fontSize: '16px' }}>
+                                      {formatRenderedDays(displayEmployee.rh) ||
+                                        '—'}
+                                    </Typography>
+                                  </Grid>
+                                </Grid>
+                              </Box>
+                            </Box>
 
-                      {/* Deductions Section */}
-                      <Box sx={{ border: '1px solid black', borderRadius: '3px', mb: 3 }}>
-                        <Box sx={{ backgroundColor: '#6D2323', color: 'white', p: 2, textAlign: 'center', fontWeight: 'bold', fontSize: '18px' }}>
-                          DEDUCTIONS BREAKDOWN
-                        </Box>
-                        <Box sx={{ p: 3 }}>
-                          <Grid container spacing={2}>
-                            {(() => {
-                              const allDeductions = [
-                                { label: 'Withholding Tax', value: displayEmployee.withholdingTax, key: 'withholdingTax' },
-                                { label: 'Life & Retirement', value: displayEmployee.personalLifeRetIns, key: 'personalLifeRetIns' },
-                                { label: 'GSIS Salary Loan', value: displayEmployee.gsisSalaryLoan, key: 'gsisSalaryLoan' },
-                                { label: 'Policy Loan', value: displayEmployee.gsisPolicyLoan, key: 'gsisPolicyLoan' },
-                                { label: 'Housing Loan', value: displayEmployee.gsisHousingLoan, key: 'gsisHousingLoan' },
-                                { label: 'GSIS Arrears', value: displayEmployee.gsisArrears, key: 'gsisArrears' },
-                                { label: 'GFAL', value: displayEmployee.gfal, key: 'gfal' },
-                                { label: 'CPL', value: displayEmployee.cpl, key: 'cpl' },
-                                { label: 'MPL', value: displayEmployee.mpl, key: 'mpl' },
-                                { label: 'MPL Lite', value: displayEmployee.mplLite, key: 'mplLite' },
-                                { label: 'ELA', value: displayEmployee.ela, key: 'ela' },
-                                { label: 'SSS', value: displayEmployee.sss, key: 'sss' },
-                                { label: 'Pag-IBIG', value: displayEmployee.pagibigFundCont, key: 'pagibigFundCont' },
-                                { label: 'PhilHealth', value: displayEmployee.PhilHealthContribution, key: 'PhilHealthContribution' },
-                                { label: 'PhilHealth Diff', value: displayEmployee.philhealthDiff, key: 'philhealthDiff' },
-                                { label: 'Pag-IBIG 2', value: displayEmployee.pagibig2, key: 'pagibig2' },
-                                { label: 'LBP Loan', value: displayEmployee.lbpLoan, key: 'lbpLoan' },
-                                { label: 'MTSLAI', value: displayEmployee.mtslai, key: 'mtslai' },
-                                { label: 'ECC', value: displayEmployee.ecc, key: 'ecc' },
-                                { label: 'To Be Refunded', value: displayEmployee.toBeRefunded, key: 'toBeRefunded' },
-                                { label: 'FEU', value: displayEmployee.feu, key: 'feu' },
-                                { label: 'ESLAI', value: displayEmployee.eslai, key: 'eslai' },
-                                { label: 'ABS', value: displayEmployee.abs, key: 'abs' },
-                              ];
-                              
-                              return allDeductions.filter(item => {
-                                const numValue = parseFloat(item.value);
-                                return !isNaN(numValue) && numValue !== 0 && numValue !== null && numValue !== undefined && item.value !== '';
-                              }).map((item, index) => (
-                              <Grid item xs={12} sm={6} md={4} key={index}>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', borderBottom: '1px solid #e0e0e0', pb: 1, mb: 1 }}>
-                                    <Typography sx={{ fontWeight: 600 }}>{item.label}:</Typography>
-                                    <Typography>{formatCurrency(item.value) || '—'}</Typography>
-                                </Box>
+                            {/* Salary Section - JO */}
+                            <Box
+                              sx={{
+                                border: '1px solid black',
+                                borderRadius: '3px',
+                                mb: 3,
+                              }}
+                            >
+                              <Box
+                                sx={{
+                                  backgroundColor: '#6D2323',
+                                  color: 'white',
+                                  p: 2,
+                                  textAlign: 'center',
+                                  fontWeight: 'bold',
+                                  fontSize: '18px',
+                                }}
+                              >
+                                SALARY DETAILS
+                              </Box>
+                              <Box sx={{ p: 3 }}>
+                                <Grid container spacing={3}>
+                                  <Grid item xs={12}>
+                                    <Typography
+                                      sx={{
+                                        fontSize: '16px',
+                                        fontWeight: 'bold',
+                                        mb: 1,
+                                        color: accentColor,
+                                      }}
+                                    >
+                                      GROSS SALARY:
+                                    </Typography>
+                                    <Typography sx={{ fontSize: '16px' }}>
+                                      {formatCurrency(
+                                        displayEmployee.grossSalary
+                                      ) || '—'}
+                                    </Typography>
+                                  </Grid>
+                                  <Grid item xs={12}>
+                                    <Typography
+                                      sx={{
+                                        fontSize: '16px',
+                                        fontWeight: 'bold',
+                                        mb: 2,
+                                        color: accentColor,
+                                      }}
+                                    >
+                                      TOTAL DEDUCTIONS:
+                                    </Typography>
+                                    <Box sx={{ pl: 2, mb: 2 }}>
+                                      <Box
+                                        sx={{
+                                          display: 'flex',
+                                          justifyContent: 'space-between',
+                                          mb: 1.5,
+                                          fontSize: '16px',
+                                        }}
+                                      >
+                                        <Typography sx={{ fontWeight: 600 }}>
+                                          SSS:
+                                        </Typography>
+                                        <Typography>
+                                          {formatCurrency(
+                                            displayEmployee.sss
+                                          ) || '—'}
+                                        </Typography>
+                                      </Box>
+                                      <Box
+                                        sx={{
+                                          display: 'flex',
+                                          justifyContent: 'space-between',
+                                          fontSize: '16px',
+                                        }}
+                                      >
+                                        <Typography sx={{ fontWeight: 600 }}>
+                                          PAGIBIG:
+                                        </Typography>
+                                        <Typography>
+                                          {formatCurrency(
+                                            displayEmployee.pagibigFundCont
+                                          ) || '—'}
+                                        </Typography>
+                                      </Box>
+                                    </Box>
+                                    <Typography
+                                      sx={{
+                                        fontSize: '16px',
+                                        fontWeight: 'bold',
+                                      }}
+                                    >
+                                      {formatCurrency(
+                                        displayEmployee.totalDeductions
+                                      ) || '—'}
+                                    </Typography>
+                                  </Grid>
+                                  <Grid item xs={12}>
+                                    <Box
+                                      sx={{
+                                        border: '1px solid #6d2323',
+                                        borderRadius: 3,
+                                        p: 2,
+                                        textAlign: 'center',
+                                        background: 'rgba(109, 35, 35, 0.05)',
+                                      }}
+                                    >
+                                      <Typography
+                                        sx={{
+                                          fontSize: '18px',
+                                          fontWeight: 'bold',
+                                          mb: 1,
+                                          color: accentColor,
+                                        }}
+                                      >
+                                        NET AMOUNT:
+                                      </Typography>
+                                      <Typography
+                                        sx={{
+                                          fontSize: '20px',
+                                          fontWeight: 'bold',
+                                          color: '#6d2323',
+                                        }}
+                                      >
+                                        {formatCurrency(
+                                          displayEmployee.netSalary
+                                        ) || '—'}
+                                      </Typography>
+                                    </Box>
+                                  </Grid>
+                                </Grid>
+                              </Box>
+                            </Box>
+
+                            {/* Footer - Same as payslip */}
+                            <Box textAlign="center" mt={4} p={3}>
+                              <Typography
+                                sx={{
+                                  fontSize: '16px',
+                                  fontWeight: 'bold',
+                                  mb: 2,
+                                }}
+                              >
+                                Certified Correct:
+                              </Typography>
+                              <Typography
+                                sx={{
+                                  fontSize: '18px',
+                                  fontWeight: 'bold',
+                                  mb: 1,
+                                }}
+                              >
+                                GIOVANNI L. AHUNIN
+                              </Typography>
+                              <Typography sx={{ fontSize: '14px' }}>
+                                Director, Administrative Services
+                              </Typography>
+                            </Box>
+                          </>
+                        );
+                      }
+
+                      // Regular Employee - Full Detailed Layout
+                      return (
+                        <>
+                          {/* Employee Information Section */}
+                          <Box
+                            sx={{
+                              border: '1px solid black',
+                              borderRadius: '3px',
+                              mb: 3,
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                backgroundColor: '#6D2323',
+                                color: 'white',
+                                p: 2,
+                                textAlign: 'center',
+                                fontWeight: 'bold',
+                                fontSize: '18px',
+                              }}
+                            >
+                              EMPLOYEE INFORMATION
+                            </Box>
+                            <Box sx={{ p: 3 }}>
+                              <Grid container spacing={2}>
+                                <Grid item xs={12} md={6}>
+                                  <Typography
+                                    sx={{
+                                      fontSize: '16px',
+                                      fontWeight: 'bold',
+                                      mb: 1,
+                                      color: accentColor,
+                                    }}
+                                  >
+                                    PERIOD:
+                                  </Typography>
+                                  <Typography
+                                    sx={{
+                                      fontSize: '16px',
+                                      fontWeight: 'bold',
+                                    }}
+                                  >
+                                    {(() => {
+                                      if (
+                                        !displayEmployee.startDate ||
+                                        !displayEmployee.endDate
+                                      )
+                                        return '—';
+                                      const start = new Date(
+                                        displayEmployee.startDate
+                                      );
+                                      const end = new Date(
+                                        displayEmployee.endDate
+                                      );
+                                      const month = start
+                                        .toLocaleString('en-US', {
+                                          month: 'long',
+                                        })
+                                        .toUpperCase();
+                                      return `${month} ${start.getDate()}-${end.getDate()} ${end.getFullYear()}`;
+                                    })() || '—'}
+                                  </Typography>
+                                </Grid>
+                                <Grid item xs={12} md={6}>
+                                  <Typography
+                                    sx={{
+                                      fontSize: '16px',
+                                      fontWeight: 'bold',
+                                      mb: 1,
+                                      color: accentColor,
+                                    }}
+                                  >
+                                    EMPLOYEE NUMBER:
+                                  </Typography>
+                                  <Typography
+                                    sx={{
+                                      fontSize: '16px',
+                                      color: 'red',
+                                      fontWeight: 'bold',
+                                    }}
+                                  >
+                                    {displayEmployee.employeeNumber
+                                      ? `${parseFloat(
+                                          displayEmployee.employeeNumber
+                                        )}`
+                                      : '—'}
+                                  </Typography>
+                                </Grid>
+                                <Grid item xs={12} md={6}>
+                                  <Typography
+                                    sx={{
+                                      fontSize: '16px',
+                                      fontWeight: 'bold',
+                                      mb: 1,
+                                      color: accentColor,
+                                    }}
+                                  >
+                                    NAME:
+                                  </Typography>
+                                  <Typography
+                                    sx={{
+                                      fontSize: '16px',
+                                      color: 'red',
+                                      fontWeight: 'bold',
+                                    }}
+                                  >
+                                    {displayEmployee.name
+                                      ? `${displayEmployee.name}`
+                                      : '—'}
+                                  </Typography>
+                                </Grid>
                               </Grid>
-                              ));
-                            })()}
-                          </Grid>
-                        </Box>
-                      </Box>
+                            </Box>
+                          </Box>
 
-                      {/* Payment Section */}
-                      <Box sx={{ border: '1px solid black', borderRadius: '3px', mb: 3 }}>
-                        <Box sx={{ backgroundColor: '#6D2323', color: 'white', p: 2, textAlign: 'center', fontWeight: 'bold', fontSize: '18px' }}>
-                          PAYMENT BREAKDOWN
-                        </Box>
-                        <Box sx={{ p: 3 }}>
-                          <Grid container spacing={3}>
-                            <Grid item xs={12} md={6}>
-                              <Typography sx={{ fontSize: '16px', fontWeight: 'bold', mb: 1, color: accentColor }}>
-                                1st Quincena:
-                              </Typography>
-                              <Typography sx={{ fontSize: '16px' }}>
-                                {formatCurrency(displayEmployee.pay1st)}
-                              </Typography>
-                            </Grid>
-                            <Grid item xs={12} md={6}>
-                              <Typography sx={{ fontSize: '16px', fontWeight: 'bold', mb: 1, color: accentColor }}>
-                                2nd Quincena:
-                              </Typography>
-                              <Typography sx={{ fontSize: '16px' }}>
-                                {formatCurrency(displayEmployee.pay2nd)}
-                              </Typography>
-                            </Grid>
-                          </Grid>
-                        </Box>
-                      </Box>
+                          {/* Salary Section */}
+                          <Box
+                            sx={{
+                              border: '1px solid black',
+                              borderRadius: '3px',
+                              mb: 3,
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                backgroundColor: '#6D2323',
+                                color: 'white',
+                                p: 2,
+                                textAlign: 'center',
+                                fontWeight: 'bold',
+                                fontSize: '18px',
+                              }}
+                            >
+                              SALARY DETAILS
+                            </Box>
+                            <Box sx={{ p: 3 }}>
+                              <Grid container spacing={3}>
+                                <Grid item xs={12} md={4}>
+                                  <Typography
+                                    sx={{
+                                      fontSize: '16px',
+                                      fontWeight: 'bold',
+                                      mb: 1,
+                                      color: accentColor,
+                                    }}
+                                  >
+                                    GROSS SALARY:
+                                  </Typography>
+                                  <Typography sx={{ fontSize: '16px' }}>
+                                    {formatCurrency(
+                                      displayEmployee.grossSalary
+                                    ) || '—'}
+                                  </Typography>
+                                </Grid>
+                                <Grid item xs={12} md={4}>
+                                  <Typography
+                                    sx={{
+                                      fontSize: '16px',
+                                      fontWeight: 'bold',
+                                      mb: 1,
+                                      color: accentColor,
+                                    }}
+                                  >
+                                    TOTAL DEDUCTIONS:
+                                  </Typography>
+                                  <Typography sx={{ fontSize: '16px' }}>
+                                    {formatCurrency(
+                                      displayEmployee.totalDeductions
+                                    ) || '—'}
+                                  </Typography>
+                                </Grid>
+                                <Grid item xs={12} md={4}>
+                                  <Box
+                                    sx={{
+                                      border: '1px solid #6d2323',
+                                      borderRadius: 3,
+                                      p: 2,
+                                      textAlign: 'center',
+                                      background: 'rgba(109, 35, 35, 0.05)',
+                                    }}
+                                  >
+                                    <Typography
+                                      sx={{
+                                        fontSize: '18px',
+                                        fontWeight: 'bold',
+                                        mb: 1,
+                                        color: accentColor,
+                                      }}
+                                    >
+                                      NET SALARY:
+                                    </Typography>
+                                    <Typography
+                                      sx={{
+                                        fontSize: '20px',
+                                        fontWeight: 'bold',
+                                        color: '#6d2323',
+                                      }}
+                                    >
+                                      {formatCurrency(
+                                        displayEmployee.netSalary
+                                      ) || '—'}
+                                    </Typography>
+                                  </Box>
+                                </Grid>
+                              </Grid>
+                            </Box>
+                          </Box>
 
-                      {/* Footer - Same as payslip */}
-                      <Box textAlign="center" mt={4} p={3}>
-                        <Typography sx={{ fontSize: '16px', fontWeight: 'bold', mb: 2 }}>
-                          Certified Correct:
-                        </Typography>
-                        <Typography sx={{ fontSize: '18px', fontWeight: 'bold', mb: 1 }}>
-                          GIOVANNI L. AHUNIN
-                        </Typography>
-                        <Typography sx={{ fontSize: '14px' }}>
-                          Director, Administrative Services
-                        </Typography>
-                      </Box>
-                    </>
-                  );
-                })()}
-              </Paper>
-            </GlassCard>
-          </Fade>
-        ) : null}
+                          {/* Deductions Section */}
+                          <Box
+                            sx={{
+                              border: '1px solid black',
+                              borderRadius: '3px',
+                              mb: 3,
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                backgroundColor: '#6D2323',
+                                color: 'white',
+                                p: 2,
+                                textAlign: 'center',
+                                fontWeight: 'bold',
+                                fontSize: '18px',
+                              }}
+                            >
+                              DEDUCTIONS BREAKDOWN
+                            </Box>
+                            <Box sx={{ p: 3 }}>
+                              <Grid container spacing={2}>
+                                {(() => {
+                                  const allDeductions = [
+                                    {
+                                      label: 'Withholding Tax',
+                                      value: displayEmployee.withholdingTax,
+                                      key: 'withholdingTax',
+                                    },
+                                    {
+                                      label: 'Life & Retirement',
+                                      value: displayEmployee.personalLifeRetIns,
+                                      key: 'personalLifeRetIns',
+                                    },
+                                    {
+                                      label: 'GSIS Salary Loan',
+                                      value: displayEmployee.gsisSalaryLoan,
+                                      key: 'gsisSalaryLoan',
+                                    },
+                                    {
+                                      label: 'Policy Loan',
+                                      value: displayEmployee.gsisPolicyLoan,
+                                      key: 'gsisPolicyLoan',
+                                    },
+                                    {
+                                      label: 'Housing Loan',
+                                      value: displayEmployee.gsisHousingLoan,
+                                      key: 'gsisHousingLoan',
+                                    },
+                                    {
+                                      label: 'GSIS Arrears',
+                                      value: displayEmployee.gsisArrears,
+                                      key: 'gsisArrears',
+                                    },
+                                    {
+                                      label: 'GFAL',
+                                      value: displayEmployee.gfal,
+                                      key: 'gfal',
+                                    },
+                                    {
+                                      label: 'CPL',
+                                      value: displayEmployee.cpl,
+                                      key: 'cpl',
+                                    },
+                                    {
+                                      label: 'MPL',
+                                      value: displayEmployee.mpl,
+                                      key: 'mpl',
+                                    },
+                                    {
+                                      label: 'MPL Lite',
+                                      value: displayEmployee.mplLite,
+                                      key: 'mplLite',
+                                    },
+                                    {
+                                      label: 'ELA',
+                                      value: displayEmployee.ela,
+                                      key: 'ela',
+                                    },
+                                    {
+                                      label: 'SSS',
+                                      value: displayEmployee.sss,
+                                      key: 'sss',
+                                    },
+                                    {
+                                      label: 'Pag-IBIG',
+                                      value: displayEmployee.pagibigFundCont,
+                                      key: 'pagibigFundCont',
+                                    },
+                                    {
+                                      label: 'PhilHealth',
+                                      value:
+                                        displayEmployee.PhilHealthContribution,
+                                      key: 'PhilHealthContribution',
+                                    },
+                                    {
+                                      label: 'PhilHealth Diff',
+                                      value: displayEmployee.philhealthDiff,
+                                      key: 'philhealthDiff',
+                                    },
+                                    {
+                                      label: 'Pag-IBIG 2',
+                                      value: displayEmployee.pagibig2,
+                                      key: 'pagibig2',
+                                    },
+                                    {
+                                      label: 'LBP Loan',
+                                      value: displayEmployee.lbpLoan,
+                                      key: 'lbpLoan',
+                                    },
+                                    {
+                                      label: 'MTSLAI',
+                                      value: displayEmployee.mtslai,
+                                      key: 'mtslai',
+                                    },
+                                    {
+                                      label: 'ECC',
+                                      value: displayEmployee.ecc,
+                                      key: 'ecc',
+                                    },
+                                    {
+                                      label: 'To Be Refunded',
+                                      value: displayEmployee.toBeRefunded,
+                                      key: 'toBeRefunded',
+                                    },
+                                    {
+                                      label: 'FEU',
+                                      value: displayEmployee.feu,
+                                      key: 'feu',
+                                    },
+                                    {
+                                      label: 'ESLAI',
+                                      value: displayEmployee.eslai,
+                                      key: 'eslai',
+                                    },
+                                    {
+                                      label: 'ABS',
+                                      value: displayEmployee.abs,
+                                      key: 'abs',
+                                    },
+                                  ];
+
+                                  return allDeductions
+                                    .filter((item) => {
+                                      const numValue = parseFloat(item.value);
+                                      return (
+                                        !isNaN(numValue) &&
+                                        numValue !== 0 &&
+                                        numValue !== null &&
+                                        numValue !== undefined &&
+                                        item.value !== ''
+                                      );
+                                    })
+                                    .map((item, index) => (
+                                      <Grid
+                                        item
+                                        xs={12}
+                                        sm={6}
+                                        md={4}
+                                        key={index}
+                                      >
+                                        <Box
+                                          sx={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            fontSize: '14px',
+                                            borderBottom: '1px solid #e0e0e0',
+                                            pb: 1,
+                                            mb: 1,
+                                          }}
+                                        >
+                                          <Typography sx={{ fontWeight: 600 }}>
+                                            {item.label}:
+                                          </Typography>
+                                          <Typography>
+                                            {formatCurrency(item.value) || '—'}
+                                          </Typography>
+                                        </Box>
+                                      </Grid>
+                                    ));
+                                })()}
+                              </Grid>
+                            </Box>
+                          </Box>
+
+                          {/* Payment Section */}
+                          <Box
+                            sx={{
+                              border: '1px solid black',
+                              borderRadius: '3px',
+                              mb: 3,
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                backgroundColor: '#6D2323',
+                                color: 'white',
+                                p: 2,
+                                textAlign: 'center',
+                                fontWeight: 'bold',
+                                fontSize: '18px',
+                              }}
+                            >
+                              PAYMENT BREAKDOWN
+                            </Box>
+                            <Box sx={{ p: 3 }}>
+                              <Grid container spacing={3}>
+                                <Grid item xs={12} md={6}>
+                                  <Typography
+                                    sx={{
+                                      fontSize: '16px',
+                                      fontWeight: 'bold',
+                                      mb: 1,
+                                      color: accentColor,
+                                    }}
+                                  >
+                                    1st Quincena:
+                                  </Typography>
+                                  <Typography sx={{ fontSize: '16px' }}>
+                                    {formatCurrency(displayEmployee.pay1st)}
+                                  </Typography>
+                                </Grid>
+                                <Grid item xs={12} md={6}>
+                                  <Typography
+                                    sx={{
+                                      fontSize: '16px',
+                                      fontWeight: 'bold',
+                                      mb: 1,
+                                      color: accentColor,
+                                    }}
+                                  >
+                                    2nd Quincena:
+                                  </Typography>
+                                  <Typography sx={{ fontSize: '16px' }}>
+                                    {formatCurrency(displayEmployee.pay2nd)}
+                                  </Typography>
+                                </Grid>
+                              </Grid>
+                            </Box>
+                          </Box>
+
+                          {/* Footer - Same as payslip */}
+                          <Box textAlign="center" mt={4} p={3}>
+                            <Typography
+                              sx={{
+                                fontSize: '16px',
+                                fontWeight: 'bold',
+                                mb: 2,
+                              }}
+                            >
+                              Certified Correct:
+                            </Typography>
+                            <Typography
+                              sx={{
+                                fontSize: '18px',
+                                fontWeight: 'bold',
+                                mb: 1,
+                              }}
+                            >
+                              GIOVANNI L. AHUNIN
+                            </Typography>
+                            <Typography sx={{ fontSize: '14px' }}>
+                              Director, Administrative Services
+                            </Typography>
+                          </Box>
+                        </>
+                      );
+                    })()}
+                  </Paper>
+                </GlassCard>
+              </Fade>
+            ) : null}
           </Grid>
         </Grid>
-        
+
         <Dialog
           open={modal.open}
           onClose={() => setModal({ ...modal, open: false })}
           PaperProps={{
             sx: {
               borderRadius: 4,
-              boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
-            }
+              boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+            },
           }}
         >
           <SuccessfulOverlay
@@ -1187,14 +1790,14 @@ const Payslip = forwardRef(({ employee }, ref) => {
 
           {modal.type === 'error' && (
             <Box sx={{ p: 4, textAlign: 'center' }}>
-              <Avatar 
-                sx={{ 
-                  bgcolor: 'rgba(244, 67, 54, 0.1)', 
-                  mx: 'auto', 
+              <Avatar
+                sx={{
+                  bgcolor: 'rgba(244, 67, 54, 0.1)',
+                  mx: 'auto',
                   mb: 2,
-                  width: 60, 
+                  width: 60,
                   height: 60,
-                  color: '#f44336'
+                  color: '#f44336',
                 }}
               >
                 <Alert severity="error" sx={{ fontSize: 30 }} />
@@ -1203,7 +1806,8 @@ const Payslip = forwardRef(({ employee }, ref) => {
                 Error Occurred
               </Typography>
               <Typography variant="body1" color="text.secondary">
-                {modal.message || 'An error occurred while processing your request.'}
+                {modal.message ||
+                  'An error occurred while processing your request.'}
               </Typography>
             </Box>
           )}
