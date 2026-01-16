@@ -124,6 +124,7 @@ import UsersList from "./components/UsersList";
 import PagesList from "./components/PagesList";
 import AuditLogs from "./components/AuditLogs";
 import Settings from "./components/Settings";
+import AdminSecurity from "./components/AdminSecurity";
 import PayrollJO from "./components/PAYROLL/PayrollJO";
 import UnderConstruction from "./components/UnderConstruction";
 
@@ -1143,6 +1144,15 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
                   <PayrollFormulas />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin-security"
+              element={
+                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                  <AdminSecurity />
                 </ProtectedRoute>
               }
             />

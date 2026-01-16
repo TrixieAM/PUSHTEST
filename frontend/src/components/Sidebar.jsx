@@ -439,6 +439,8 @@ const Sidebar = ({
       setSelectedItem("users-list");
     } else if (currentPath === "/settings") {
       setSelectedItem("settings");
+    } else if (currentPath === "/admin-security") {
+      setSelectedItem("admin-security");
     } else if (currentPath === "/profile") {
       setSelectedItem(null);
     } else {
@@ -567,6 +569,7 @@ const Sidebar = ({
       "registration",
       "reset-password",
       "payroll-formulas",
+      "admin-security",
     ];
 
     if (informationManagementItems.includes(item) && !open) {
@@ -1797,12 +1800,65 @@ const Sidebar = ({
                         sx={{ marginLeft: "-10px" }}
                       />
                     </ListItem>
+
+                    {/* Admin Security */}
+                    <ListItem
+                      button
+                      component={Link}
+                      to="/admin-security"
+                      onClick={() => handleItemClick("admin-security")}
+                      sx={{
+                        bgcolor:
+                          selectedItem === "admin-security"
+                            ? settings.accentColor || "#FEF9E1"
+                            : "inherit",
+                        color:
+                          selectedItem === "admin-security"
+                            ? settings.textPrimaryColor
+                            : settings.textSecondaryColor,
+                        "& .MuiListItemIcon-root": {
+                          color:
+                            selectedItem === "admin-security"
+                              ? settings.textPrimaryColor
+                              : settings.textSecondaryColor,
+                        },
+                        "& .MuiListItemText-primary": {
+                          color:
+                            selectedItem === "admin-security"
+                              ? settings.textPrimaryColor
+                              : settings.textSecondaryColor,
+                        },
+                        "&:hover": {
+                          bgcolor: settings.hoverColor || "#6D2323",
+                          color: settings.textSecondaryColor,
+                          "& .MuiListItemIcon-root": {
+                            color: settings.textSecondaryColor,
+                          },
+                          "& .MuiListItemText-primary": {
+                            color: settings.textSecondaryColor,
+                          },
+                        },
+                        borderTopRightRadius:
+                          selectedItem === "admin-security" ? "15px" : 0,
+                        borderBottomRightRadius:
+                          selectedItem === "admin-security" ? "15px" : 0,
+                      }}
+                    >
+                      <ListItemIcon sx={{ marginRight: "-1rem" }}>
+                        <AdminPanelSettings />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary="Admin Security"
+                        sx={{ marginLeft: "-10px" }}
+                      />
+                    </ListItem>
                   </List>
                 </Collapse>
               </>
             )}
 
-            {userRole === "staff" && (
+            {/* Employee Reports - Commented out for staff role */}
+            {/* {userRole === "staff" && (
               <ListItem
                 button
                 component={Link}
@@ -1856,7 +1912,7 @@ const Sidebar = ({
                   sx={{ marginLeft: "-10px" }}
                 />
               </ListItem>
-            )}
+            )} */}
 
             {/* Rest of the sidebar items continue... */}
             {userRole !== "staff" && (
