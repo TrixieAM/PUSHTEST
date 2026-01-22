@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { authenticateToken } = require('../middleware/auth');
+const socketService = require('../socket/socketService');
 
 // GET ALL PAGES
 router.get('/pages', authenticateToken, async (req, res) => {
@@ -230,6 +231,21 @@ router.post('/page_access', authenticateToken, async (req, res) => {
                 .status(500)
                 .json({ error: 'Failed to create page access' });
             }
+
+            // Fetch page details and notify user via Socket.IO
+            const pageQuery = 'SELECT * FROM pages WHERE id = ?';
+            db.query(pageQuery, [page_id], (pageErr, pageResults) => {
+              if (!pageErr && pageResults.length > 0) {
+                socketService.notifyPageAccessGranted(employeeNumber, {
+                  page_id: page_id,
+                  page_name: pageResults[0].page_name,
+                  page_url: pageResults[0].page_url,
+                  component_identifier: pageResults[0].component_identifier,
+                  page_privilege: page_privilege,
+                });
+              }
+            });
+
             res
               .status(201)
               .json({ message: 'Page access created successfully' });
@@ -263,11 +279,63 @@ router.put('/page_access/:employeeNumber/:pageId', authenticateToken, async (req
       if (result.affectedRows === 0) {
         return res.status(404).json({ error: 'Page access record not found' });
       }
+
+      // Fetch page details and notify user via Socket.IO
+      const pageQuery = 'SELECT * FROM pages WHERE id = ?';
+      db.query(pageQuery, [pageId], (pageErr, pageResults) => {
+        if (!pageErr && pageResults.length > 0) {
+          const action = page_privilege !== '0' && page_privilege !== '' ? 'granted' : 'revoked';
+          socketService.notifyPageAccessChanged(employeeNumber, action, {
+            page_id: pageId,
+            page_name: pageResults[0].page_name,
+            page_url: pageResults[0].page_url,
+            component_identifier: pageResults[0].component_identifier,
+            page_privilege: page_privilege,
+          });
+        }
+      });
+
       res.status(200).json({ message: 'Page access updated successfully' });
     });
   } catch (err) {
     console.error('Error during page access update:', err);
     res.status(500).json({ error: 'Failed to update page access' });
+  }
+});
+
+// GET ACCESSIBLE PAGES FOR USER (Optimized combined endpoint)
+router.get('/pages/accessible/:employeeNumber', authenticateToken, async (req, res) => {
+  const { employeeNumber } = req.params;
+
+  try {
+    const query = `
+      SELECT 
+        p.id,
+        p.page_name,
+        p.page_description,
+        p.page_url,
+        p.page_group,
+        p.component_identifier,
+        pa.page_privilege
+      FROM pages p
+      INNER JOIN page_access pa ON p.id = pa.page_id
+      WHERE pa.employeeNumber = ? 
+        AND pa.page_privilege != '0'
+        AND pa.page_privilege IS NOT NULL
+        AND pa.page_privilege != ''
+      ORDER BY p.page_description ASC, p.page_name ASC
+    `;
+
+    db.query(query, [employeeNumber], (err, results) => {
+      if (err) {
+        console.error('Error fetching accessible pages:', err);
+        return res.status(500).json({ error: 'Failed to fetch accessible pages' });
+      }
+      res.status(200).json(results);
+    });
+  } catch (err) {
+    console.error('Error during accessible pages fetch:', err);
+    res.status(500).json({ error: 'Failed to fetch accessible pages' });
   }
 });
 

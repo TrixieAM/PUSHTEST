@@ -142,6 +142,32 @@ router.post('/register', async (req, res) => {
                       });
                     }
 
+                    // Grant default page access for staff role
+                    const grantDefaultAccessQuery = `
+                      SELECT id FROM pages 
+                      WHERE page_url IN ('/home', '/admin-home', '/attendance-user-state', '/daily_time_record', '/payslip', '/pds1', '/pds2', '/pds3', '/pds4', '/settings') 
+                      OR component_identifier IN ('HomeEmployee', 'HomeAdmin', 'AttendanceUserState', 'DailyTimeRecord', 'Payslip', 'PDS1', 'PDS2', 'PDS3', 'PDS4', 'Settings')
+                    `;
+                    
+                    db.query(grantDefaultAccessQuery, (pagesErr, pagesResult) => {
+                      if (!pagesErr && pagesResult.length > 0) {
+                        pagesResult.forEach((page) => {
+                          const insertAccessQuery = `
+                            INSERT INTO page_access (employeeNumber, page_id, page_privilege)
+                            VALUES (?, ?, '1')
+                            ON DUPLICATE KEY UPDATE page_privilege = '1'
+                          `;
+                          db.query(insertAccessQuery, [employeeNumber, page.id], (insertErr) => {
+                            if (insertErr) {
+                              console.error('Error granting default page access:', insertErr);
+                            } else {
+                              console.log(`Granted default access to page ${page.id} for new staff user ${employeeNumber}`);
+                            }
+                          });
+                        });
+                      }
+                    });
+
                     // SEND EMAIL WITH CREDENTIALS
                     try {
                       await transporter.sendMail({
@@ -400,6 +426,71 @@ router.post('/register', async (req, res) => {
                       );
                       // Don't fail registration if email fails
                     }
+
+                    // Assign default official time for new user
+                    const defaultTimes = {
+                      officialTimeIN: '08:00:00 AM',
+                      officialBreaktimeIN: '00:00:00 AM',
+                      officialBreaktimeOUT: '00:00:00 PM',
+                      officialTimeOUT: '05:00:00 PM',
+                      officialHonorariumTimeIN: '00:00:00 AM',
+                      officialHonorariumTimeOUT: '00:00:00 PM',
+                      officialServiceCreditTimeIN: '00:00:00 AM',
+                      officialServiceCreditTimeOUT: '00:00:00 AM',
+                      officialOverTimeIN: '00:00:00 AM',
+                      officialOverTimeOUT: '00:00:00 PM',
+                      breaktime: '',
+                    };
+
+                    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                    const officialTimeValues = days.map((day) => [
+                      employeeNumber,
+                      day,
+                      defaultTimes.officialTimeIN,
+                      defaultTimes.officialBreaktimeIN,
+                      defaultTimes.officialBreaktimeOUT,
+                      defaultTimes.officialTimeOUT,
+                      defaultTimes.officialHonorariumTimeIN,
+                      defaultTimes.officialHonorariumTimeOUT,
+                      defaultTimes.officialServiceCreditTimeIN,
+                      defaultTimes.officialServiceCreditTimeOUT,
+                      defaultTimes.officialOverTimeIN,
+                      defaultTimes.officialOverTimeOUT,
+                      defaultTimes.breaktime,
+                    ]);
+
+                    const officialTimeQuery = `
+                      INSERT INTO officialtime (
+                        employeeID,
+                        day,
+                        officialTimeIN,
+                        officialBreaktimeIN,
+                        officialBreaktimeOUT,
+                        officialTimeOUT,
+                        officialHonorariumTimeIN,
+                        officialHonorariumTimeOUT,
+                        officialServiceCreditTimeIN,
+                        officialServiceCreditTimeOUT,
+                        officialOverTimeIN,
+                        officialOverTimeOUT,
+                        breaktime
+                      )
+                      VALUES ?
+                    `;
+
+                    db.query(officialTimeQuery, [officialTimeValues], (officialTimeErr) => {
+                      if (officialTimeErr) {
+                        console.error(
+                          `Error assigning default official time for ${employeeNumber}:`,
+                          officialTimeErr
+                        );
+                        // Don't fail registration if official time assignment fails
+                      } else {
+                        console.log(
+                          `Default official time assigned to ${employeeNumber}`
+                        );
+                      }
+                    });
 
                     res
                       .status(200)
@@ -663,6 +754,32 @@ router.post('/excel-register', async (req, res) => {
                                   );
                                   return resolve();
                                 }
+
+                                // Grant default page access for staff role
+                                const grantDefaultAccessQuery = `
+                                  SELECT id FROM pages 
+                                  WHERE page_url IN ('/home', '/admin-home', '/attendance-user-state', '/daily_time_record', '/payslip', '/pds1', '/pds2', '/pds3', '/pds4', '/settings') 
+                                  OR component_identifier IN ('HomeEmployee', 'HomeAdmin', 'AttendanceUserState', 'DailyTimeRecord', 'Payslip', 'PDS1', 'PDS2', 'PDS3', 'PDS4', 'Settings')
+                                `;
+                                
+                                db.query(grantDefaultAccessQuery, (pagesErr, pagesResult) => {
+                                  if (!pagesErr && pagesResult.length > 0) {
+                                    pagesResult.forEach((page) => {
+                                      const insertAccessQuery = `
+                                        INSERT INTO page_access (employeeNumber, page_id, page_privilege)
+                                        VALUES (?, ?, '1')
+                                        ON DUPLICATE KEY UPDATE page_privilege = '1'
+                                      `;
+                                      db.query(insertAccessQuery, [user.employeeNumber, page.id], (insertErr) => {
+                                        if (insertErr) {
+                                          console.error('Error granting default page access:', insertErr);
+                                        } else {
+                                          console.log(`Granted default access to page ${page.id} for bulk registered staff user ${user.employeeNumber}`);
+                                        }
+                                      });
+                                    });
+                                  }
+                                });
 
                                 // SEND EMAIL WITH CREDENTIALS
                                 try {
@@ -936,7 +1053,7 @@ router.get('/users/search', authenticateToken, (req, res) => {
       queryParams = [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm];
     }
 
-    query += ` ORDER BY p.lastName, p.firstName ASC LIMIT 100`;
+    query += ` ORDER BY p.lastName, p.firstName ASC`;
 
     db.query(query, queryParams, (err, results) => {
       if (err) {
@@ -1039,9 +1156,9 @@ router.put('/users/:employeeNumber/role', authenticateToken, (req, res) => {
     return res.status(400).json({ error: 'Role is required' });
   }
 
-  const validRoles = ['superadmin', 'administrator', 'staff'];
+  const validRoles = ['superadmin', 'administrator', 'technical', 'staff'];
   if (!validRoles.includes(role.toLowerCase())) {
-    return res.status(400).json({ error: 'Invalid role. Must be one of: superadmin, administrator, staff' });
+    return res.status(400).json({ error: 'Invalid role. Must be one of: superadmin, administrator, technical, staff' });
   }
 
   // First, get the current role for audit logging
@@ -1074,6 +1191,37 @@ router.put('/users/:employeeNumber/role', authenticateToken, (req, res) => {
 
       if (result.affectedRows === 0) {
         return res.status(404).json({ error: 'User not found' });
+      }
+
+      // If role is changed to 'staff', grant default page access
+      if (newRole === 'staff') {
+        // Get default pages for staff (Home, Attendance, DTR, Payslip, PDS, Settings)
+        const getDefaultPagesQuery = `
+          SELECT id FROM pages 
+          WHERE page_url IN ('/home', '/admin-home', '/attendance-user-state', '/daily_time_record', '/payslip', '/pds1', '/pds2', '/pds3', '/pds4', '/settings') 
+          OR component_identifier IN ('HomeEmployee', 'HomeAdmin', 'AttendanceUserState', 'DailyTimeRecord', 'Payslip', 'PDS1', 'PDS2', 'PDS3', 'PDS4', 'Settings')
+        `;
+        
+        db.query(getDefaultPagesQuery, (pagesErr, pagesResult) => {
+          if (!pagesErr && pagesResult.length > 0) {
+            // Grant access to default pages for staff
+            pagesResult.forEach((page) => {
+              const upsertAccessQuery = `
+                INSERT INTO page_access (employeeNumber, page_id, page_privilege)
+                VALUES (?, ?, '1')
+                ON DUPLICATE KEY UPDATE page_privilege = '1'
+              `;
+              
+              db.query(upsertAccessQuery, [employeeNumber, page.id], (accessErr) => {
+                if (accessErr) {
+                  console.error('Error granting default page access:', accessErr);
+                } else {
+                  console.log(`Granted access to page ${page.id} for staff user ${employeeNumber}`);
+                }
+              });
+            });
+          }
+        });
       }
 
       // Log audit
@@ -1281,6 +1429,413 @@ router.post('/users/reset-password', authenticateToken, async (req, res) => {
   } catch (err) {
     console.error('Error during password reset:', err);
     res.status(500).json({ error: 'Failed to reset password' });
+  }
+});
+
+// PUT: Update employee number
+router.put('/users/:employeeNumber/employee-number', authenticateToken, (req, res) => {
+  const { employeeNumber } = req.params;
+  const { newEmployeeNumber } = req.body;
+
+  if (!newEmployeeNumber) {
+    return res.status(400).json({ error: 'New employee number is required' });
+  }
+
+  if (newEmployeeNumber === employeeNumber) {
+    return res.status(200).json({ message: 'Employee number unchanged' });
+  }
+
+  // Check if new employee number already exists
+  const checkQuery = `
+    SELECT employeeNumber FROM users WHERE employeeNumber = ? 
+    UNION 
+    SELECT agencyEmployeeNum FROM person_table WHERE agencyEmployeeNum = ?
+  `;
+
+  db.query(checkQuery, [newEmployeeNumber, newEmployeeNumber], (err, existingRecords) => {
+    if (err) {
+      console.error('Error checking employee number:', err);
+      return res.status(500).json({ error: 'Failed to check employee number' });
+    }
+
+    if (existingRecords.length > 0) {
+      return res.status(400).json({ error: 'Employee number already exists' });
+    }
+
+    // Get connection from pool for transaction
+    db.getConnection((err, connection) => {
+      if (err) {
+        console.error('Error getting connection:', err);
+        return res.status(500).json({ error: 'Failed to get database connection' });
+      }
+
+      // Begin transaction
+      connection.beginTransaction((err) => {
+        if (err) {
+          connection.release();
+          console.error('Error starting transaction:', err);
+          return res.status(500).json({ error: 'Failed to start transaction' });
+        }
+
+        // Update users table
+        const updateUserQuery = 'UPDATE users SET employeeNumber = ? WHERE employeeNumber = ?';
+        connection.query(updateUserQuery, [newEmployeeNumber, employeeNumber], (err) => {
+          if (err) {
+            return connection.rollback(() => {
+              connection.release();
+              console.error('Error updating users table:', err);
+              res.status(500).json({ error: 'Failed to update employee number in users table' });
+            });
+          }
+
+          // Update person_table
+          const updatePersonQuery = 'UPDATE person_table SET agencyEmployeeNum = ? WHERE agencyEmployeeNum = ?';
+          connection.query(updatePersonQuery, [newEmployeeNumber, employeeNumber], (err) => {
+            if (err) {
+              return connection.rollback(() => {
+                connection.release();
+                console.error('Error updating person_table:', err);
+                res.status(500).json({ error: 'Failed to update employee number in person table' });
+              });
+            }
+
+            // Update employment_category
+            const updateEmpCatQuery = 'UPDATE employment_category SET employeeNumber = ? WHERE employeeNumber = ?';
+            connection.query(updateEmpCatQuery, [newEmployeeNumber, employeeNumber], (err) => {
+              if (err) {
+                return connection.rollback(() => {
+                  connection.release();
+                  console.error('Error updating employment_category:', err);
+                  res.status(500).json({ error: 'Failed to update employee number in employment category' });
+                });
+              }
+
+              // Update page_access
+              const updatePageAccessQuery = 'UPDATE page_access SET employeeNumber = ? WHERE employeeNumber = ?';
+              connection.query(updatePageAccessQuery, [newEmployeeNumber, employeeNumber], (err) => {
+                if (err) {
+                  return connection.rollback(() => {
+                    connection.release();
+                    console.error('Error updating page_access:', err);
+                    res.status(500).json({ error: 'Failed to update employee number in page access' });
+                  });
+                }
+
+                // Commit transaction
+                connection.commit((err) => {
+                  if (err) {
+                    return connection.rollback(() => {
+                      connection.release();
+                      console.error('Error committing transaction:', err);
+                      res.status(500).json({ error: 'Failed to commit transaction' });
+                    });
+                  }
+
+                  connection.release();
+
+                  // Log audit
+                  try {
+                    logAudit(
+                      req.user,
+                      'Update',
+                      'users',
+                      newEmployeeNumber,
+                      newEmployeeNumber
+                    );
+                  } catch (e) {
+                    console.error('Audit log error:', e);
+                  }
+
+                  res.status(200).json({
+                    message: 'Employee number updated successfully',
+                    oldEmployeeNumber: employeeNumber,
+                    newEmployeeNumber: newEmployeeNumber,
+                  });
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+  });
+});
+
+// DELETE: Delete user
+router.delete('/users/:employeeNumber', authenticateToken, (req, res) => {
+  const { employeeNumber } = req.params;
+
+  if (!employeeNumber) {
+    return res.status(400).json({ error: 'Employee number is required' });
+  }
+
+  // Check if user exists
+  const checkQuery = 'SELECT employeeNumber FROM users WHERE employeeNumber = ?';
+  db.query(checkQuery, [employeeNumber], (err, results) => {
+    if (err) {
+      console.error('Error checking user:', err);
+      return res.status(500).json({ error: 'Failed to check user' });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Get connection from pool for transaction
+    db.getConnection((err, connection) => {
+      if (err) {
+        console.error('Error getting connection:', err);
+        return res.status(500).json({ error: 'Failed to get database connection' });
+      }
+
+      // Begin transaction
+      connection.beginTransaction((err) => {
+        if (err) {
+          connection.release();
+          console.error('Error starting transaction:', err);
+          return res.status(500).json({ error: 'Failed to start transaction' });
+        }
+
+        // Delete from page_access
+        const deletePageAccessQuery = 'DELETE FROM page_access WHERE employeeNumber = ?';
+        connection.query(deletePageAccessQuery, [employeeNumber], (err) => {
+          if (err) {
+            return connection.rollback(() => {
+              connection.release();
+              console.error('Error deleting from page_access:', err);
+              res.status(500).json({ error: 'Failed to delete page access records' });
+            });
+          }
+
+          // Delete from employment_category
+          const deleteEmpCatQuery = 'DELETE FROM employment_category WHERE employeeNumber = ?';
+          connection.query(deleteEmpCatQuery, [employeeNumber], (err) => {
+            if (err) {
+              return connection.rollback(() => {
+                connection.release();
+                console.error('Error deleting from employment_category:', err);
+                res.status(500).json({ error: 'Failed to delete employment category record' });
+              });
+            }
+
+            // Delete from person_table
+            const deletePersonQuery = 'DELETE FROM person_table WHERE agencyEmployeeNum = ?';
+            connection.query(deletePersonQuery, [employeeNumber], (err) => {
+              if (err) {
+                return connection.rollback(() => {
+                  connection.release();
+                  console.error('Error deleting from person_table:', err);
+                  res.status(500).json({ error: 'Failed to delete person record' });
+                });
+              }
+
+              // Delete from users
+              const deleteUserQuery = 'DELETE FROM users WHERE employeeNumber = ?';
+              connection.query(deleteUserQuery, [employeeNumber], (err) => {
+                if (err) {
+                  return connection.rollback(() => {
+                    connection.release();
+                    console.error('Error deleting from users:', err);
+                    res.status(500).json({ error: 'Failed to delete user record' });
+                  });
+                }
+
+                // Commit transaction
+                connection.commit((err) => {
+                  if (err) {
+                    return connection.rollback(() => {
+                      connection.release();
+                      console.error('Error committing transaction:', err);
+                      res.status(500).json({ error: 'Failed to commit transaction' });
+                    });
+                  }
+
+                  connection.release();
+
+                  // Log audit
+                  try {
+                    logAudit(
+                      req.user,
+                      'Delete',
+                      'users',
+                      employeeNumber,
+                      employeeNumber
+                    );
+                  } catch (e) {
+                    console.error('Audit log error:', e);
+                  }
+
+                  res.status(200).json({
+                    message: 'User deleted successfully',
+                    employeeNumber: employeeNumber,
+                  });
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+  });
+});
+
+// POST: Grant default page access to all existing staff users
+router.post('/users/grant-default-access', authenticateToken, async (req, res) => {
+  try {
+    // Get all staff users
+    const getStaffQuery = 'SELECT employeeNumber FROM users WHERE role = ?';
+    
+    db.query(getStaffQuery, ['staff'], (err, staffUsers) => {
+      if (err) {
+        console.error('Error fetching staff users:', err);
+        return res.status(500).json({ error: 'Failed to fetch staff users' });
+      }
+
+      if (staffUsers.length === 0) {
+        return res.status(200).json({ 
+          message: 'No staff users found',
+          usersProcessed: 0 
+        });
+      }
+
+      // Get default pages for staff
+      const getDefaultPagesQuery = `
+        SELECT id FROM pages 
+        WHERE page_url IN ('home', 'admin-home', 'attendance-user-state', 'daily-time-record', 'payslip', 'pds1', 'pds2', 'pds3', 'pds4', 'settings') 
+        OR component_identifier IN ('HomeEmployee', 'HomeAdmin', 'AttendanceUserState', 'DailyTimeRecord', 'Payslip', 'PDS1', 'PDS2', 'PDS3', 'PDS4', 'Settings', 'attendance-user-state', 'daily-time-record')
+      `;
+
+      db.query(getDefaultPagesQuery, (pagesErr, pages) => {
+        if (pagesErr) {
+          console.error('Error fetching pages:', pagesErr);
+          return res.status(500).json({ error: 'Failed to fetch pages' });
+        }
+
+        if (pages.length === 0) {
+          return res.status(404).json({ error: 'No default pages found in database' });
+        }
+
+        let processedCount = 0;
+        let errorCount = 0;
+        const totalOperations = staffUsers.length * pages.length;
+
+        // Grant access to each staff user for each default page
+        staffUsers.forEach((user) => {
+          pages.forEach((page) => {
+            const upsertAccessQuery = `
+              INSERT INTO page_access (employeeNumber, page_id, page_privilege)
+              VALUES (?, ?, '1')
+              ON DUPLICATE KEY UPDATE page_privilege = '1'
+            `;
+
+            db.query(upsertAccessQuery, [user.employeeNumber, page.id], (accessErr) => {
+              if (accessErr) {
+                console.error(`Error granting access to ${user.employeeNumber} for page ${page.id}:`, accessErr);
+                errorCount++;
+              } else {
+                processedCount++;
+              }
+
+              // Check if all operations are complete
+              if (processedCount + errorCount === totalOperations) {
+                res.status(200).json({
+                  message: 'Default access granted to all staff users',
+                  usersProcessed: staffUsers.length,
+                  pagesGranted: pages.length,
+                  successfulOperations: processedCount,
+                  failedOperations: errorCount
+                });
+              }
+            });
+          });
+        });
+      });
+    });
+  } catch (err) {
+    console.error('Error granting default access:', err);
+    res.status(500).json({ error: 'Failed to grant default access' });
+  }
+});
+
+// POST: Grant default page access to all existing administrator users (excluding User Management, Payroll Formulas, Admin Security)
+router.post('/users/grant-default-access-administrator', authenticateToken, async (req, res) => {
+  try {
+    // Get all administrator users
+    const getAdminQuery = 'SELECT employeeNumber FROM users WHERE role = ?';
+    
+    db.query(getAdminQuery, ['administrator'], (err, adminUsers) => {
+      if (err) {
+        console.error('Error fetching administrator users:', err);
+        return res.status(500).json({ error: 'Failed to fetch administrator users' });
+      }
+
+      if (adminUsers.length === 0) {
+        return res.status(200).json({ 
+          message: 'No administrator users found',
+          usersProcessed: 0 
+        });
+      }
+
+      // Get all pages EXCEPT User Management, Payroll Formulas, and Admin Security
+      // Exclude by page_url or component_identifier
+      const getDefaultPagesQuery = `
+        SELECT id FROM pages 
+        WHERE (page_url NOT LIKE '%users-list%' 
+          AND page_url NOT LIKE '%user-management%'
+          AND page_url NOT LIKE '%payroll-formulas%'
+          AND page_url NOT LIKE '%admin-security%'
+          AND component_identifier NOT IN ('users-list', 'UsersList', 'UserManagement', 'payroll-formulas', 'PayrollFormulas', 'admin-security', 'AdminSecurity'))
+      `;
+
+      db.query(getDefaultPagesQuery, (pagesErr, pages) => {
+        if (pagesErr) {
+          console.error('Error fetching pages:', pagesErr);
+          return res.status(500).json({ error: 'Failed to fetch pages' });
+        }
+
+        if (pages.length === 0) {
+          return res.status(404).json({ error: 'No default pages found in database' });
+        }
+
+        let processedCount = 0;
+        let errorCount = 0;
+        const totalOperations = adminUsers.length * pages.length;
+
+        // Grant access to each administrator user for each default page
+        adminUsers.forEach((user) => {
+          pages.forEach((page) => {
+            const upsertAccessQuery = `
+              INSERT INTO page_access (employeeNumber, page_id, page_privilege)
+              VALUES (?, ?, '1')
+              ON DUPLICATE KEY UPDATE page_privilege = '1'
+            `;
+
+            db.query(upsertAccessQuery, [user.employeeNumber, page.id], (accessErr) => {
+              if (accessErr) {
+                console.error(`Error granting access to ${user.employeeNumber} for page ${page.id}:`, accessErr);
+                errorCount++;
+              } else {
+                processedCount++;
+              }
+
+              // Check if all operations are complete
+              if (processedCount + errorCount === totalOperations) {
+                res.status(200).json({
+                  message: 'Default access granted to all administrator users (excluding User Management, Payroll Formulas, Admin Security)',
+                  usersProcessed: adminUsers.length,
+                  pagesGranted: pages.length,
+                  successfulOperations: processedCount,
+                  failedOperations: errorCount
+                });
+              }
+            });
+          });
+        });
+      });
+    });
+  } catch (err) {
+    console.error('Error granting default access to administrators:', err);
+    res.status(500).json({ error: 'Failed to grant default access to administrators' });
   }
 });
 

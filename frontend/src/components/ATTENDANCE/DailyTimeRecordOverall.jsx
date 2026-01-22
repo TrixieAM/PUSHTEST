@@ -146,7 +146,7 @@ const DailyTimeRecordFaculty = () => {
   const [printingStatus, setPrintingStatus] = useState('');
 
   // View mode state: 'single' or 'multiple'
-  const [viewMode, setViewMode] = useState('single');
+  const [viewMode, setViewMode] = useState('multiple');
 
   // Record filter: 'all' | 'has' | 'no'
   const [recordFilter, setRecordFilter] = useState('all');
@@ -202,18 +202,7 @@ const DailyTimeRecordFaculty = () => {
     };
   };
 
-  // Mirror: set personID from token exactly like main component
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        const decoded = jwtDecode(token);
-        setPersonID(decoded.employeeNumber);
-      } catch (error) {
-        console.error('Error decoding token:', error);
-      }
-    }
-  }, []);
+  // Employee Number field is empty by default for searching any employee
 
   // Use a single constant width (in) for DTR rendering/capture so all variants match
   const DTR_WIDTH_IN = '8.7in'; // match main DailyTimeRecord table width
@@ -320,6 +309,7 @@ const DailyTimeRecordFaculty = () => {
   };
 
   // Fetch all users and their DTR data - Optimized for large datasets
+  // Note: Data is already auto-saved from device, so we're just loading from database
   const fetchAllUsersDTR = async () => {
     if (!startDate || !endDate) {
       showAlert('Date Required', 'Please select start date and end date first');
@@ -335,27 +325,17 @@ const DailyTimeRecordFaculty = () => {
 
       const users = usersResponse.data || [];
 
-      // Warn if dataset is large
-      if (users.length > 150) {
-        const proceed = window.confirm(
-          `Loading DTR for ${users.length} employees may take a while and could slow down the system. Continue?`,
-        );
-        if (!proceed) {
-          setLoadingAllUsers(false);
-          return;
-        }
-      }
-
-      // Process in batches to prevent overwhelming the browser
-      const BATCH_SIZE = 20; // Process 20 users at a time
+      // No alert needed - data is already in database (auto-saved from device)
+      // Process in batches for better performance
+      const BATCH_SIZE = 30; // Increased batch size since we're reading from DB (faster)
       const allDTRData = [];
       
       for (let i = 0; i < users.length; i += BATCH_SIZE) {
         const batch = users.slice(i, i + BATCH_SIZE);
         const progress = Math.min(100, Math.round(((i + batch.length) / users.length) * 100));
         
-        // Update status
-        setPrintingStatus(`Loading DTR data: ${i + batch.length} of ${users.length} (${progress}%)`);
+        // Update status - clarify that data is from database
+        setPrintingStatus(`Loading DTR data from database: ${i + batch.length} of ${users.length} (${progress}%)`);
 
         const batchPromises = batch.map(async (user) => {
           try {
@@ -402,8 +382,8 @@ const DailyTimeRecordFaculty = () => {
         const batchResults = await Promise.all(batchPromises);
         allDTRData.push(...batchResults);
 
-        // Small delay between batches to prevent overwhelming the browser
-        await new Promise(resolve => setTimeout(resolve, 50));
+        // Reduced delay since we're reading from DB (faster than device extraction)
+        await new Promise(resolve => setTimeout(resolve, 25));
       }
 
       allDTRData.sort((a, b) => {
@@ -466,20 +446,27 @@ const DailyTimeRecordFaculty = () => {
       return; // Already printed records cannot be bulk selected
     }
     
-    const newSelected = new Set(selectedUsers);
-    if (newSelected.has(employeeNumber)) newSelected.delete(employeeNumber);
-    else newSelected.add(employeeNumber);
-    setSelectedUsers(newSelected);
+    setSelectedUsers((prevSelected) => {
+      const newSelected = new Set(prevSelected);
+      if (newSelected.has(employeeNumber)) {
+        newSelected.delete(employeeNumber);
+      } else {
+        newSelected.add(employeeNumber);
+      }
+      return newSelected;
+    });
   };
 
   const handleSelectAll = (checked) => {
     if (checked) {
       const filtered = getFilteredUsers();
-      const limitedFiltered = filtered.slice(0, 50);
+      // Only select users that are not already printed
+      const selectableUsers = filtered.filter((user) => !printStatusMap.has(user.employeeNumber));
+      const limitedFiltered = selectableUsers.slice(0, 50);
       setSelectedUsers(new Set(limitedFiltered.map((user) => user.employeeNumber)));
       
-      if (filtered.length > 50) {
-        showAlert('Selection Limited', `Only the first 50 users were selected (out of ${filtered.length} filtered users). Bulk printing is limited to 50 users per batch for better performance.`);
+      if (selectableUsers.length > 50) {
+        showAlert('Selection Limited', `Only the first 50 users were selected (out of ${selectableUsers.length} selectable users). Bulk printing is limited to 50 users per batch for better performance.`);
       }
     } else {
       setSelectedUsers(new Set());
@@ -919,78 +906,53 @@ const DailyTimeRecordFaculty = () => {
     const rowHeight = '16px';
 
     const renderHeader = () => (
-      <thead style={{ textAlign: 'center', position: 'relative' }}>
+      <thead style={{ textAlign: 'center' }}>
         <tr>
-          <div
-            style={{
-              position: 'absolute',
-              paddingTop: '25px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              fontWeight: 'bold',
-              fontSize: '11px',
-              fontFamily: 'Arial, "Times New Roman", serif',
-              width: '100%',
-              color: 'black',
-            }}
-          >
-            Republic of the Philippines
-          </div>
-          <td
-            colSpan="1"
-            style={{
-              position: 'relative',
-              width: '60px',
-            }}
-          >
-            <img
-              src={earistLogo}
-              alt="Logo"
-              width="50"
-              height="50"
+          <td colSpan="9" style={{ position: 'relative', padding: '25px 10px 0px 10px', textAlign: 'center' }}>
+            <div
               style={{
-                position: 'absolute',
-                top: '25px',
-                right: '10px',
-              }}
-            />
-          </td>
-          <td
-            colSpan="5"
-            style={{
-              verticalAlign: 'bottom',
-              paddingBottom: '5px',
-              paddingRight: '70px',
-            }}
-          >
-            <p
-              style={{
-                margin: '0',
-                fontSize: '11.50px',
                 fontWeight: 'bold',
-                textAlign: 'center',
-                width: '100%',
+                fontSize: '11px',
                 fontFamily: 'Arial, "Times New Roman", serif',
-                lineHeight: '1.2',
-                paddingTop: '40px',
+                color: 'black',
+                marginBottom: '2px',
               }}
             >
-              EULOGIO "AMANG" RODRIGUEZ <br /> INSTITUTE OF SCIENCE & TECHNOLOGY
-            </p>
+              Republic of the Philippines
+            </div>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '3px' }}>
+              <img
+                src={earistLogo}
+                alt="Logo"
+                width="50"
+                height="50"
+                style={{
+                  position: 'absolute',
+                  left: '10px',
+                }}
+              />
+              <p
+                style={{
+                  margin: '0',
+                  fontSize: '11.5px',
+                  fontWeight: 'bold',
+                  textAlign: 'center',
+                  fontFamily: 'Arial, "Times New Roman", serif',
+                  lineHeight: '1.2',
+                }}
+              >
+                EULOGIO "AMANG" RODRIGUEZ <br /> INSTITUTE OF SCIENCE & TECHNOLOGY
+              </p>
+            </div>
           </td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
         </tr>
         <tr>
-          <td colSpan="9">
+          <td colSpan="9" style={{ textAlign: 'center', padding: '0px 5px 2px 5px' }}>
             <p
               style={{
                 fontSize: '11px',
                 fontWeight: 'bold',
-                marginTop: '-2%',
+                margin: '0',
                 fontFamily: 'Arial, serif',
               }}
             >
@@ -999,12 +961,12 @@ const DailyTimeRecordFaculty = () => {
           </td>
         </tr>
         <tr>
-          <td colSpan="9">
+          <td colSpan="9" style={{ textAlign: 'center', padding: '2px 5px' }}>
             <p
               style={{
                 fontSize: '8px',
                 fontWeight: 'bold',
-                paddingTop: '-2px',
+                margin: '0',
                 fontFamily: 'Arial, serif',
               }}
             >
@@ -1013,12 +975,12 @@ const DailyTimeRecordFaculty = () => {
           </td>
         </tr>
         <tr>
-          <td colSpan="9" style={{ padding: '2', lineHeight: '0' }}>
+          <td colSpan="9" style={{ textAlign: 'center', padding: '2px 5px', lineHeight: '1.2' }}>
             <h4
               style={{
                 fontFamily: 'Times New Roman, serif',
                 textAlign: 'center',
-                marginTop: '2px',
+                margin: '2px 0',
                 fontWeight: 'bold',
                 fontSize: '16px',
               }}
@@ -1029,27 +991,28 @@ const DailyTimeRecordFaculty = () => {
         </tr>
         <tr>
           <td
-            colSpan="5"
+            colSpan="9"
             style={{
               paddingTop: '10px',
               paddingBottom: '5px',
               lineHeight: '1.1',
               verticalAlign: 'top',
+              textAlign: 'center',
             }}
           >
             <div
               style={{
-                paddingLeft: '5px',
-                marginTop: '0',
+                margin: '0 auto',
                 fontFamily: 'Arial, serif',
                 width: '100%',
-                maxWidth: '250px',
+                maxWidth: '400px',
+                position: 'relative',
               }}
             >
               <div
                 style={{
                   borderBottom: '2px solid black',
-                  width: '159%',
+                  width: '100%',
                   margin: '2px 0 3px 0',
                 }}
               />
@@ -1059,13 +1022,11 @@ const DailyTimeRecordFaculty = () => {
                   fontSize: '12px',
                   fontWeight: 'bold',
                   textTransform: 'uppercase',
-                  /* Allow full name to wrap and be visible instead of truncating */
-                  whiteSpace: 'normal',
-                  overflow: 'visible',
-                  textOverflow: 'unset',
-                  wordBreak: 'break-word',
-                  paddingLeft: '130px',
+                  whiteSpace: 'nowrap',
+                  textAlign: 'center',
                   fontFamily: 'Times New Roman',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
                 }}
               >
                 {user.fullName}
@@ -1075,7 +1036,7 @@ const DailyTimeRecordFaculty = () => {
               <div
                 style={{
                   borderBottom: '2px solid black',
-                  width: '159%',
+                  width: '100%',
                   margin: '2px 0 3px 0',
                 }}
               />
@@ -1085,7 +1046,6 @@ const DailyTimeRecordFaculty = () => {
                 style={{
                   fontSize: '9px',
                   textAlign: 'center',
-                  paddingLeft: '130px',
                   fontFamily: 'Times New Roman',
                 }}
               >
@@ -1093,12 +1053,10 @@ const DailyTimeRecordFaculty = () => {
               </div>
             </div>
           </td>
-
-          <td></td>
         </tr>
 
         <tr>
-          <td colSpan="9" style={{ padding: '2px 0', lineHeight: '1.1' }}>
+          <td colSpan="9" style={{ padding: '2px 5px', lineHeight: '1.1', textAlign: 'left' }}>
             <div
               style={{
                 display: 'flex',
@@ -1131,8 +1089,8 @@ const DailyTimeRecordFaculty = () => {
           <td
             colSpan="9"
             style={{
-              padding: '2',
-              lineHeight: '2',
+              padding: '2px 5px',
+              lineHeight: '1.2',
               textAlign: 'left',
             }}
           >
@@ -1170,7 +1128,7 @@ const DailyTimeRecordFaculty = () => {
             <div
               style={{
                 display: 'flex',
-                alignItems: 'center',
+                alignItems: 'flex-end',
                 paddingLeft: '5%',
                 height: '14px',
                 marginBottom: '0px',
@@ -1178,13 +1136,14 @@ const DailyTimeRecordFaculty = () => {
                 fontSize: '10px',
               }}
             >
-              <span style={{ marginRight: '8px' }}>Regular Days:</span>
+              <span style={{ marginRight: '5px' }}>Regular Days:</span>
               <span
                 style={{
                   display: 'inline-block',
                   borderBottom: '1.5px solid black',
                   flexGrow: 1,
                   minWidth: '300px',
+                  marginBottom: '2px',
                 }}
               ></span>
             </div>
@@ -1194,32 +1153,32 @@ const DailyTimeRecordFaculty = () => {
         {/* Spacer rows to preserve original visual spacing */}
         {Array.from({ length: 2 }, (_, i) => (
           <tr key={`empty2-${i}`}>
-            <td colSpan="3"></td>
-            <td></td>
+            <td colSpan="9"></td>
           </tr>
         ))}
 
         {/* "Saturdays" label as a stable table row instead of absolute */}
         <tr>
-          <td colSpan="9" style={{ padding: '4px 5px' }}>
+          <td colSpan="9" style={{ padding: '2px 5px' }}>
             <div
               style={{
                 display: 'flex',
-                alignItems: 'center',
+                alignItems: 'flex-end',
                 paddingLeft: '5%',
-                height: '28px', // fixed height
+                height: '20px', // fixed height
                 fontFamily: 'Arial, serif',
                 fontSize: '10px',
                 whiteSpace: 'nowrap',
               }}
             >
-              <span style={{ marginRight: '8px' }}>Saturdays:</span>
+              <span style={{ marginRight: '5px' }}>Saturdays:</span>
               <span
                 style={{
                   display: 'inline-block',
                   borderBottom: '1.5px solid black',
                   flexGrow: 1,
                   minWidth: '318px',
+                  marginBottom: '2px',
                 }}
               ></span>
             </div>
@@ -1228,10 +1187,7 @@ const DailyTimeRecordFaculty = () => {
 
         {Array.from({ length: 2 }, (_, i) => (
           <tr key={`empty3-${i}`}>
-            <td colSpan="3"></td>
-            <td></td>
-            <td></td>
-            <td></td>
+            <td colSpan="9"></td>
           </tr>
         ))}
         <tr>
@@ -1299,6 +1255,8 @@ const DailyTimeRecordFaculty = () => {
               border: '1px solid black',
               fontSize: '9px',
               fontFamily: 'Arial, serif',
+              width: 'fit-content',
+              whiteSpace: 'nowrap',
             }}
           >
             Departure
@@ -1308,6 +1266,8 @@ const DailyTimeRecordFaculty = () => {
               border: '1px solid black',
               fontSize: '9px',
               fontFamily: 'Arial, serif',
+              width: 'fit-content',
+              whiteSpace: 'nowrap',
             }}
           >
             Arrival
@@ -1317,6 +1277,8 @@ const DailyTimeRecordFaculty = () => {
               border: '1px solid black',
               fontSize: '9px',
               fontFamily: 'Arial, serif',
+              width: 'fit-content',
+              whiteSpace: 'nowrap',
             }}
           >
             Departure
@@ -1346,7 +1308,7 @@ const DailyTimeRecordFaculty = () => {
     const cellStyle = {
       border: '1px solid black',
       textAlign: 'center',
-      padding: '0 2px',
+      padding: '0 1px',
       fontFamily: 'Arial, serif',
       fontSize: '10px',
       height: rowHeight,
@@ -1417,22 +1379,23 @@ const DailyTimeRecordFaculty = () => {
                       style={{
                         textAlign: 'justify',
                         fontSize: '9px',
-                        lineHeight: '1.1',
+                        lineHeight: '1.4',
                         fontFamily: 'Times New Roman, serif',
                         margin: '5px 0',
                       }}
                     >
-                      I CERTIFY on my honor that the above is a true and correct
-                      report of the hours of work performed, record of which was
-                      made daily at the time of arrival and at the time of
-                      departure from office.
+                      I CERTIFY on my honor that the above is a true and correct report
+                      <br />
+                      of the hours of work performed, record of which was made daily at 
+                      <br />
+                      the time of arrival and at the time of departure from office.
                     </p>
                     <div
                       style={{
                         width: '50%',
                         marginLeft: 'auto',
                         textAlign: 'center',
-                        marginTop: '15px',
+                        marginTop: '40px',
                       }}
                     >
                       <hr
@@ -1566,22 +1529,23 @@ const DailyTimeRecordFaculty = () => {
                       style={{
                         textAlign: 'justify',
                         fontSize: '9px',
-                        lineHeight: '1.1',
+                        lineHeight: '1.4',
                         fontFamily: 'Times New Roman, serif',
                         margin: '5px 0',
                       }}
                     >
-                      I CERTIFY on my honor that the above is a true and correct
-                      report of the hours of work performed, record of which was
-                      made daily at the time of arrival and at the time of
-                      departure from office.
+                      I CERTIFY on my honor that the above is a true and correct report
+                      <br />
+                      of the hours of work performed, record of which was made daily at 
+                      <br />
+                      the time of arrival and at the time of departure from office.
                     </p>
                     <div
                       style={{
                         width: '50%',
                         marginLeft: 'auto',
                         textAlign: 'center',
-                        marginTop: '15px',
+                        marginTop: '40px',
                       }}
                     >
                       <hr
@@ -1956,12 +1920,12 @@ const DailyTimeRecordFaculty = () => {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <MCircularProgress size={24} sx={{ color: 'white' }} />
             <Typography variant="h6" sx={{ fontWeight: 700 }}>
-              {printingStatus || (loadingAllUsers ? 'Loading DTR data...' : 'Preparing DTRs...')}
+              {printingStatus || (loadingAllUsers ? 'Loading DTR data from database...' : 'Preparing DTRs...')}
             </Typography>
           </Box>
           <Typography variant="body2" sx={{ opacity: 0.9 }}>
             {loadingAllUsers 
-              ? 'Please wait while we fetch DTR data for all users...'
+              ? 'Loading DTR data from database (already saved from device)...'
               : 'Please wait — the DTRs are being captured and compiled. A new tab will open when ready.'}
           </Typography>
         </Box>
@@ -2094,7 +2058,7 @@ const DailyTimeRecordFaculty = () => {
                         component="h1"
                         sx={{
                           fontWeight: 700,
-                          mb: 1,
+                          mb: 0.25,
                           lineHeight: 1.2,
                           color: textPrimaryColor,
                         }}
@@ -2265,26 +2229,42 @@ const DailyTimeRecordFaculty = () => {
                   </Select>
                 </FormControl>
 
-                {months.map((month, index) => (
-                  <ProfessionalButton
-                    key={month}
-                    variant={
-                      selectedMonth === index ? 'contained' : 'contained'
-                    }
-                    onClick={() => handleMonthClick(index)}
-                    sx={{
-                      backgroundColor:
-                        selectedMonth === index ? accentDark : accentColor,
-                      color: textSecondaryColor,
-                      '&:hover': { backgroundColor: hoverColor },
-                      py: 0.5,
-                      px: 1.5,
-                      fontSize: '0.8rem',
-                    }}
-                  >
-                    {month}
-                  </ProfessionalButton>
-                ))}
+                {months.map((month, index) => {
+                  const isSelected = selectedMonth === index;
+                  return (
+                    <ProfessionalButton
+                      key={month}
+                      variant={isSelected ? 'contained' : 'outlined'}
+                      size="medium"
+                      onClick={() => handleMonthClick(index)}
+                      sx={{
+                        borderColor: isSelected
+                          ? accentColor
+                          : accentColor,
+                        backgroundColor: isSelected
+                          ? accentColor
+                          : 'transparent',
+                        color: isSelected
+                          ? textSecondaryColor
+                          : textPrimaryColor,
+                        py: 1.5,
+                        fontWeight: 600,
+                        '&:hover': {
+                          backgroundColor: isSelected
+                            ? accentDark
+                            : alpha(accentColor, 0.1),
+                          borderWidth: 2,
+                        },
+                        transition: 'all 0.3s ease',
+                        boxShadow: isSelected
+                          ? `0 4px 12px ${alpha(accentColor, 0.3)}`
+                          : 'none',
+                      }}
+                    >
+                      {month}
+                    </ProfessionalButton>
+                  );
+                })}
               </Box>
 
               {/* Show Employee Number, Date fields, and Search button only in Single User mode */}
@@ -2432,12 +2412,10 @@ const DailyTimeRecordFaculty = () => {
                   {/* Print limit selector: auto-select first N when changed */}
                   {allUsersDTR.length > 0 && (
                     <FormControl
-                      sx={{ minWidth: 160, backgroundColor: 'white' }}
+                      sx={{ minWidth: 160, backgroundColor: 'white', marginRight: 1 }}
                     >
-                      <InputLabel>Auto Select</InputLabel>
                       <Select
                         value={''}
-                        label="Auto Select"
                         onChange={(e) => {
                           const val = e.target.value;
                           if (val === 'none') return;
@@ -2663,34 +2641,52 @@ const DailyTimeRecordFaculty = () => {
                             <TableCell>
                               <Checkbox
                                 checked={
-                                  selectedUsers.size ===
-                                    getFilteredUsers().length &&
-                                  getFilteredUsers().length > 0
+                                  (() => {
+                                    const filtered = getFilteredUsers();
+                                    const selectableCount = filtered.filter(
+                                      (user) => !printStatusMap.has(user.employeeNumber)
+                                    ).length;
+                                    return selectedUsers.size === selectableCount && selectableCount > 0;
+                                  })()
                                 }
                                 indeterminate={
-                                  selectedUsers.size > 0 &&
-                                  selectedUsers.size < getFilteredUsers().length
+                                  (() => {
+                                    const filtered = getFilteredUsers();
+                                    const selectableCount = filtered.filter(
+                                      (user) => !printStatusMap.has(user.employeeNumber)
+                                    ).length;
+                                    return selectedUsers.size > 0 && selectedUsers.size < selectableCount;
+                                  })()
                                 }
                                 onChange={(e) =>
                                   handleSelectAll(e.target.checked)
                                 }
+                                sx={{
+                                  color: '#ffffff',
+                                  '&.Mui-checked': {
+                                    color: '#ffffff',
+                                  },
+                                  '&.MuiCheckbox-indeterminate': {
+                                    color: '#ffffff',
+                                  },
+                                }}
                               />
                             </TableCell>
-                            <TableCell sx={{ minWidth: 120 }}>
+                            <TableCell sx={{ minWidth: 120, color: '#ffffff' }}>
                               Employee Number
                             </TableCell>
-                            <TableCell sx={{ minWidth: 200, maxWidth: 250 }}>
+                            <TableCell sx={{ minWidth: 200, maxWidth: 250, color: '#ffffff' }}>
                               Full Name
                             </TableCell>
-                            <TableCell sx={{ minWidth: 120, maxWidth: 180 }}>
+                            <TableCell sx={{ minWidth: 120, maxWidth: 180, color: '#ffffff' }}>
                               Last Name
                             </TableCell>
-                            <TableCell sx={{ minWidth: 120 }}>
+                            <TableCell sx={{ minWidth: 120, color: '#ffffff' }}>
                               Records Count
                             </TableCell>
-                            <TableCell sx={{ minWidth: 100 }}>Status</TableCell>
-                            <TableCell sx={{ minWidth: 120 }}>Print Status</TableCell>
-                            <TableCell sx={{ minWidth: 100 }}>Actions</TableCell>
+                            <TableCell sx={{ minWidth: 100, color: '#ffffff' }}>Status</TableCell>
+                            <TableCell sx={{ minWidth: 120, color: '#ffffff' }}>Print Status</TableCell>
+                            <TableCell sx={{ minWidth: 100, color: '#ffffff' }}>Actions</TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
@@ -2916,85 +2912,55 @@ const DailyTimeRecordFaculty = () => {
                           <thead
                             style={{
                               textAlign: 'center',
-                              position: 'relative',
                             }}
                           >
                             <tr>
-                              <div
-                                style={{
-                                  position: 'absolute',
-                                  paddingTop: '25px',
-                                  left: '53%',
-                                  transform: 'translateX(-50%)',
-                                  fontWeight: 'bold',
-                                  fontSize: '8px',
-                                  fontFamily: 'Arial, "Times New Roman", serif',
-                                  width: '100%',
-                                }}
-                              >
-                                Republic of the Philippines
-                              </div>
-                              <td
-                                colSpan="1"
-                                style={{
-                                  position: 'relative',
-                                  width: '60px', // Fixed width for logo column
-                                }}
-                              >
-                                <img
-                                  src={earistLogo}
-                                  alt="Logo"
-                                  width="50"
-                                  height="50"
+                              <td colSpan="9" style={{ position: 'relative', padding: '25px 10px 0px 10px', textAlign: 'center' }}>
+                                <div
                                   style={{
-                                    position: 'absolute',
-                                    top: '25px',
-                                    left: '-5px',
-                                  }}
-                                />
-                              </td>
-                              <td
-                                colSpan="5"
-                                style={{
-                                  verticalAlign: 'bottom',
-                                  paddingBottom: '5px',
-                                  paddingRight: '40px',
-                                }}
-                              >
-                                <p
-                                  style={{
-                                    margin: '0',
-                                    fontSize: '12px',
                                     fontWeight: 'bold',
-                                    textAlign: 'center',
-                                    width: '100%',
-                                    fontFamily:
-                                      'Arial, "Times New Roman", serif',
-                                    lineHeight: '1.15',
-                                    paddingTop: '35px',
-                                    letterSpacing: '0.5px',
+                                    fontSize: '11px',
+                                    fontFamily: 'Arial, "Times New Roman", serif',
+                                    color: 'black',
+                                    marginBottom: '2px',
                                   }}
                                 >
-                                  EULOGIO "AMANG" RODRIGUEZ
-                                  <br />
-                                  INSTITUTE OF SCIENCE &amp; TECHNOLOGY
-                                </p>
+                                  Republic of the Philippines
+                                </div>
+                                <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '3px' }}>
+                                  <img
+                                    src={earistLogo}
+                                    alt="Logo"
+                                    width="50"
+                                    height="50"
+                                    style={{
+                                      position: 'absolute',
+                                      left: '10px',
+                                    }}
+                                  />
+                                  <p
+                                    style={{
+                                      margin: '0',
+                                      fontSize: '11.5px',
+                                      fontWeight: 'bold',
+                                      textAlign: 'center',
+                                      fontFamily: 'Arial, "Times New Roman", serif',
+                                      lineHeight: '1.2',
+                                    }}
+                                  >
+                                    EULOGIO "AMANG" RODRIGUEZ <br /> INSTITUTE OF SCIENCE & TECHNOLOGY
+                                  </p>
+                                </div>
                               </td>
-
-                              <td></td>
-                              <td></td>
-                              <td></td>
-                              <td></td>
-                              <td></td>
                             </tr>
                             <tr>
-                              <td colSpan="9">
+                              <td colSpan="9" style={{ textAlign: 'center', padding: '0px 5px 2px 5px' }}>
                                 <p
                                   style={{
-                                    fontSize: '10px',
-                                    marginTop: '-2%',
+                                    fontSize: '11px',
+                                    fontWeight: 'bold',
+                                    margin: '0',
                                     fontFamily: 'Arial, serif',
-                                    paddingLeft: '16px',
                                   }}
                                 >
                                   Nagtahan, Sampaloc Manila
@@ -3002,12 +2968,12 @@ const DailyTimeRecordFaculty = () => {
                               </td>
                             </tr>
                             <tr>
-                              <td colSpan="9">
+                              <td colSpan="9" style={{ textAlign: 'center', padding: '2px 5px' }}>
                                 <p
                                   style={{
                                     fontSize: '8px',
                                     fontWeight: 'bold',
-                                    paddingTop: '-2px',
+                                    margin: '0',
                                     fontFamily: 'Arial, serif',
                                   }}
                                 >
@@ -3018,13 +2984,13 @@ const DailyTimeRecordFaculty = () => {
                             <tr>
                               <td
                                 colSpan="9"
-                                style={{ padding: '2', lineHeight: '0' }}
+                                style={{ textAlign: 'center', padding: '2px 5px', lineHeight: '1.2' }}
                               >
                                 <h4
                                   style={{
                                     fontFamily: 'Times New Roman, serif',
                                     textAlign: 'center',
-                                    marginTop: '2px',
+                                    margin: '2px 0',
                                     fontWeight: 'bold',
                                     fontSize: '16px',
                                   }}
@@ -3035,27 +3001,28 @@ const DailyTimeRecordFaculty = () => {
                             </tr>
                             <tr>
                               <td
-                                colSpan="5"
+                                colSpan="9"
                                 style={{
                                   paddingTop: '10px',
                                   paddingBottom: '5px',
                                   lineHeight: '1.1',
                                   verticalAlign: 'top',
+                                  textAlign: 'center',
                                 }}
                               >
                                 <div
                                   style={{
-                                    paddingLeft: '5px',
-                                    marginTop: '0',
+                                    margin: '0 auto',
                                     fontFamily: 'Arial, serif',
                                     width: '100%',
-                                    maxWidth: '250px',
+                                    maxWidth: '400px',
+                                    position: 'relative',
                                   }}
                                 >
                                   <div
                                     style={{
                                       borderBottom: '2px solid black',
-                                      width: '159%',
+                                      width: '100%',
                                       margin: '2px 0 3px 0',
                                     }}
                                   />
@@ -3065,15 +3032,11 @@ const DailyTimeRecordFaculty = () => {
                                       fontSize: '12px',
                                       fontWeight: 'bold',
                                       textTransform: 'uppercase',
-                                      /* Allow full name to wrap and be visible instead of truncating */
-                                      whiteSpace: 'normal',
-                                      overflow: 'visible',
-                                      wordBreak: 'break-word',
-                                      fontFamily: 'Times New Roman',
+                                      whiteSpace: 'nowrap',
                                       textAlign: 'center',
-                                      paddingLeft: '0', // remove this
-                                      width: '159%', // match underline width
-                                      margin: '0 auto',
+                                      fontFamily: 'Times New Roman',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
                                     }}
                                   >
                                     {employeeName}
@@ -3083,7 +3046,7 @@ const DailyTimeRecordFaculty = () => {
                                   <div
                                     style={{
                                       borderBottom: '2px solid black',
-                                      width: '159%',
+                                      width: '100%',
                                       margin: '2px 0 3px 0',
                                     }}
                                   />
@@ -3093,7 +3056,6 @@ const DailyTimeRecordFaculty = () => {
                                     style={{
                                       fontSize: '9px',
                                       textAlign: 'center',
-                                      paddingLeft: '130px',
                                       fontFamily: 'Times New Roman',
                                     }}
                                   >
@@ -3101,14 +3063,12 @@ const DailyTimeRecordFaculty = () => {
                                   </div>
                                 </div>
                               </td>
-
-                              <td></td>
                             </tr>
 
                             <tr>
                               <td
                                 colSpan="9"
-                                style={{ padding: '2px 0', lineHeight: '1.1' }}
+                                style={{ padding: '2px 5px', lineHeight: '1.1', textAlign: 'left' }}
                               >
                                 <div
                                   style={{
@@ -3146,8 +3106,8 @@ const DailyTimeRecordFaculty = () => {
                               <td
                                 colSpan="9"
                                 style={{
-                                  padding: '2',
-                                  lineHeight: '2',
+                                  padding: '2px 5px',
+                                  lineHeight: '1.2',
                                   textAlign: 'left',
                                 }}
                               >
@@ -3183,10 +3143,7 @@ const DailyTimeRecordFaculty = () => {
                             </tr>
                             {Array.from({ length: 6 }, (_, i) => (
                               <tr key={`empty1-${i}`}>
-                                <td colSpan="3"></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
+                                <td colSpan="9"></td>
                               </tr>
                             ))}
 
@@ -3196,7 +3153,7 @@ const DailyTimeRecordFaculty = () => {
                                 <div
                                   style={{
                                     display: 'flex',
-                                    alignItems: 'center',
+                                    alignItems: 'flex-end',
                                     paddingLeft: '5%',
                                     height: '12px',
                                     marginBottom: '0px',
@@ -3205,7 +3162,7 @@ const DailyTimeRecordFaculty = () => {
                                     whiteSpace: 'nowrap',
                                   }}
                                 >
-                                  <span style={{ marginRight: '8px' }}>
+                                  <span style={{ marginRight: '5px' }}>
                                     Regular Days:
                                   </span>
                                   <span
@@ -3214,6 +3171,7 @@ const DailyTimeRecordFaculty = () => {
                                       borderBottom: '1.5px solid black',
                                       flexGrow: 1,
                                       minWidth: '310px',
+                                      marginBottom: '2px',
                                     }}
                                   ></span>
                                 </div>
@@ -3222,27 +3180,24 @@ const DailyTimeRecordFaculty = () => {
 
                             {Array.from({ length: 2 }, (_, i) => (
                               <tr key={`empty2-${i}`}>
-                                <td colSpan="3"></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
+                                <td colSpan="9"></td>
                               </tr>
                             ))}
 
                             <tr>
-                              <td colSpan="9" style={{ padding: '4px 5px' }}>
+                              <td colSpan="9" style={{ padding: '2px 5px' }}>
                                 <div
                                   style={{
                                     display: 'flex',
-                                    alignItems: 'center',
+                                    alignItems: 'flex-end',
                                     paddingLeft: '5%',
-                                    height: '14px',
+                                    height: '20px',
                                     fontFamily: 'Arial, serif',
                                     fontSize: '10px',
                                     whiteSpace: 'nowrap',
                                   }}
                                 >
-                                  <span style={{ marginRight: '8px' }}>
+                                  <span style={{ marginRight: '5px' }}>
                                     Saturdays:
                                   </span>
                                   <span
@@ -3251,6 +3206,7 @@ const DailyTimeRecordFaculty = () => {
                                       borderBottom: '1.5px solid black',
                                       flexGrow: 1,
                                       minWidth: '318px',
+                                      marginBottom: '2px',
                                     }}
                                   ></span>
                                 </div>
@@ -3259,10 +3215,7 @@ const DailyTimeRecordFaculty = () => {
 
                             {Array.from({ length: 2 }, (_, i) => (
                               <tr key={`empty3-${i}`}>
-                                <td colSpan="3"></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
+                                <td colSpan="9"></td>
                               </tr>
                             ))}
                             <tr>

@@ -94,6 +94,8 @@ import {
   Assessment,
   Delete as DeleteIcon,
   DeleteForever,
+  Edit as EditIcon,
+  ErrorOutline,
 } from "@mui/icons-material";
 import SearchIcon from "@mui/icons-material/Search";
 import axios from "axios";
@@ -215,6 +217,25 @@ const UsersList = () => {
   const [roleChangeDialog, setRoleChangeDialog] = useState(false);
   const [pendingRoleChange, setPendingRoleChange] = useState(null);
   const [roleChangeLoading, setRoleChangeLoading] = useState(false);
+  
+  // Edit User States
+  const [editDialog, setEditDialog] = useState(false);
+  const [userToEdit, setUserToEdit] = useState(null);
+  const [editedEmployeeNumber, setEditedEmployeeNumber] = useState("");
+  const [editedFirstName, setEditedFirstName] = useState("");
+  const [editedMiddleName, setEditedMiddleName] = useState("");
+  const [editedLastName, setEditedLastName] = useState("");
+  const [editedNameExtension, setEditedNameExtension] = useState("");
+  const [editLoading, setEditLoading] = useState(false);
+  
+  // Delete User States
+  const [deleteDialog, setDeleteDialog] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Grant Default Access State
+  const [grantingAccess, setGrantingAccess] = useState(false);
+  const [grantingAdminAccess, setGrantingAdminAccess] = useState(false);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -231,7 +252,10 @@ const UsersList = () => {
   }, []);
 
   // Check if user is superadmin
-  const isSuperAdmin = userRole === 'superadmin';
+  const isSuperAdmin = userRole === 'superadmin' || userRole === 'technical';
+  
+  // Check if user is technical (for restricted features)
+  const isTechnical = userRole === 'technical';
 
   // Handle module authorization
   const handleModuleAuthorization = async () => {
@@ -753,6 +777,242 @@ const UsersList = () => {
     setPendingRoleChange(null);
   };
 
+  // Handle Edit User
+  const handleEditUser = (user) => {
+    setUserToEdit(user);
+    setEditedEmployeeNumber(user.employeeNumber);
+    setEditedFirstName(user.firstName || "");
+    setEditedMiddleName(user.middleName || "");
+    setEditedLastName(user.lastName || "");
+    setEditedNameExtension(user.nameExtension || "");
+    setEditDialog(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editedEmployeeNumber || !editedFirstName || !editedLastName) {
+      setError("Employee Number, First Name, and Last Name are required");
+      return;
+    }
+
+    setEditLoading(true);
+    try {
+      const authHeaders = getAuthHeaders();
+      
+      // Update user's employee number if changed
+      if (editedEmployeeNumber !== userToEdit.employeeNumber) {
+        const updateUserResponse = await fetch(
+          `${API_BASE_URL}/users/${userToEdit.employeeNumber}/employee-number`,
+          {
+            method: "PUT",
+            ...authHeaders,
+            body: JSON.stringify({ newEmployeeNumber: editedEmployeeNumber }),
+          }
+        );
+
+        if (!updateUserResponse.ok) {
+          const errorData = await updateUserResponse.json().catch(() => ({}));
+          setError(errorData.error || "Failed to update employee number");
+          setEditLoading(false);
+          return;
+        }
+      }
+
+      // Update person table with name information
+      const updatePersonResponse = await fetch(
+        `${API_BASE_URL}/personalinfo/person/${editedEmployeeNumber}`,
+        {
+          method: "PUT",
+          ...authHeaders,
+          body: JSON.stringify({
+            firstName: editedFirstName,
+            middleName: editedMiddleName || null,
+            lastName: editedLastName,
+            nameExtension: editedNameExtension || null,
+          }),
+        }
+      );
+
+      if (!updatePersonResponse.ok) {
+        const errorData = await updatePersonResponse.json().catch(() => ({}));
+        setError(errorData.error || "Failed to update user name");
+        setEditLoading(false);
+        return;
+      }
+
+      // Refresh users list
+      await fetchUsers();
+
+      setSuccessAction("edit");
+      setSuccessOpen(true);
+      setEditDialog(false);
+      setUserToEdit(null);
+    } catch (err) {
+      console.error("Error updating user:", err);
+      setError("Network error occurred while updating user");
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditDialog(false);
+    setUserToEdit(null);
+  };
+
+  // Handle Delete User
+  const handleDeleteUser = (user) => {
+    setUserToDelete(user);
+    setDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!userToDelete) return;
+
+    setDeleteLoading(true);
+    try {
+      const authHeaders = getAuthHeaders();
+      const response = await fetch(
+        `${API_BASE_URL}/users/${userToDelete.employeeNumber}`,
+        {
+          method: "DELETE",
+          ...authHeaders,
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        setError(errorData.error || "Failed to delete user");
+        setDeleteLoading(false);
+        return;
+      }
+
+      // Refresh users list
+      await fetchUsers();
+
+      setSuccessAction("delete");
+      setSuccessOpen(true);
+      setDeleteDialog(false);
+      setUserToDelete(null);
+    } catch (err) {
+      console.error("Error deleting user:", err);
+      setError("Network error occurred while deleting user");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteDialog(false);
+    setUserToDelete(null);
+  };
+
+  // Handle Grant Default Access to All Staff
+  const handleGrantDefaultAccess = async () => {
+    const confirmGrant = window.confirm(
+      "This will grant default page access (Home, Attendance, DTR, Payslip, PDS, Settings) to ALL existing staff users. Continue?"
+    );
+
+    if (!confirmGrant) return;
+
+    setGrantingAccess(true);
+    try {
+      const authHeaders = getAuthHeaders();
+      const response = await fetch(
+        `${API_BASE_URL}/users/grant-default-access`,
+        {
+          method: "POST",
+          ...authHeaders,
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        setError(errorData.error || "Failed to grant default access");
+        setGrantingAccess(false);
+        return;
+      }
+
+      const result = await response.json();
+      
+      // Show success message
+      setSuccessAction("grant-access");
+      setSuccessOpen(true);
+      
+      // Show details in console
+      console.log("Default access granted:", result);
+      
+      // Optionally show an alert with details
+      alert(
+        `✅ Default access granted successfully!\n\n` +
+        `Users Processed: ${result.usersProcessed}\n` +
+        `Pages Granted: ${result.pagesGranted}\n` +
+        `Successful Operations: ${result.successfulOperations}\n` +
+        `Failed Operations: ${result.failedOperations}`
+      );
+
+      // Refresh users list
+      await fetchUsers();
+    } catch (err) {
+      console.error("Error granting default access:", err);
+      setError("Network error occurred while granting default access");
+    } finally {
+      setGrantingAccess(false);
+    }
+  };
+
+  const handleGrantDefaultAccessAdministrator = async () => {
+    const confirmGrant = window.confirm(
+      "This will grant default page access to ALL existing administrator users (excluding User Management, Payroll Formulas, Admin Security). Continue?"
+    );
+
+    if (!confirmGrant) return;
+
+    setGrantingAdminAccess(true);
+    try {
+      const authHeaders = getAuthHeaders();
+      const response = await fetch(
+        `${API_BASE_URL}/users/grant-default-access-administrator`,
+        {
+          method: "POST",
+          ...authHeaders,
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        setError(errorData.error || "Failed to grant default access to administrators");
+        setGrantingAdminAccess(false);
+        return;
+      }
+
+      const result = await response.json();
+      
+      // Show success message
+      setSuccessAction("grant-admin-access");
+      setSuccessOpen(true);
+      
+      // Show details in console
+      console.log("Default access granted to administrators:", result);
+      
+      // Optionally show an alert with details
+      alert(
+        `✅ Default access granted to administrators successfully!\n\n` +
+        `Users Processed: ${result.usersProcessed}\n` +
+        `Pages Granted: ${result.pagesGranted}\n` +
+        `Successful Operations: ${result.successfulOperations}\n` +
+        `Failed Operations: ${result.failedOperations}`
+      );
+
+      // Refresh users list
+      await fetchUsers();
+    } catch (err) {
+      console.error("Error granting default access to administrators:", err);
+      setError("Network error occurred while granting default access to administrators");
+    } finally {
+      setGrantingAdminAccess(false);
+    }
+  };
+
   useEffect(() => {
     // Only fetch users if module is authorized
     if (moduleAuthorized) {
@@ -812,6 +1072,11 @@ const UsersList = () => {
         return {
           sx: { bgcolor: alpha(settings?.secondaryColor || '#6d2323', 0.15), color: settings?.secondaryColor || '#6d2323' },
           icon: <AdminPanelSettings />,
+        };
+      case "technical":
+        return {
+          sx: { bgcolor: alpha(settings?.primaryColor || '#894444', 0.15), color: settings?.primaryColor || '#894444' },
+          icon: <SupervisorAccount />,
         };
       case "staff":
         return {
@@ -1141,37 +1406,23 @@ const UsersList = () => {
                       Single Registration
                     </ProfessionalButton>
 
-                    {/* Pages Library Button - Disabled for non-superadmin */}
-                    <Tooltip 
-                      title={isSuperAdmin ? "Manage system pages" : "This page is restricted to authorized personnel only"}
-                      arrow
-                    >
-                      <span>
-                        <ProfessionalButton
-                          variant="contained"
-                          startIcon={<Pages />}
-                          onClick={() => isSuperAdmin && navigate("/pages-list")}
-                          disabled={!isSuperAdmin}
-                          sx={{
-                            bgcolor: isSuperAdmin 
-                              ? (settings?.primaryColor || '#894444')
-                              : alpha(settings?.primaryColor || '#894444', 0.5),
-                            color: isSuperAdmin 
-                              ? (settings?.accentColor || '#FEF9E1')
-                              : alpha(settings?.accentColor || '#FEF9E1', 0.7),
-                            "&:hover": {
-                              bgcolor: isSuperAdmin 
-                                ? (settings?.secondaryColor || '#6d2323')
-                                : alpha(settings?.primaryColor || '#894444', 0.5),
-                            },
-                            cursor: isSuperAdmin ? 'pointer' : 'not-allowed',
-                            opacity: isSuperAdmin ? 1 : 0.7,
-                          }}
-                        >
-                          Page Management
-                        </ProfessionalButton>
-                      </span>
-                    </Tooltip>
+                    {/* Pages Library Button - Only visible for technical users */}
+                    {isTechnical && (
+                      <ProfessionalButton
+                        variant="contained"
+                        startIcon={<Pages />}
+                        onClick={() => navigate("/pages-list")}
+                        sx={{
+                          bgcolor: settings?.primaryColor || '#894444',
+                          color: settings?.accentColor || '#FEF9E1',
+                          "&:hover": {
+                            bgcolor: settings?.secondaryColor || '#6d2323',
+                          },
+                        }}
+                      >
+                        Page Management
+                      </ProfessionalButton>
+                    )}
                   </Box>
                 </Box>
               </Box>
@@ -1231,7 +1482,7 @@ const UsersList = () => {
         {/* Stats Cards */}
         <Fade in timeout={700}>
           <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid item xs={12} sm={6} md={2.4}>
+            <Grid item xs={12} sm={6} md sx={{ minWidth: 0, flex: '1 1 0%' }}>
               <GlassCard>
                 <CardContent sx={{ textAlign: "center", p: 3 }}>
                   <AccountCircle
@@ -1250,7 +1501,7 @@ const UsersList = () => {
               </GlassCard>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={2.4}>
+            <Grid item xs={12} sm={6} md sx={{ minWidth: 0, flex: '1 1 0%' }}>
               <GlassCard>
                 <CardContent sx={{ textAlign: "center", p: 3 }}>
                   <SupervisorAccount
@@ -1269,7 +1520,7 @@ const UsersList = () => {
               </GlassCard>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={2.4}>
+            <Grid item xs={12} sm={6} md sx={{ minWidth: 0, flex: '1 1 0%' }}>
               <GlassCard>
                 <CardContent sx={{ textAlign: "center", p: 3 }}>
                   <AdminPanelSettings
@@ -1288,7 +1539,7 @@ const UsersList = () => {
               </GlassCard>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={2.4}>
+            <Grid item xs={12} sm={6} md sx={{ minWidth: 0, flex: '1 1 0%' }}>
               <GlassCard>
                 <CardContent sx={{ textAlign: "center", p: 3 }}>
                   <Work sx={{ fontSize: 44, color: settings?.textPrimaryColor || '#6D2323', mb: 1 }} />
@@ -1305,7 +1556,7 @@ const UsersList = () => {
               </GlassCard>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={2.4}>
+            <Grid item xs={12} sm={6} md sx={{ minWidth: 0, flex: '1 1 0%' }}>
               <GlassCard>
                 <CardContent sx={{ textAlign: "center", p: 3 }}>
                   <Visibility
@@ -1448,6 +1699,44 @@ const UsersList = () => {
                       : `Total: ${users.length} registered users`}
                   </Typography>
                 </Box>
+                <Box display="flex" alignItems="center" gap={2}>
+                  <Tooltip title="Grant Default Access to All Staff">
+                    <ProfessionalButton
+                      variant="outlined"
+                      startIcon={<LockOpen />}
+                      onClick={handleGrantDefaultAccess}
+                      disabled={grantingAccess}
+                      sx={{
+                        borderColor: settings?.primaryColor || '#894444',
+                        color: settings?.primaryColor || '#894444',
+                        "&:hover": {
+                          bgcolor: alpha(settings?.primaryColor || '#894444', 0.1),
+                          borderColor: settings?.secondaryColor || '#6d2323',
+                        },
+                      }}
+                    >
+                      {grantingAccess ? 'Granting...' : 'Grant Staff Access'}
+                    </ProfessionalButton>
+                  </Tooltip>
+                  <Tooltip title="Grant Default Access to All Administrators (excluding User Management, Payroll Formulas, Admin Security)">
+                    <ProfessionalButton
+                      variant="outlined"
+                      startIcon={<AdminPanelSettings />}
+                      onClick={handleGrantDefaultAccessAdministrator}
+                      disabled={grantingAdminAccess}
+                      sx={{
+                        borderColor: settings?.primaryColor || '#894444',
+                        color: settings?.primaryColor || '#894444',
+                        "&:hover": {
+                          bgcolor: alpha(settings?.primaryColor || '#894444', 0.1),
+                          borderColor: settings?.secondaryColor || '#6d2323',
+                        },
+                      }}
+                    >
+                      {grantingAdminAccess ? 'Granting...' : 'Grant Admin Access'}
+                    </ProfessionalButton>
+                  </Tooltip>
+                </Box>
               </Box>
 
               <PremiumTableContainer component={Paper} elevation={0}>
@@ -1477,6 +1766,15 @@ const UsersList = () => {
                         <Security sx={{ mr: 1, verticalAlign: "middle" }} />
                         Page Access
                       </PremiumTableCell>
+                      {isTechnical && (
+                        <PremiumTableCell
+                          isHeader
+                          sx={{ color: settings?.textPrimaryColor || '#6D2323', textAlign: "center" }}
+                        >
+                          <Settings sx={{ mr: 1, verticalAlign: "middle" }} />
+                          Actions
+                        </PremiumTableCell>
+                      )}
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -1581,12 +1879,52 @@ const UsersList = () => {
                               Manage
                             </ProfessionalButton>
                           </PremiumTableCell>
+
+                          {/* Actions Column - Only visible for technical users */}
+                          {isTechnical && (
+                            <PremiumTableCell sx={{ textAlign: "center" }}>
+                              <Box sx={{ display: "flex", gap: 1, justifyContent: "center" }}>
+                                <Tooltip title="Edit User" arrow>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleEditUser(user)}
+                                    sx={{
+                                      bgcolor: alpha(settings?.primaryColor || '#894444', 0.1),
+                                      color: settings?.primaryColor || '#894444',
+                                      "&:hover": {
+                                        bgcolor: settings?.primaryColor || '#894444',
+                                        color: settings?.accentColor || '#FEF9E1',
+                                      },
+                                    }}
+                                  >
+                                    <EditIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Delete User" arrow>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleDeleteUser(user)}
+                                    sx={{
+                                      bgcolor: alpha('#d32f2f', 0.1),
+                                      color: '#d32f2f',
+                                      "&:hover": {
+                                        bgcolor: '#d32f2f',
+                                        color: 'white',
+                                      },
+                                    }}
+                                  >
+                                    <DeleteIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              </Box>
+                            </PremiumTableCell>
+                          )}
                         </TableRow>
                       ))
                     ) : (
                       <TableRow>
                         <TableCell
-                          colSpan={5}
+                          colSpan={isTechnical ? 6 : 5}
                           sx={{ textAlign: "center", py: 8 }}
                         >
                           <Box sx={{ textAlign: "center" }}>
@@ -2444,6 +2782,280 @@ const UsersList = () => {
               }}
             >
               {roleChangeLoading ? "Updating..." : "Confirm Change"}
+            </ProfessionalButton>
+          </DialogActions>
+        </Dialog>
+
+        {/* Edit User Dialog */}
+        <Dialog
+          open={editDialog}
+          onClose={handleCancelEdit}
+          maxWidth="md"
+          fullWidth
+          PaperProps={{
+            sx: {
+              borderRadius: 4,
+              bgcolor: settings?.accentColor || '#FEF9E1',
+            },
+          }}
+        >
+          <DialogTitle
+            sx={{
+              background: `linear-gradient(135deg, ${settings?.primaryColor || '#894444'} 0%, ${settings?.secondaryColor || '#6d2323'} 100%)`,
+              color: settings?.accentColor || '#FEF9E1',
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              p: 3,
+              fontWeight: 700,
+            }}
+          >
+            <EditIcon sx={{ fontSize: 30 }} />
+            Edit User Information
+          </DialogTitle>
+
+          <DialogContent sx={{ p: 4 }}>
+            {userToEdit && (
+              <>
+                <Box
+                  sx={{
+                    mb: 3,
+                    p: 3,
+                    borderRadius: 3,
+                    border: `1px solid ${alpha(settings?.primaryColor || '#894444', 0.2)}`,
+                    bgcolor: alpha(settings?.accentColor || '#FEF9E1', 0.5),
+                  }}
+                >
+                  <Typography
+                    variant="h6"
+                    sx={{ fontWeight: 700, color: settings?.textPrimaryColor || '#6D2323', mb: 2 }}
+                  >
+                    Edit User Details
+                  </Typography>
+                  
+                  <ModernTextField
+                    fullWidth
+                    label="Employee Number"
+                    value={editedEmployeeNumber}
+                    onChange={(e) => setEditedEmployeeNumber(e.target.value)}
+                    sx={{ mb: 2 }}
+                    required
+                  />
+                  
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                      <ModernTextField
+                        fullWidth
+                        label="First Name"
+                        value={editedFirstName}
+                        onChange={(e) => setEditedFirstName(e.target.value)}
+                        required
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <ModernTextField
+                        fullWidth
+                        label="Middle Name"
+                        value={editedMiddleName}
+                        onChange={(e) => setEditedMiddleName(e.target.value)}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <ModernTextField
+                        fullWidth
+                        label="Last Name"
+                        value={editedLastName}
+                        onChange={(e) => setEditedLastName(e.target.value)}
+                        required
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <ModernTextField
+                        fullWidth
+                        label="Name Extension (Jr., Sr., III)"
+                        value={editedNameExtension}
+                        onChange={(e) => setEditedNameExtension(e.target.value)}
+                      />
+                    </Grid>
+                  </Grid>
+                </Box>
+
+                <Alert
+                  severity="info"
+                  sx={{
+                    borderRadius: 2,
+                    "& .MuiAlert-message": { fontWeight: 500 },
+                  }}
+                  icon={<Info />}
+                >
+                  Changes will be reflected across all modules and records.
+                </Alert>
+              </>
+            )}
+          </DialogContent>
+
+          <DialogActions sx={{ p: 3, gap: 2 }}>
+            <ProfessionalButton
+              onClick={handleCancelEdit}
+              variant="outlined"
+              disabled={editLoading}
+              sx={{
+                borderColor: settings?.primaryColor || '#894444',
+                color: settings?.primaryColor || '#894444',
+                "&:hover": {
+                  borderColor: settings?.secondaryColor || '#6d2323',
+                  bgcolor: alpha(settings?.primaryColor || '#894444', 0.05),
+                },
+              }}
+            >
+              Cancel
+            </ProfessionalButton>
+            <ProfessionalButton
+              onClick={handleSaveEdit}
+              variant="contained"
+              disabled={editLoading}
+              startIcon={editLoading ? <CircularProgress size={20} /> : <CheckCircle />}
+              sx={{
+                bgcolor: settings?.primaryColor || '#894444',
+                color: settings?.accentColor || '#FEF9E1',
+                "&:hover": {
+                  bgcolor: settings?.secondaryColor || '#6d2323',
+                },
+                "&:disabled": {
+                  bgcolor: alpha(settings?.primaryColor || '#894444', 0.5),
+                },
+              }}
+            >
+              {editLoading ? "Saving..." : "Save Changes"}
+            </ProfessionalButton>
+          </DialogActions>
+        </Dialog>
+
+        {/* Delete User Confirmation Dialog */}
+        <Dialog
+          open={deleteDialog}
+          onClose={handleCancelDelete}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{
+            sx: {
+              borderRadius: 4,
+              bgcolor: settings?.accentColor || '#FEF9E1',
+            },
+          }}
+        >
+          <DialogTitle
+            sx={{
+              background: 'linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%)',
+              color: 'white',
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              p: 3,
+              fontWeight: 700,
+            }}
+          >
+            <DeleteIcon sx={{ fontSize: 30 }} />
+            Confirm Delete User
+          </DialogTitle>
+
+          <DialogContent sx={{ p: 4 }}>
+            {userToDelete && (
+              <>
+                <Box
+                  sx={{
+                    mb: 3,
+                    p: 3,
+                    borderRadius: 3,
+                    border: '1px solid rgba(211, 47, 47, 0.2)',
+                    bgcolor: 'rgba(211, 47, 47, 0.05)',
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
+                    <Avatar
+                      src={userToDelete.avatar || ""}
+                      alt={userToDelete.fullName}
+                      sx={{
+                        bgcolor: '#d32f2f',
+                        width: 64,
+                        height: 64,
+                        fontWeight: 700,
+                        fontSize: "1.2rem",
+                        border: "3px solid #fff",
+                        boxShadow: '0 4px 12px rgba(211, 47, 47, 0.2)',
+                      }}
+                    >
+                      {!userToDelete.avatar && getInitials(userToDelete.fullName)}
+                    </Avatar>
+                    <Box>
+                      <Typography
+                        variant="h6"
+                        sx={{ fontWeight: 700, color: settings?.textPrimaryColor || '#6D2323' }}
+                      >
+                        {userToDelete.fullName}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{ color: settings?.textPrimaryColor || '#6D2323', mt: 1 }}
+                      >
+                        Employee: <strong>{userToDelete.employeeNumber}</strong>
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Box>
+
+                <Alert
+                  severity="warning"
+                  sx={{
+                    borderRadius: 2,
+                    "& .MuiAlert-message": { fontWeight: 500 },
+                  }}
+                  icon={<ErrorOutline />}
+                >
+                  <Typography variant="body1" sx={{ fontWeight: 600, mb: 1 }}>
+                    Warning: This action cannot be undone!
+                  </Typography>
+                  <Typography variant="body2">
+                    Deleting this user will permanently remove their account and all associated data from the system.
+                  </Typography>
+                </Alert>
+              </>
+            )}
+          </DialogContent>
+
+          <DialogActions sx={{ p: 3, gap: 2 }}>
+            <ProfessionalButton
+              onClick={handleCancelDelete}
+              variant="outlined"
+              disabled={deleteLoading}
+              sx={{
+                borderColor: '#666',
+                color: '#666',
+                "&:hover": {
+                  borderColor: '#333',
+                  bgcolor: 'rgba(0,0,0,0.05)',
+                },
+              }}
+            >
+              Cancel
+            </ProfessionalButton>
+            <ProfessionalButton
+              onClick={handleConfirmDelete}
+              variant="contained"
+              disabled={deleteLoading}
+              startIcon={deleteLoading ? <CircularProgress size={20} /> : <DeleteForever />}
+              sx={{
+                bgcolor: '#d32f2f',
+                color: 'white',
+                "&:hover": {
+                  bgcolor: '#b71c1c',
+                },
+                "&:disabled": {
+                  bgcolor: 'rgba(211, 47, 47, 0.5)',
+                },
+              }}
+            >
+              {deleteLoading ? "Deleting..." : "Delete User"}
             </ProfessionalButton>
           </DialogActions>
         </Dialog>

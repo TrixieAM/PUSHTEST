@@ -194,127 +194,6 @@ router.post('/api/attendance', authenticateToken, (req, res) => {
   });
 });
 
-// NEW: Auto-save and fetch attendance records
-router.post('/api/all-attendance', authenticateToken, async (req, res) => {
-  const { personID, startDate, endDate } = req.body;
-
-  const query = `
-    SELECT
-      PersonID, PersonName,
-      DATE_FORMAT(FROM_UNIXTIME(AttendanceDateTime/1000), '%Y-%m-%d') AS Date,
-      MIN(CASE WHEN AttendanceState = 1 THEN AttendanceDateTime END) AS Time1,
-      MIN(CASE WHEN AttendanceState = 2 THEN AttendanceDateTime END) AS Time2,
-      MIN(CASE WHEN AttendanceState = 3 THEN AttendanceDateTime END) AS Time3,
-      MAX(CASE WHEN AttendanceState = 4 THEN AttendanceDateTime END) AS Time4
-    FROM AttendanceRecordInfo
-    WHERE PersonID = ? AND AttendanceDateTime BETWEEN ? AND ?
-    GROUP BY Date, PersonID, PersonName;
-  `;
-
-  const startTimestamp = new Date(startDate).getTime();
-  const endTimestamp = new Date(endDate).getTime();
-
-  db.query(
-    query,
-    [personID, startTimestamp, endTimestamp],
-    async (err, results) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-
-      logAudit(
-        req.user,
-        'search',
-        'Device Attendance Records',
-        `${startDate} && ${endDate}`,
-        personID
-      );
-
-      const convertToManilaTime = (timestamp) => {
-        if (!timestamp) return null;
-        const date = new Date(timestamp);
-        return date
-          .toLocaleString('en-PH', {
-            timeZone: 'Asia/Manila',
-            year: 'numeric',
-            month: 'numeric',
-            day: 'numeric',
-            hour: 'numeric',
-            minute: 'numeric',
-            second: 'numeric',
-          })
-          .split(', ')[1];
-      };
-
-      const records = results.map((record) => ({
-        PersonID: record.PersonID,
-        PersonName: record.PersonName,
-        Date: record.Date,
-        Time1: convertToManilaTime(record.Time1),
-        Time2: convertToManilaTime(record.Time2),
-        Time3: convertToManilaTime(record.Time3),
-        Time4: convertToManilaTime(record.Time4),
-      }));
-
-      // AUTO-SAVE: Save records to attendanceRecord table
-      try {
-        for (const record of records) {
-          const checkSql = `SELECT id FROM attendanceRecord WHERE personID = ? AND date = ?`;
-          const existingRecord = await new Promise((resolve, reject) => {
-            db.query(
-              checkSql,
-              [record.PersonID, record.Date],
-              (err, result) => {
-                if (err) reject(err);
-                else resolve(result);
-              }
-            );
-          });
-
-          if (existingRecord.length === 0) {
-            // Insert new record
-            const insertSql = `
-            INSERT INTO attendanceRecord (personID, date, day, timeIN, breaktimeIN, breaktimeOUT, timeOUT)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-          `;
-            await new Promise((resolve, reject) => {
-              db.query(
-                insertSql,
-                [
-                  record.PersonID,
-                  record.Date,
-                  getDayOfWeek(record.Date),
-                  formatTime(record.Time1),
-                  formatTime(record.Time3),
-                  formatTime(record.Time2),
-                  formatTime(record.Time4),
-                ],
-                (err) => {
-                  if (err) reject(err);
-                  else {
-                    logAudit(
-                      req.user,
-                      'auto-create',
-                      'Device Attendance Auto-Save',
-                      record.Date,
-                      record.PersonID
-                    );
-                    resolve();
-                  }
-                }
-              );
-            });
-          }
-        }
-      } catch (saveError) {
-        console.error('Error auto-saving records:', saveError);
-        // Continue even if save fails
-      }
-
-      res.json(records);
-    }
-  );
-});
 
 // NEW: Send to DTR Module endpoint
 router.post('/api/send-to-dtr', authenticateToken, async (req, res) => {
@@ -998,7 +877,8 @@ router.post('/api/all-attendance', authenticateToken, async (req, res) => {
       // AUTO-SAVE: Save records to attendanceRecord table
       try {
         for (const record of records) {
-          const checkSql = `SELECT id FROM attendanceRecord WHERE personID = ? AND date = ?`;
+          // Get existing record with all fields to compare
+          const checkSql = `SELECT id, timeIN, breaktimeIN, breaktimeOUT, timeOUT, day FROM attendanceRecord WHERE personID = ? AND date = ?`;
           const existingRecord = await new Promise((resolve, reject) => {
             db.query(
               checkSql,
@@ -1010,8 +890,14 @@ router.post('/api/all-attendance', authenticateToken, async (req, res) => {
             );
           });
 
+          const newTimeIN = formatTime(record.Time1);
+          const newBreaktimeIN = formatTime(record.Time3);
+          const newBreaktimeOUT = formatTime(record.Time2);
+          const newTimeOUT = formatTime(record.Time4);
+          const newDay = getDayOfWeek(record.Date);
+
           if (existingRecord.length === 0) {
-            // Insert new record
+            // Insert new record if it doesn't exist
             const insertSql = `
             INSERT INTO attendanceRecord (personID, date, day, timeIN, breaktimeIN, breaktimeOUT, timeOUT)
             VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -1022,11 +908,11 @@ router.post('/api/all-attendance', authenticateToken, async (req, res) => {
                 [
                   record.PersonID,
                   record.Date,
-                  getDayOfWeek(record.Date),
-                  formatTime(record.Time1),
-                  formatTime(record.Time3),
-                  formatTime(record.Time2),
-                  formatTime(record.Time4),
+                  newDay,
+                  newTimeIN,
+                  newBreaktimeIN,
+                  newBreaktimeOUT,
+                  newTimeOUT,
                 ],
                 (err) => {
                   if (err) {
@@ -1046,41 +932,52 @@ router.post('/api/all-attendance', authenticateToken, async (req, res) => {
               );
             });
           } else {
-            // UPDATE existing record to keep data fresh
-            const updateSql = `
-            UPDATE attendanceRecord
-            SET timeIN = ?, breaktimeIN = ?, breaktimeOUT = ?, timeOUT = ?, day = ?
-            WHERE personID = ? AND date = ?
-          `;
-            await new Promise((resolve, reject) => {
-              db.query(
-                updateSql,
-                [
-                  formatTime(record.Time1),
-                  formatTime(record.Time3),
-                  formatTime(record.Time2),
-                  formatTime(record.Time4),
-                  getDayOfWeek(record.Date),
-                  record.PersonID,
-                  record.Date,
-                ],
-                (err) => {
-                  if (err) {
-                    console.error('Error updating record:', err);
-                    reject(err);
-                  } else {
-                    logAudit(
-                      req.user,
-                      'auto-update',
-                      'Device Attendance Auto-Save',
-                      record.Date,
-                      record.PersonID
-                    );
-                    resolve();
+            // Only UPDATE if there are actual changes
+            const existing = existingRecord[0];
+            const hasChanges =
+              (existing.timeIN || 'N/A') !== (newTimeIN || 'N/A') ||
+              (existing.breaktimeIN || 'N/A') !== (newBreaktimeIN || 'N/A') ||
+              (existing.breaktimeOUT || 'N/A') !== (newBreaktimeOUT || 'N/A') ||
+              (existing.timeOUT || 'N/A') !== (newTimeOUT || 'N/A') ||
+              (existing.day || '') !== newDay;
+
+            if (hasChanges) {
+              const updateSql = `
+              UPDATE attendanceRecord
+              SET timeIN = ?, breaktimeIN = ?, breaktimeOUT = ?, timeOUT = ?, day = ?
+              WHERE personID = ? AND date = ?
+            `;
+              await new Promise((resolve, reject) => {
+                db.query(
+                  updateSql,
+                  [
+                    newTimeIN,
+                    newBreaktimeIN,
+                    newBreaktimeOUT,
+                    newTimeOUT,
+                    newDay,
+                    record.PersonID,
+                    record.Date,
+                  ],
+                  (err) => {
+                    if (err) {
+                      console.error('Error updating record:', err);
+                      reject(err);
+                    } else {
+                      logAudit(
+                        req.user,
+                        'auto-update',
+                        'Device Attendance Auto-Save',
+                        record.Date,
+                        record.PersonID
+                      );
+                      resolve();
+                    }
                   }
-                }
-              );
-            });
+                );
+              });
+            }
+            // If no changes, skip update (no duplicate, no unnecessary write)
           }
         }
       } catch (saveError) {
@@ -1164,7 +1061,8 @@ router.post('/api/bulk-auto-save', authenticateToken, async (req, res) => {
         };
 
         for (const record of records) {
-          const checkSql = `SELECT id FROM attendanceRecord WHERE personID = ? AND date = ?`;
+          // Get existing record with all fields to compare
+          const checkSql = `SELECT id, timeIN, breaktimeIN, breaktimeOUT, timeOUT, day FROM attendanceRecord WHERE personID = ? AND date = ?`;
           const existingRecord = await new Promise((resolve, reject) => {
             db.query(
               checkSql,
@@ -1176,7 +1074,14 @@ router.post('/api/bulk-auto-save', authenticateToken, async (req, res) => {
             );
           });
 
+          const newTimeIN = formatTime(convertToManilaTime(record.Time1));
+          const newBreaktimeIN = formatTime(convertToManilaTime(record.Time3));
+          const newBreaktimeOUT = formatTime(convertToManilaTime(record.Time2));
+          const newTimeOUT = formatTime(convertToManilaTime(record.Time4));
+          const newDay = getDayOfWeek(record.Date);
+
           if (existingRecord.length === 0) {
+            // Insert new record if it doesn't exist
             const insertSql = `
               INSERT INTO attendanceRecord (personID, date, day, timeIN, breaktimeIN, breaktimeOUT, timeOUT)
               VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -1187,11 +1092,11 @@ router.post('/api/bulk-auto-save', authenticateToken, async (req, res) => {
                 [
                   record.PersonID,
                   record.Date,
-                  getDayOfWeek(record.Date),
-                  formatTime(convertToManilaTime(record.Time1)),
-                  formatTime(convertToManilaTime(record.Time3)),
-                  formatTime(convertToManilaTime(record.Time2)),
-                  formatTime(convertToManilaTime(record.Time4)),
+                  newDay,
+                  newTimeIN,
+                  newBreaktimeIN,
+                  newBreaktimeOUT,
+                  newTimeOUT,
                 ],
                 (err) => {
                   if (err) reject(err);
@@ -1203,32 +1108,44 @@ router.post('/api/bulk-auto-save', authenticateToken, async (req, res) => {
               );
             });
           } else {
-            const updateSql = `
-              UPDATE attendanceRecord
-              SET timeIN = ?, breaktimeIN = ?, breaktimeOUT = ?, timeOUT = ?, day = ?
-              WHERE personID = ? AND date = ?
-            `;
-            await new Promise((resolve, reject) => {
-              db.query(
-                updateSql,
-                [
-                  formatTime(convertToManilaTime(record.Time1)),
-                  formatTime(convertToManilaTime(record.Time3)),
-                  formatTime(convertToManilaTime(record.Time2)),
-                  formatTime(convertToManilaTime(record.Time4)),
-                  getDayOfWeek(record.Date),
-                  record.PersonID,
-                  record.Date,
-                ],
-                (err) => {
-                  if (err) reject(err);
-                  else {
-                    updatedCount++;
-                    resolve();
+            // Only UPDATE if there are actual changes
+            const existing = existingRecord[0];
+            const hasChanges =
+              (existing.timeIN || 'N/A') !== (newTimeIN || 'N/A') ||
+              (existing.breaktimeIN || 'N/A') !== (newBreaktimeIN || 'N/A') ||
+              (existing.breaktimeOUT || 'N/A') !== (newBreaktimeOUT || 'N/A') ||
+              (existing.timeOUT || 'N/A') !== (newTimeOUT || 'N/A') ||
+              (existing.day || '') !== newDay;
+
+            if (hasChanges) {
+              const updateSql = `
+                UPDATE attendanceRecord
+                SET timeIN = ?, breaktimeIN = ?, breaktimeOUT = ?, timeOUT = ?, day = ?
+                WHERE personID = ? AND date = ?
+              `;
+              await new Promise((resolve, reject) => {
+                db.query(
+                  updateSql,
+                  [
+                    newTimeIN,
+                    newBreaktimeIN,
+                    newBreaktimeOUT,
+                    newTimeOUT,
+                    newDay,
+                    record.PersonID,
+                    record.Date,
+                  ],
+                  (err) => {
+                    if (err) reject(err);
+                    else {
+                      updatedCount++;
+                      resolve();
+                    }
                   }
-                }
-              );
-            });
+                );
+              });
+            }
+            // If no changes, skip update (no duplicate, no unnecessary write)
           }
         }
       } catch (userError) {

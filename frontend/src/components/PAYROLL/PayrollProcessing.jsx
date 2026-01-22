@@ -484,40 +484,41 @@ const PayrollProcess = () => {
       });
 
       setDuplicateEmployeeNumbers([...duplicates]);
-      setFilteredData(normalizedData);
-      setData(normalizedData);
+      
+      // Filter out processed items by default - PayrollProcessing should only show unprocessed items
+      // Users can use the status filter if they want to see processed items
+      const unprocessedData = normalizedData.filter(
+        (item) => item.status !== 'Processed' && item.status !== 1
+      );
+      
+      setFilteredData(unprocessedData);
+      setData(normalizedData); // Keep all data for filtering purposes
 
-      // Calculate summary data using recalculated values
-      const processedCount = normalizedData.filter(
-        (item) => item.status === 'Processed' || item.status === 1
-      ).length;
-
-      const totalGross = normalizedData.reduce(
+      // Calculate summary data using only unprocessed items (what's being displayed)
+      const totalGross = unprocessedData.reduce(
         (sum, item) => sum + parseFloat(item.grossSalary || 0),
         0
       );
 
-      const totalNet = normalizedData.reduce(
+      const totalNet = unprocessedData.reduce(
         (sum, item) => sum + parseFloat(item.netSalary || 0),
         0
       );
 
       setSummaryData({
-        totalEmployees: normalizedData.length,
-        processedEmployees: processedCount,
-        unprocessedEmployees: normalizedData.length - processedCount,
+        totalEmployees: unprocessedData.length,
+        processedEmployees: normalizedData.filter(
+          (item) => item.status === 'Processed' || item.status === 1
+        ).length,
+        unprocessedEmployees: unprocessedData.length,
         totalGrossSalary: totalGross,
         totalNetSalary: totalNet,
       });
 
-      // Check if all processed/unprocessed
-      const allProcessed = normalizedData.every(
-        (item) => item.status === 'Processed' || item.status === 1
-      );
-
-      const allUnprocessed = normalizedData.every(
-        (item) => item.status === 'Unprocessed' || item.status === 0
-      );
+      // Check if all processed/unprocessed (based on displayed data)
+      // Since we only show unprocessed items, allUnprocessed should be true if unprocessedData has items
+      const allProcessed = unprocessedData.length === 0;
+      const allUnprocessed = unprocessedData.length > 0;
 
       setIsPayrollProcessed(allProcessed);
     } catch (err) {
@@ -640,14 +641,21 @@ const PayrollProcess = () => {
   const applyFilters = (department, search, status, month, year) => {
     let filtered = [...data];
 
+    // Apply status filter
+    // If no status is selected, default to showing only unprocessed items
+    // This ensures PayrollProcessing only shows unprocessed items by default
+    if (status && status !== '') {
+      filtered = filtered.filter((record) => record.status === status);
+    } else {
+      // Default: filter out processed items
+      filtered = filtered.filter(
+        (record) => record.status !== 'Processed' && record.status !== 1
+      );
+    }
+
     // Apply department filter
     if (department && department !== '') {
       filtered = filtered.filter((record) => record.department === department);
-    }
-
-    // Apply status filter
-    if (status && status !== '') {
-      filtered = filtered.filter((record) => record.status === status);
     }
 
     // Apply month filter based on startDate
@@ -811,8 +819,18 @@ const PayrollProcess = () => {
       );
       console.log('Finalized payroll response:', finalizedResponse.data);
 
-      // Update UI state with new data
-      const updatedFilteredData = filteredData.map((row) => {
+      // Update UI state with new data - remove processed items since they should move to PayrollProcessed
+      const updatedFilteredData = filteredData
+        .map((row) => {
+          const match = processedRowsToSubmit.find(
+            (item) => item.employeeNumber === row.employeeNumber
+          );
+          return match ? { ...row, status: 'Processed' } : row;
+        })
+        .filter((row) => row.status !== 'Processed' && row.status !== 1); // Remove processed items
+
+      // Update data state (keep all data for filtering, but update statuses)
+      const updatedDataState = data.map((row) => {
         const match = processedRowsToSubmit.find(
           (item) => item.employeeNumber === row.employeeNumber
         );
@@ -820,8 +838,8 @@ const PayrollProcess = () => {
       });
 
       setFilteredData(updatedFilteredData);
-      setData(updatedFilteredData);
-      setIsPayrollProcessed(true);
+      setData(updatedDataState);
+      setIsPayrollProcessed(updatedFilteredData.length === 0);
 
       // Refresh finalizedPayroll from backend
       const res = await axios.get(

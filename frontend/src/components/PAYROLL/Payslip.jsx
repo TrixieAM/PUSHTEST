@@ -31,6 +31,10 @@ import {
   LinearProgress,
   Stack,
   Badge,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import Search from '@mui/icons-material/Search';
 import LoadingOverlay from '../LoadingOverlay';
@@ -129,6 +133,7 @@ const Payslip = forwardRef(({ employee }, ref) => {
   const [search, setSearch] = useState(''); // search input
   const [hasSearched, setHasSearched] = useState(false); // flag if search was done
   const [selectedMonth, setSelectedMonth] = useState(''); // which month is selected
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear()); // which year is selected
   const [filteredPayroll, setFilteredPayroll] = useState([]); // search r
   const [personID, setPersonID] = useState('');
   const months = [
@@ -145,6 +150,10 @@ const Payslip = forwardRef(({ employee }, ref) => {
     'Nov',
     'Dec',
   ];
+  
+  // Generate years (current year and 5 years back)
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
 
   const { settings } = useSystemSettings();
 
@@ -400,6 +409,7 @@ const Payslip = forwardRef(({ employee }, ref) => {
     setSearch('');
     setHasSearched(false);
     setSelectedMonth('');
+    setSelectedYear(new Date().getFullYear());
     setFilteredPayroll([]);
 
     if (employee) {
@@ -419,16 +429,44 @@ const Payslip = forwardRef(({ employee }, ref) => {
 
     const result = allPayroll.filter((emp) => {
       if (!emp.startDate) return false;
-      const empMonth = new Date(emp.startDate).getMonth();
+      const empDate = new Date(emp.startDate);
+      const empMonth = empDate.getMonth();
+      const empYear = empDate.getFullYear();
       return (
         emp.employeeNumber?.toString() === personID.toString() &&
-        empMonth === monthIndex
+        empMonth === monthIndex &&
+        empYear === selectedYear
       );
     });
 
     setFilteredPayroll(result);
     setDisplayEmployee(result.length > 0 ? result[0] : null);
     setHasSearched(true);
+  };
+
+  // Year filter
+  const handleYearChange = (year) => {
+    setSelectedYear(year);
+    
+    // If a month is already selected, re-filter with new year
+    if (selectedMonth) {
+      const monthIndex = months.indexOf(selectedMonth);
+      
+      const result = allPayroll.filter((emp) => {
+        if (!emp.startDate) return false;
+        const empDate = new Date(emp.startDate);
+        const empMonth = empDate.getMonth();
+        const empYear = empDate.getFullYear();
+        return (
+          emp.employeeNumber?.toString() === personID.toString() &&
+          empMonth === monthIndex &&
+          empYear === year
+        );
+      });
+
+      setFilteredPayroll(result);
+      setDisplayEmployee(result.length > 0 ? result[0] : null);
+    }
   };
 
   // Helper functions for formatting
@@ -490,119 +528,120 @@ const Payslip = forwardRef(({ employee }, ref) => {
         overflow: 'hidden', // Prevent horizontal scroll
       }}
     >
-      {/* Container with fixed width */}
-      <Box sx={{ px: 6 }}>
-        {/* Header */}
-        <Fade in timeout={500}>
-          <Box sx={{ mb: 4 }}>
-            <GlassCard
+      {/* Header - Full Width */}
+      <Fade in timeout={500}>
+        <Box sx={{ mb: 4, px: 6 }}>
+          <GlassCard
+            sx={{
+              background: `rgba(${hexToRgb(primaryColor)}, 0.95)`,
+              boxShadow: `0 8px 40px ${alpha(accentColor, 0.08)}`,
+              border: `1px solid ${alpha(accentColor, 0.1)}`,
+              '&:hover': {
+                boxShadow: `0 12px 48px ${alpha(accentColor, 0.15)}`,
+              },
+            }}
+          >
+            <Box
               sx={{
-                background: `rgba(${hexToRgb(primaryColor)}, 0.95)`,
-                boxShadow: `0 8px 40px ${alpha(accentColor, 0.08)}`,
-                border: `1px solid ${alpha(accentColor, 0.1)}`,
-                '&:hover': {
-                  boxShadow: `0 12px 48px ${alpha(accentColor, 0.15)}`,
-                },
+                p: 5,
+                background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
+                color: textPrimaryColor,
+                position: 'relative',
+                overflow: 'hidden',
               }}
             >
+              {/* Decorative elements */}
               <Box
                 sx={{
-                  p: 5,
-                  background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
-                  color: textPrimaryColor,
-                  position: 'relative',
-                  overflow: 'hidden',
+                  position: 'absolute',
+                  top: -50,
+                  right: -50,
+                  width: 200,
+                  height: 200,
+                  background:
+                    'radial-gradient(circle, rgba(109,35,35,0.1) 0%, rgba(109,35,35,0) 70%)',
                 }}
-              >
-                {/* Decorative elements */}
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    top: -50,
-                    right: -50,
-                    width: 200,
-                    height: 200,
-                    background:
-                      'radial-gradient(circle, rgba(109,35,35,0.1) 0%, rgba(109,35,35,0) 70%)',
-                  }}
-                />
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    bottom: -30,
-                    left: '30%',
-                    width: 150,
-                    height: 150,
-                    background:
-                      'radial-gradient(circle, rgba(109,35,35,0.08) 0%, rgba(109,35,35,0) 70%)',
-                  }}
-                />
+              />
+              <Box
+                sx={{
+                  position: 'absolute',
+                  bottom: -30,
+                  left: '30%',
+                  width: 150,
+                  height: 150,
+                  background:
+                    'radial-gradient(circle, rgba(109,35,35,0.08) 0%, rgba(109,35,35,0) 70%)',
+                }}
+              />
 
-                <Box
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="space-between"
-                  position="relative"
-                  zIndex={1}
-                >
-                  <Box display="flex" alignItems="center">
-                    <Avatar
+              <Box
+                display="flex"
+                alignItems="center"
+                justifyContent="space-between"
+                position="relative"
+                zIndex={1}
+              >
+                <Box display="flex" alignItems="center">
+                  <Avatar
+                    sx={{
+                      bgcolor: 'rgba(109,35,35,0.15)',
+                      mr: 4,
+                      width: 64,
+                      height: 64,
+                      boxShadow: '0 8px 24px rgba(109,35,35,0.15)',
+                    }}
+                  >
+                    <WorkIcon sx={{ color: accentColor, fontSize: 32 }} />
+                  </Avatar>
+                  <Box>
+                    <Typography
+                      variant="h4"
+                      component="h1"
                       sx={{
-                        bgcolor: 'rgba(109,35,35,0.15)',
-                        mr: 4,
-                        width: 64,
-                        height: 64,
-                        boxShadow: '0 8px 24px rgba(109,35,35,0.15)',
+                        fontWeight: 700,
+                        mb: 1,
+                        lineHeight: 1.2,
+                        color: accentColor,
                       }}
                     >
-                      <WorkIcon sx={{ color: accentColor, fontSize: 32 }} />
-                    </Avatar>
-                    <Box>
-                      <Typography
-                        variant="h4"
-                        component="h1"
-                        sx={{
-                          fontWeight: 700,
-                          mb: 1,
-                          lineHeight: 1.2,
-                          color: accentColor,
-                        }}
-                      >
-                        Employee Payslip Record
-                      </Typography>
-                      <Typography
-                        variant="body1"
-                        sx={{
-                          opacity: 0.8,
-                          fontWeight: 400,
-                          color: accentDark,
-                        }}
-                      >
-                        View and download employee payslip
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Box display="flex" alignItems="center" gap={2}>
-                    <Tooltip title="Refresh Data">
-                      <IconButton
-                        onClick={() => window.location.reload()}
-                        sx={{
-                          bgcolor: 'rgba(109,35,35,0.1)',
-                          '&:hover': { bgcolor: 'rgba(109,35,35,0.2)' },
-                          color: accentColor,
-                          width: 48,
-                          height: 48,
-                        }}
-                      >
-                        <Refresh sx={{ fontSize: 24 }} />
-                      </IconButton>
-                    </Tooltip>
+                      Employee Payslip Record
+                    </Typography>
+                    <Typography
+                      variant="body1"
+                      sx={{
+                        opacity: 0.8,
+                        fontWeight: 400,
+                        color: accentDark,
+                      }}
+                    >
+                      View and download employee payslip
+                    </Typography>
                   </Box>
                 </Box>
+                <Box display="flex" alignItems="center" gap={2}>
+                  <Tooltip title="Refresh Data">
+                    <IconButton
+                      onClick={() => window.location.reload()}
+                      sx={{
+                        bgcolor: 'rgba(109,35,35,0.1)',
+                        '&:hover': { bgcolor: 'rgba(109,35,35,0.2)' },
+                        color: accentColor,
+                        width: 48,
+                        height: 48,
+                      }}
+                    >
+                      <Refresh sx={{ fontSize: 24 }} />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
               </Box>
-            </GlassCard>
-          </Box>
-        </Fade>
+            </Box>
+          </GlassCard>
+        </Box>
+      </Fade>
+
+      {/* Container with fixed width */}
+      <Box sx={{ px: 6 }}>
 
         {/* Loading Backdrop */}
         <Backdrop
@@ -645,22 +684,18 @@ const Payslip = forwardRef(({ employee }, ref) => {
           </Fade>
         )}
 
-        {/* Two Column Layout */}
-        <Grid container spacing={4} alignItems="stretch">
-          {/* Left Column - Controls and Download */}
-          <Grid item xs={12} md={4} sx={{ display: 'flex' }}>
-            <Fade in timeout={700}>
-              <Box sx={{ position: 'sticky', top: 20 }}>
-                <GlassCard
-                  sx={{
-                    mb: 3,
-                    border: `1px solid ${alpha(accentColor, 0.1)}`,
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                  }}
-                >
-                  <CardContent sx={{ p: 5 }}>
+        {/* Controls Section at Top */}
+        <Fade in timeout={700}>
+          <Box sx={{ mb: 4 }}>
+            <GlassCard
+              sx={{
+                border: `1px solid ${alpha(accentColor, 0.1)}`,
+              }}
+            >
+              <CardContent sx={{ p: 5 }}>
+                <Grid container spacing={4} alignItems="center">
+                  {/* Employee Number */}
+                  <Grid item xs={12} md={6}>
                     <Typography
                       variant="h6"
                       sx={{ fontWeight: 600, mb: 2, color: accentColor }}
@@ -682,7 +717,6 @@ const Payslip = forwardRef(({ employee }, ref) => {
                         ),
                       }}
                       sx={{
-                        mb: 4,
                         '& .MuiInputBase-input': {
                           fontSize: '1.2rem',
                           py: 2.5,
@@ -693,82 +727,18 @@ const Payslip = forwardRef(({ employee }, ref) => {
                         },
                       }}
                     />
+                  </Grid>
 
-                    <Divider
-                      sx={{ my: 3, borderColor: 'rgba(109,35,35,0.1)' }}
-                    />
-
-                    {/* Month Selection */}
-                    <Box sx={{ mb: 2 }}>
-                      <Typography
-                        variant="h6"
-                        gutterBottom
-                        sx={{
-                          color: accentColor,
-                          display: 'flex',
-                          alignItems: 'center',
-                          mb: 2,
-                        }}
-                      >
-                        <Search sx={{ mr: 2, fontSize: 24 }} />
-                        <b>Filter By Month:</b>
-                      </Typography>
-                      <Box
-                        sx={{
-                          display: 'grid',
-                          gridTemplateColumns: 'repeat(3, 1fr)',
-                          gap: 3,
-                        }}
-                      >
-                        {months.map((month) => (
-                          <ProfessionalButton
-                            key={month}
-                            variant={
-                              month === selectedMonth ? 'contained' : 'outlined'
-                            }
-                            size="small"
-                            fullWidth
-                            onClick={() => handleMonthSelect(month)}
-                            sx={{
-                              borderColor: accentColor,
-                              borderWidth: 2,
-                              color:
-                                month === selectedMonth
-                                  ? primaryColor
-                                  : accentColor,
-                              minWidth: 'auto',
-                              fontSize: '0.95rem',
-                              fontWeight: 600,
-                              py: 2.5,
-                              px: 3,
-                              backgroundColor:
-                                month === selectedMonth
-                                  ? accentColor
-                                  : 'transparent',
-                              '&:hover': {
-                                backgroundColor:
-                                  month === selectedMonth
-                                    ? accentDark
-                                    : alpha(accentColor, 0.1),
-                                borderWidth: 2,
-                              },
-                            }}
-                          >
-                            {month}
-                          </ProfessionalButton>
-                        ))}
-                      </Box>
-                    </Box>
-                  </CardContent>
-                </GlassCard>
-
-                {/* Download Button */}
-                {displayEmployee && (
-                  <Fade in timeout={1100}>
-                    <GlassCard
-                      sx={{ border: `1px solid ${alpha(accentColor, 0.1)}` }}
-                    >
-                      <CardContent sx={{ p: 5 }}>
+                  {/* Download Button */}
+                  <Grid item xs={12} md={6}>
+                    {displayEmployee && (
+                      <Box>
+                        <Typography
+                          variant="h6"
+                          sx={{ fontWeight: 600, mb: 2, color: accentColor }}
+                        >
+                          Actions
+                        </Typography>
                         <ProfessionalButton
                           variant="contained"
                           fullWidth
@@ -796,16 +766,119 @@ const Payslip = forwardRef(({ employee }, ref) => {
                         >
                           {sending ? 'Processing...' : 'Download PDF Document'}
                         </ProfessionalButton>
-                      </CardContent>
-                    </GlassCard>
-                  </Fade>
-                )}
-              </Box>
-            </Fade>
-          </Grid>
+                      </Box>
+                    )}
+                  </Grid>
+                </Grid>
 
-          {/* Right Column - Payslip Display */}
-          <Grid item xs={12} md={8} sx={{ display: 'flex' }}>
+                <Divider sx={{ my: 4, borderColor: 'rgba(109,35,35,0.1)' }} />
+
+                {/* Month and Year Selection */}
+                <Box>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      color: accentColor,
+                      display: 'flex',
+                      alignItems: 'center',
+                      mb: 2,
+                    }}
+                  >
+                    <Search sx={{ mr: 2, fontSize: 24 }} />
+                    <b>Filter By Month:</b>
+                  </Typography>
+                  
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      flexWrap: 'nowrap',
+                      gap: 1,
+                      overflowX: 'auto',
+                      alignItems: 'center',
+                    }}
+                  >
+                    {months.map((month) => (
+                      <ProfessionalButton
+                        key={month}
+                        variant={
+                          month === selectedMonth ? 'contained' : 'outlined'
+                        }
+                        size="small"
+                        onClick={() => handleMonthSelect(month)}
+                        sx={{
+                          borderColor: accentColor,
+                          borderWidth: 2,
+                          color:
+                            month === selectedMonth
+                              ? primaryColor
+                              : accentColor,
+                          minWidth: '70px',
+                          flexShrink: 0,
+                          fontSize: '0.85rem',
+                          fontWeight: 600,
+                          py: 1.5,
+                          px: 2,
+                          backgroundColor:
+                            month === selectedMonth
+                              ? accentColor
+                              : 'transparent',
+                          '&:hover': {
+                            backgroundColor:
+                              month === selectedMonth
+                                ? accentDark
+                                : alpha(accentColor, 0.1),
+                            borderWidth: 2,
+                          },
+                        }}
+                      >
+                        {month}
+                      </ProfessionalButton>
+                    ))}
+                    
+                    {/* Year Dropdown - on same row as month buttons */}
+                    <FormControl size="small" sx={{ width: 85, flexShrink: 0 }}>
+                      <Select
+                        value={selectedYear}
+                        onChange={(e) => handleYearChange(e.target.value)}
+                        sx={{
+                          borderRadius: 3,
+                          backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                          height: '42px',
+                          '& .MuiOutlinedInput-notchedOutline': {
+                            borderColor: accentColor,
+                            borderWidth: 2,
+                          },
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: accentDark,
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: accentColor,
+                          },
+                          fontWeight: 600,
+                          color: accentColor,
+                          '& .MuiSelect-select': {
+                            paddingLeft: '10px',
+                            paddingRight: '32px',
+                          },
+                        }}
+                      >
+                        {years.map((year) => (
+                          <MenuItem key={year} value={year}>
+                            {year}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Box>
+                </Box>
+              </CardContent>
+            </GlassCard>
+          </Box>
+        </Fade>
+
+        {/* Payslip Display at Bottom */}
+        <Grid container spacing={4}>
+          <Grid item xs={12}>
             {/* Payslip Display - EXACT COPY from PayslipOverall */}
             {displayEmployee ? (
               <Fade in timeout={900}>

@@ -1,9 +1,11 @@
 const express = require('express');
+const http = require('http');
 const cors = require('cors');
 const bodyparser = require('body-parser');
 require('dotenv').config();
 
 const db = require('./db');
+const { initializeSocket } = require('./socket/socketServer');
 
 // Import existing route modules
 const childrenRouter = require('./dashboardRoutes/Children');
@@ -59,7 +61,7 @@ const app = express();
 // CORS configuration - MUST be before body parsing middleware
 const allowedOrigins = [
   'http://localhost:5137',
-  'http://192.168.50.42:5137',
+  'http://192.168.50.54:5137',
   'http://192.168.50.45:5137',
   'http://136.239.248.42:5137',
   'http://192.168.50.97:5137',
@@ -192,10 +194,24 @@ app.use('/', settingsExtendedRoutes);
 app.use('/', confidentialPasswordRoutes);
 app.use('/', PayrollFormulas);
 
-// Server startup
+// Server startup with Socket.IO
 const PORT = process.env.WEB_PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}...`);
+
+// Create HTTP server
+const server = http.createServer(app);
+
+// Initialize Socket.IO
+const io = initializeSocket(server);
+
+// Make io accessible to routes via app.locals
+app.locals.io = io;
+
+// Start server
+server.listen(PORT, () => {
+  console.log(`========================================`);
+  console.log(`✓ HTTP Server running on port ${PORT}`);
+  console.log(`✓ Socket.IO server ready`);
+  console.log(`========================================`);
 });
 
-module.exports = app;
+module.exports = { app, server, io };

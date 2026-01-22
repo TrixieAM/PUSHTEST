@@ -306,11 +306,12 @@ const PagesList = () => {
   const accessGroupOptions = [
     'superadmin',
     'administrator',
+    'technical',
     'staff'
   ];
 
-  // Check if user is superadmin
-  const isSuperAdmin = userRole === 'superadmin';
+  // Check if user is superadmin or technical
+  const isSuperAdmin = userRole === 'superadmin' || userRole === 'technical';
 
   useEffect(() => {
     if (isSuperAdmin && roleChecked) {
@@ -564,6 +565,11 @@ const PagesList = () => {
       case 'administrator':
         return {
           sx: { bgcolor: alpha(settings?.secondaryColor || '#6d2323', 0.15), color: settings?.secondaryColor || '#6d2323' },
+          icon: <AdminPanelSettings />,
+        };
+      case 'technical':
+        return {
+          sx: { bgcolor: alpha('#2196f3', 0.15), color: '#2196f3' },
           icon: <AdminPanelSettings />,
         };
       case 'staff':
@@ -937,7 +943,7 @@ const PagesList = () => {
                   </Typography>
                   <Typography
                     variant="body2"
-                    sx={{ opacity: 0.8, color: settings?.accentColor || '#FEF9E1' }}
+                    sx={{ opacity: 0.8, color: settings?.textPrimaryColor || '#6D2323' }}
                   >
                     {searchTerm
                       ? `Showing ${filteredPages.length} of ${pages.length} pages matching "${searchTerm}"`
@@ -961,33 +967,33 @@ const PagesList = () => {
               </Box>
 
               <PremiumTableContainer component={Paper} elevation={0}>
-                <Table sx={{ minWidth: 800 }}>
+                <Table sx={{ minWidth: 1200 }}>
                   <TableHead sx={{ bgcolor: alpha(settings?.accentColor || '#FEF9E1', 0.7) }}>
                     <TableRow>
-                      <PremiumTableCell isHeader sx={{ color: settings?.textPrimaryColor || '#6D2323' }}>
+                      <PremiumTableCell isHeader sx={{ color: settings?.textPrimaryColor || '#6D2323', width: '50px' }}>
                         ID
                       </PremiumTableCell>
-                      <PremiumTableCell isHeader sx={{ color: settings?.textPrimaryColor || '#6D2323' }}>
+                      <PremiumTableCell isHeader sx={{ color: settings?.textPrimaryColor || '#6D2323', width: '150px' }}>
                         <Description sx={{ mr: 1, verticalAlign: "middle" }} />
                         Page Name
                       </PremiumTableCell>
-                      <PremiumTableCell isHeader sx={{ color: settings?.textPrimaryColor || '#6D2323' }}>
+                      <PremiumTableCell isHeader sx={{ color: settings?.textPrimaryColor || '#6D2323', width: '180px' }}>
                         Page Description
                       </PremiumTableCell>
-                      <PremiumTableCell isHeader sx={{ color: settings?.textPrimaryColor || '#6D2323' }}>
+                      <PremiumTableCell isHeader sx={{ color: settings?.textPrimaryColor || '#6D2323', width: '150px' }}>
                         URL
                       </PremiumTableCell>
-                      <PremiumTableCell isHeader sx={{ color: settings?.textPrimaryColor || '#6D2323' }}>
+                      <PremiumTableCell isHeader sx={{ color: settings?.textPrimaryColor || '#6D2323', width: '180px' }}>
                         <Assignment sx={{ mr: 1, verticalAlign: "middle" }} />
                         Component Identifier
                       </PremiumTableCell>
-                      <PremiumTableCell isHeader sx={{ color: settings?.textPrimaryColor || '#6D2323' }}>
+                      <PremiumTableCell isHeader sx={{ color: settings?.textPrimaryColor || '#6D2323', width: '250px' }}>
                         <Group sx={{ mr: 1, verticalAlign: "middle" }} />
                         Access Groups
                       </PremiumTableCell>
                       <PremiumTableCell
                         isHeader
-                        sx={{ color: settings?.textPrimaryColor || '#6D2323', textAlign: "center" }}
+                        sx={{ color: settings?.textPrimaryColor || '#6D2323', textAlign: "center", width: '120px' }}
                       >
                         Actions
                       </PremiumTableCell>
@@ -1114,18 +1120,21 @@ const PagesList = () => {
                           </PremiumTableCell>
 
                           <PremiumTableCell>
-                            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, maxWidth: '250px' }}>
                               {pg.page_group && pg.page_group.split(",").map((group, index) => (
                                 <Chip
                                   key={index}
                                   label={group.trim().toUpperCase()}
                                   size="small"
+                                  variant="outlined"
                                   icon={getGroupColor(group.trim()).icon}
                                   sx={{
-                                    ...getGroupColor(group.trim()).sx,
+                                    borderColor: getGroupColor(group.trim()).sx.color,
+                                    color: getGroupColor(group.trim()).sx.color,
                                     fontWeight: 600,
                                     padding: "2px 6px",
                                     fontSize: "0.75rem",
+                                    bgcolor: 'transparent',
                                   }}
                                 />
                               ))}

@@ -2693,7 +2693,7 @@ const EventsList = ({ settings, employeeNumber }) => {
 
 // Modified QuickActions component to filter out Audit Logs for non-superadmins
 const QuickActions = ({ settings, userRole }) => {
-  const isSuperAdmin = userRole === "superadmin";
+  const isSuperAdmin = userRole === "superadmin" || userRole === "technical";
 
   // Filter out Audit Logs if user is not a superadmin
   const filteredActions = QUICK_ACTIONS(settings).filter(
@@ -2977,7 +2977,7 @@ const AdminHome = () => {
   const [userRole, setUserRole] = useState(null);
 
   // Check if user is superadmin
-  const isSuperAdmin = userRole === "superadmin";
+  const isSuperAdmin = userRole === "superadmin" || userRole === "technical";
 
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [openModal, setOpenModal] = useState(false);

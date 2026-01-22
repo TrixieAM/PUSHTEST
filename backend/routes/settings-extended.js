@@ -47,7 +47,7 @@ router.get('/api/faqs/:id', (req, res) => {
 // POST create FAQ (admin only)
 router.post('/api/faqs', authenticateToken, (req, res) => {
   const userRole = req.user?.role;
-  if (userRole !== 'superadmin' && userRole !== 'administrator') {
+  if (userRole !== 'superadmin' && userRole !== 'administrator' && userRole !== 'technical' && userRole !== 'technical') {
     return res.status(403).json({ error: 'Access denied. Admin only.' });
   }
 
@@ -78,7 +78,7 @@ router.post('/api/faqs', authenticateToken, (req, res) => {
 // PUT update FAQ (admin only)
 router.put('/api/faqs/:id', authenticateToken, (req, res) => {
   const userRole = req.user?.role;
-  if (userRole !== 'superadmin' && userRole !== 'administrator') {
+  if (userRole !== 'superadmin' && userRole !== 'administrator' && userRole !== 'technical') {
     return res.status(403).json({ error: 'Access denied. Admin only.' });
   }
 
@@ -129,7 +129,7 @@ router.put('/api/faqs/:id', authenticateToken, (req, res) => {
 // DELETE FAQ (admin only)
 router.delete('/api/faqs/:id', authenticateToken, (req, res) => {
   const userRole = req.user?.role;
-  if (userRole !== 'superadmin' && userRole !== 'administrator') {
+  if (userRole !== 'superadmin' && userRole !== 'administrator' && userRole !== 'technical') {
     return res.status(403).json({ error: 'Access denied. Admin only.' });
   }
 
@@ -260,7 +260,7 @@ router.get('/api/about-us', (req, res) => {
 // PUT update About Us (admin only)
 router.put('/api/about-us', authenticateToken, (req, res) => {
   const userRole = req.user?.role;
-  if (userRole !== 'superadmin' && userRole !== 'administrator') {
+  if (userRole !== 'superadmin' && userRole !== 'administrator' && userRole !== 'technical') {
     return res.status(403).json({ error: 'Access denied. Admin only.' });
   }
 
@@ -408,7 +408,7 @@ router.post('/api/contact-us', authenticateToken, (req, res) => {
 router.get('/api/contact-us', authenticateToken, (req, res) => {
   // Check if user is admin
   const userRole = req.user?.role;
-  if (userRole !== 'superadmin' && userRole !== 'administrator') {
+  if (userRole !== 'superadmin' && userRole !== 'administrator' && userRole !== 'technical') {
     return res.status(403).json({ error: 'Access denied. Admin only.' });
   }
 
@@ -459,7 +459,7 @@ router.get('/api/contact-us', authenticateToken, (req, res) => {
 // GET single contact message (admin only)
 router.get('/api/contact-us/:id', authenticateToken, (req, res) => {
   const userRole = req.user?.role;
-  if (userRole !== 'superadmin' && userRole !== 'administrator') {
+  if (userRole !== 'superadmin' && userRole !== 'administrator' && userRole !== 'technical') {
     return res.status(403).json({ error: 'Access denied. Admin only.' });
   }
 
@@ -479,7 +479,7 @@ router.get('/api/contact-us/:id', authenticateToken, (req, res) => {
 // PUT update contact message (admin only - for status and notes)
 router.put('/api/contact-us/:id', authenticateToken, (req, res) => {
   const userRole = req.user?.role;
-  if (userRole !== 'superadmin' && userRole !== 'administrator') {
+  if (userRole !== 'superadmin' && userRole !== 'administrator' && userRole !== 'technical') {
     return res.status(403).json({ error: 'Access denied. Admin only.' });
   }
 
@@ -580,7 +580,7 @@ router.put('/api/contact-us/:id', authenticateToken, (req, res) => {
 // DELETE contact message (admin only)
 router.delete('/api/contact-us/:id', authenticateToken, (req, res) => {
   const userRole = req.user?.role;
-  if (userRole !== 'superadmin' && userRole !== 'administrator') {
+  if (userRole !== 'superadmin' && userRole !== 'administrator' && userRole !== 'technical') {
     return res.status(403).json({ error: 'Access denied. Admin only.' });
   }
 
@@ -686,7 +686,7 @@ router.get('/api/policies/:id', (req, res) => {
 // POST create policy (admin only)
 router.post('/api/policies', authenticateToken, (req, res) => {
   const userRole = req.user?.role;
-  if (userRole !== 'superadmin' && userRole !== 'administrator') {
+  if (userRole !== 'superadmin' && userRole !== 'administrator' && userRole !== 'technical') {
     return res.status(403).json({ error: 'Access denied. Admin only.' });
   }
 
@@ -732,7 +732,7 @@ router.post('/api/policies', authenticateToken, (req, res) => {
 // PUT update policy (admin only)
 router.put('/api/policies/:id', authenticateToken, (req, res) => {
   const userRole = req.user?.role;
-  if (userRole !== 'superadmin' && userRole !== 'administrator') {
+  if (userRole !== 'superadmin' && userRole !== 'administrator' && userRole !== 'technical') {
     return res.status(403).json({ error: 'Access denied. Admin only.' });
   }
 
@@ -796,7 +796,7 @@ router.put('/api/policies/:id', authenticateToken, (req, res) => {
 // DELETE policy (admin only)
 router.delete('/api/policies/:id', authenticateToken, (req, res) => {
   const userRole = req.user?.role;
-  if (userRole !== 'superadmin' && userRole !== 'administrator') {
+  if (userRole !== 'superadmin' && userRole !== 'administrator' && userRole !== 'technical') {
     return res.status(403).json({ error: 'Access denied. Admin only.' });
   }
 

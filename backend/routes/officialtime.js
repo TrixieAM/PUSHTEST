@@ -336,6 +336,223 @@ router.post(
   }
 );
 
+// GET all users with their official time status
+router.get('/officialtime/users-status', authenticateToken, (req, res) => {
+  const sql = `
+    SELECT 
+      u.employeeNumber,
+      u.email,
+      u.role,
+      p.firstName,
+      p.middleName,
+      p.lastName,
+      p.nameExtension,
+      CASE 
+        WHEN COUNT(ot.id) >= 7 THEN 1 
+        ELSE 0 
+      END as hasDefaultOfficialTime,
+      COUNT(ot.id) as officialTimeDaysCount
+    FROM users u
+    LEFT JOIN person_table p ON u.employeeNumber = p.agencyEmployeeNum
+    LEFT JOIN officialtime ot ON u.employeeNumber = ot.employeeID
+    GROUP BY u.employeeNumber, u.email, u.role, p.firstName, p.middleName, p.lastName, p.nameExtension
+    ORDER BY p.lastName, p.firstName
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error('Error fetching users with official time status:', err);
+      return res.status(500).json({ error: err.message });
+    }
+
+    try {
+      logAudit(req.user, 'View', 'Official Time Users Status', null, null);
+    } catch (e) {
+      console.error('Audit log error:', e);
+    }
+
+    // Format the results
+    const formattedResults = results.map((row) => ({
+      employeeNumber: row.employeeNumber,
+      email: row.email,
+      role: row.role,
+      firstName: row.firstName || '',
+      middleName: row.middleName || '',
+      lastName: row.lastName || '',
+      nameExtension: row.nameExtension || '',
+      fullName: `${row.firstName || ''} ${row.middleName ? row.middleName + ' ' : ''}${row.lastName || ''}${row.nameExtension ? ' ' + row.nameExtension : ''}`.trim(),
+      hasDefaultOfficialTime: row.hasDefaultOfficialTime === 1,
+      officialTimeDaysCount: row.officialTimeDaysCount || 0,
+    }));
+
+    res.json(formattedResults);
+  });
+});
+
+// POST set default official time for users who don't have it
+router.post('/officialtime/set-default-for-users', authenticateToken, (req, res) => {
+  const { employeeNumbers } = req.body; // Optional: if provided, only set for these users
+
+  // Default official time values
+  const defaultTimes = {
+    officialTimeIN: '08:00:00 AM',
+    officialBreaktimeIN: '00:00:00 AM',
+    officialBreaktimeOUT: '00:00:00 PM',
+    officialTimeOUT: '05:00:00 PM',
+    officialHonorariumTimeIN: '00:00:00 AM',
+    officialHonorariumTimeOUT: '00:00:00 PM',
+    officialServiceCreditTimeIN: '00:00:00 AM',
+    officialServiceCreditTimeOUT: '00:00:00 AM',
+    officialOverTimeIN: '00:00:00 AM',
+    officialOverTimeOUT: '00:00:00 PM',
+    breaktime: '',
+  };
+
+  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+  // First, get all users or specific users
+  let userQuery = 'SELECT employeeNumber FROM users';
+  let queryParams = [];
+
+  if (employeeNumbers && Array.isArray(employeeNumbers) && employeeNumbers.length > 0) {
+    const placeholders = employeeNumbers.map(() => '?').join(',');
+    userQuery += ` WHERE employeeNumber IN (${placeholders})`;
+    queryParams = employeeNumbers;
+  }
+
+  db.query(userQuery, queryParams, (err, users) => {
+    if (err) {
+      console.error('Error fetching users:', err);
+      return res.status(500).json({ error: err.message });
+    }
+
+    let processedCount = 0;
+    let insertedCount = 0;
+    let errors = [];
+
+    // Process each user
+    const processUser = (user, callback) => {
+      const employeeID = user.employeeNumber;
+
+      // Check if user already has official time for all days
+      const checkQuery = 'SELECT COUNT(*) as count FROM officialtime WHERE employeeID = ?';
+      db.query(checkQuery, [employeeID], (checkErr, checkResult) => {
+        if (checkErr) {
+          errors.push(`Error checking official time for ${employeeID}: ${checkErr.message}`);
+          return callback();
+        }
+
+        const existingCount = checkResult[0]?.count || 0;
+
+        // If user already has all 7 days, skip
+        if (existingCount >= 7) {
+          processedCount++;
+          return callback();
+        }
+
+        // Prepare values for all days
+        const values = days.map((day) => [
+          employeeID,
+          day,
+          defaultTimes.officialTimeIN,
+          defaultTimes.officialBreaktimeIN,
+          defaultTimes.officialBreaktimeOUT,
+          defaultTimes.officialTimeOUT,
+          defaultTimes.officialHonorariumTimeIN,
+          defaultTimes.officialHonorariumTimeOUT,
+          defaultTimes.officialServiceCreditTimeIN,
+          defaultTimes.officialServiceCreditTimeOUT,
+          defaultTimes.officialOverTimeIN,
+          defaultTimes.officialOverTimeOUT,
+          defaultTimes.breaktime,
+        ]);
+
+        const insertQuery = `
+          INSERT INTO officialtime (
+            employeeID,
+            day,
+            officialTimeIN,
+            officialBreaktimeIN,
+            officialBreaktimeOUT,
+            officialTimeOUT,
+            officialHonorariumTimeIN,
+            officialHonorariumTimeOUT,
+            officialServiceCreditTimeIN,
+            officialServiceCreditTimeOUT,
+            officialOverTimeIN,
+            officialOverTimeOUT,
+            breaktime
+          )
+          VALUES ?
+          ON DUPLICATE KEY UPDATE
+            officialTimeIN = VALUES(officialTimeIN),
+            officialBreaktimeIN = VALUES(officialBreaktimeIN),
+            officialBreaktimeOUT = VALUES(officialBreaktimeOUT),
+            officialTimeOUT = VALUES(officialTimeOUT),
+            officialHonorariumTimeIN = VALUES(officialHonorariumTimeIN),
+            officialHonorariumTimeOUT = VALUES(officialHonorariumTimeOUT),
+            officialServiceCreditTimeIN = VALUES(officialServiceCreditTimeIN),
+            officialServiceCreditTimeOUT = VALUES(officialServiceCreditTimeOUT),
+            officialOverTimeIN = VALUES(officialOverTimeIN),
+            officialOverTimeOUT = VALUES(officialOverTimeOUT),
+            breaktime = VALUES(breaktime)
+        `;
+
+        db.query(insertQuery, [values], (insertErr, insertResult) => {
+          if (insertErr) {
+            errors.push(`Error setting default official time for ${employeeID}: ${insertErr.message}`);
+          } else {
+            insertedCount += insertResult.affectedRows || 0;
+          }
+          processedCount++;
+          callback();
+        });
+      });
+    };
+
+    // Process all users sequentially to avoid overwhelming the database
+    let currentIndex = 0;
+    const processNext = () => {
+      if (currentIndex >= users.length) {
+        try {
+          logAudit(
+            req.user,
+            `Set default official time for ${processedCount} users (${insertedCount} records inserted)`,
+            'Official Time',
+            null,
+            null
+          );
+        } catch (e) {
+          console.error('Audit log error:', e);
+        }
+
+        res.json({
+          message: 'Default official time set successfully',
+          processed: processedCount,
+          inserted: insertedCount,
+          errors: errors.length > 0 ? errors : undefined,
+        });
+        return;
+      }
+
+      processUser(users[currentIndex], () => {
+        currentIndex++;
+        processNext();
+      });
+    };
+
+    if (users.length === 0) {
+      return res.json({
+        message: 'No users found',
+        processed: 0,
+        inserted: 0,
+      });
+    }
+
+    processNext();
+  });
+});
+
 module.exports = router;
 
 

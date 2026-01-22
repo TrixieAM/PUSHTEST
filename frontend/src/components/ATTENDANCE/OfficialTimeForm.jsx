@@ -1,9 +1,12 @@
 import API_BASE_URL from '../../apiConfig';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import SaveIcon from '@mui/icons-material/Save';
 import SearchIcon from '@mui/icons-material/Search';
+import PeopleIcon from '@mui/icons-material/People';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
 import { useCRUDButtonStyles } from '../../hooks/useCRUDButtonStyles';
 
 import {
@@ -37,6 +40,7 @@ import {
   styled,
   Divider,
   CardHeader,
+  Checkbox,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import {
@@ -193,6 +197,19 @@ const OfficialTimeForm = () => {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [previewRecords, setPreviewRecords] = useState([]);
 
+  // Auto-save states
+  const [autoSaving, setAutoSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState(null);
+  const autoSaveTimeoutRef = useRef(null);
+
+  // All users view states
+  const [showAllUsers, setShowAllUsers] = useState(false);
+  const [allUsers, setAllUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedUsers, setSelectedUsers] = useState(new Set());
+  const [settingDefault, setSettingDefault] = useState(false);
+
   const getAuthHeaders = () => {
     const token = localStorage.getItem('token');
     return {
@@ -261,6 +278,40 @@ const OfficialTimeForm = () => {
     const updatedRecords = [...records];
     updatedRecords[index][field] = value;
     setRecords(updatedRecords);
+
+    // Auto-save with debouncing (1.5 seconds delay)
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      autoSaveRecords(updatedRecords);
+    }, 1500);
+  };
+
+  const autoSaveRecords = async (recordsToSave) => {
+    if (!employeeID || !recordsToSave || recordsToSave.length === 0) {
+      return;
+    }
+
+    setAutoSaving(true);
+    try {
+      await axios.post(
+        `${API_BASE_URL}/officialtimetable`,
+        {
+          employeeID,
+          records: recordsToSave,
+        },
+        getAuthHeaders()
+      );
+      setLastSaved(new Date());
+      setFound(true); // Mark as found since we've saved
+    } catch (err) {
+      console.error('Error auto-saving records:', err);
+      // Don't show error to user for auto-save failures
+    } finally {
+      setAutoSaving(false);
+    }
   };
 
   const handleSubmit = (e) => {
@@ -270,6 +321,11 @@ const OfficialTimeForm = () => {
       setSuccessOpen(true);
       setTimeout(() => setSuccessOpen(false), 2000);
       return;
+    }
+
+    // Clear any pending auto-save
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
     }
 
     setLoading(true);
@@ -284,6 +340,7 @@ const OfficialTimeForm = () => {
       )
       .then((res) => {
         setLoading(false);
+        setLastSaved(new Date());
         setSuccessAction(found ? 'Updated Successfully' : 'Saved Successfully');
         setSuccessOpen(true);
         setTimeout(() => setSuccessOpen(false), 2000);
@@ -296,6 +353,151 @@ const OfficialTimeForm = () => {
         setTimeout(() => setSuccessOpen(false), 2000);
       });
   };
+
+  // Fetch all users with official time status
+  const fetchAllUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/officialtime/users-status`,
+        getAuthHeaders()
+      );
+      setAllUsers(response.data || []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      setSuccessAction('Error fetching users.');
+      setSuccessOpen(true);
+      setTimeout(() => setSuccessOpen(false), 2000);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  // Set default official time for selected users
+  const handleSetDefaultForSelected = async () => {
+    if (selectedUsers.size === 0) {
+      setSuccessAction('Please select at least one user.');
+      setSuccessOpen(true);
+      setTimeout(() => setSuccessOpen(false), 2000);
+      return;
+    }
+
+    setSettingDefault(true);
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/officialtime/set-default-for-users`,
+        { employeeNumbers: Array.from(selectedUsers) },
+        getAuthHeaders()
+      );
+
+      setSuccessAction(
+        `Default official time set for ${response.data.inserted || 0} users successfully.`
+      );
+      setSuccessOpen(true);
+      setTimeout(() => setSuccessOpen(false), 3000);
+
+      // Refresh users list
+      await fetchAllUsers();
+      setSelectedUsers(new Set());
+    } catch (error) {
+      console.error('Error setting default official time:', error);
+      setSuccessAction('Error setting default official time.');
+      setSuccessOpen(true);
+      setTimeout(() => setSuccessOpen(false), 2000);
+    } finally {
+      setSettingDefault(false);
+    }
+  };
+
+  // Set default for all users without official time
+  const handleSetDefaultForAll = async () => {
+    const usersWithoutDefault = allUsers
+      .filter((u) => !u.hasDefaultOfficialTime)
+      .map((u) => u.employeeNumber);
+
+    if (usersWithoutDefault.length === 0) {
+      setSuccessAction('All users already have default official time.');
+      setSuccessOpen(true);
+      setTimeout(() => setSuccessOpen(false), 2000);
+      return;
+    }
+
+    setSettingDefault(true);
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/officialtime/set-default-for-users`,
+        { employeeNumbers: usersWithoutDefault },
+        getAuthHeaders()
+      );
+
+      setSuccessAction(
+        `Default official time set for ${response.data.inserted || 0} users successfully.`
+      );
+      setSuccessOpen(true);
+      setTimeout(() => setSuccessOpen(false), 3000);
+
+      // Refresh users list
+      await fetchAllUsers();
+    } catch (error) {
+      console.error('Error setting default official time:', error);
+      setSuccessAction('Error setting default official time.');
+      setSuccessOpen(true);
+      setTimeout(() => setSuccessOpen(false), 2000);
+    } finally {
+      setSettingDefault(false);
+    }
+  };
+
+  const handleUserSelect = (employeeNumber) => {
+    setSelectedUsers((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(employeeNumber)) {
+        newSet.delete(employeeNumber);
+      } else {
+        newSet.add(employeeNumber);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = (checked) => {
+    const filtered = getFilteredUsers();
+    if (checked) {
+      setSelectedUsers(new Set(filtered.map((u) => u.employeeNumber)));
+    } else {
+      setSelectedUsers(new Set());
+    }
+  };
+
+  const getFilteredUsers = () => {
+    let filtered = allUsers.slice();
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter((user) => {
+        const full = (user.fullName || '').toLowerCase();
+        const emp = (user.employeeNumber || '').toLowerCase();
+        return full.includes(q) || emp.includes(q);
+      });
+    }
+
+    return filtered;
+  };
+
+  useEffect(() => {
+    if (showAllUsers) {
+      fetchAllUsers();
+    }
+  }, [showAllUsers]);
+
+  // Cleanup auto-save timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const PreviewModal = () => (
     <Dialog
@@ -621,6 +823,26 @@ const OfficialTimeForm = () => {
                           '& .MuiChip-label': { px: 1 },
                         }}
                       />
+                      <ProfessionalButton
+                        variant={showAllUsers ? 'contained' : 'outlined'}
+                        onClick={() => {
+                          setShowAllUsers(!showAllUsers);
+                          if (!showAllUsers) {
+                            fetchAllUsers();
+                          }
+                        }}
+                        startIcon={<PeopleIcon />}
+                        sx={{
+                          bgcolor: showAllUsers ? accentColor : 'transparent',
+                          color: showAllUsers ? primaryColor : accentColor,
+                          borderColor: accentColor,
+                          '&:hover': {
+                            bgcolor: showAllUsers ? accentDark : alpha(accentColor, 0.1),
+                          },
+                        }}
+                      >
+                        {showAllUsers ? 'Hide All Users' : 'View All Users'}
+                      </ProfessionalButton>
                       <Tooltip title="Refresh Data">
                         <IconButton
                           onClick={handleSearch}
@@ -1091,8 +1313,32 @@ const OfficialTimeForm = () => {
                   </PremiumTableContainer>
 
                   <Box
-                    sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}
+                    sx={{ mt: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                   >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      {autoSaving && (
+                        <Chip
+                          icon={<CircularProgress size={16} />}
+                          label="Auto-saving..."
+                          size="small"
+                          sx={{
+                            bgcolor: alpha(accentColor, 0.1),
+                            color: accentColor,
+                          }}
+                        />
+                      )}
+                      {lastSaved && !autoSaving && (
+                        <Chip
+                          icon={<CheckCircleIcon />}
+                          label={`Saved at ${lastSaved.toLocaleTimeString()}`}
+                          size="small"
+                          sx={{
+                            bgcolor: alpha('#4caf50', 0.1),
+                            color: '#4caf50',
+                          }}
+                        />
+                      )}
+                    </Box>
                     <ProfessionalButton
                       type="submit"
                       variant="contained"
@@ -1107,6 +1353,210 @@ const OfficialTimeForm = () => {
                     </ProfessionalButton>
                   </Box>
                 </Box>
+              </GlassCard>
+            </Fade>
+          )}
+
+          {/* All Users View */}
+          {showAllUsers && (
+            <Fade in timeout={500}>
+              <GlassCard
+                sx={{ mb: 4, border: `1px solid ${alpha(accentColor, 0.1)}` }}
+              >
+                <Box
+                  sx={{
+                    p: 4,
+                    background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
+                    color: accentColor,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Box>
+                    <Typography
+                      variant="h5"
+                      sx={{ fontWeight: 600, mb: 1, color: accentColor }}
+                    >
+                      All Users - Official Time Status
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ opacity: 0.8, color: accentDark }}
+                    >
+                      View and manage default official time for all users
+                    </Typography>
+                  </Box>
+                  <Avatar
+                    sx={{
+                      bgcolor: 'rgba(109,35,35,0.15)',
+                      width: 64,
+                      height: 64,
+                    }}
+                  >
+                    <PeopleIcon sx={{ fontSize: 32, color: accentColor }} />
+                  </Avatar>
+                </Box>
+
+                <CardContent sx={{ p: 4 }}>
+                  {/* Search and Actions */}
+                  <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center' }}>
+                    <ModernTextField
+                      fullWidth
+                      placeholder="Search by name or employee number..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <SearchIcon sx={{ color: accentColor }} />
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                    <ProfessionalButton
+                      variant="contained"
+                      onClick={handleSetDefaultForSelected}
+                      disabled={selectedUsers.size === 0 || settingDefault}
+                      startIcon={<CheckCircleIcon />}
+                      sx={{
+                        bgcolor: accentColor,
+                        color: primaryColor,
+                        minWidth: 200,
+                      }}
+                    >
+                      Set Default for Selected ({selectedUsers.size})
+                    </ProfessionalButton>
+                    <ProfessionalButton
+                      variant="outlined"
+                      onClick={handleSetDefaultForAll}
+                      disabled={
+                        settingDefault ||
+                        allUsers.filter((u) => !u.hasDefaultOfficialTime).length === 0
+                      }
+                      sx={{
+                        borderColor: accentColor,
+                        color: accentColor,
+                        minWidth: 200,
+                      }}
+                    >
+                      Set Default for All Missing
+                    </ProfessionalButton>
+                  </Box>
+
+                  {/* Users Table */}
+                  {loadingUsers ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                      <CircularProgress sx={{ color: accentColor }} />
+                    </Box>
+                  ) : (
+                    <PremiumTableContainer>
+                      <Table stickyHeader>
+                        <TableHead>
+                          <TableRow sx={{ bgcolor: 'rgba(254, 249, 225, 0.7)' }}>
+                            <PremiumTableCell>
+                              <Checkbox
+                                checked={
+                                  getFilteredUsers().length > 0 &&
+                                  getFilteredUsers().every((u) =>
+                                    selectedUsers.has(u.employeeNumber)
+                                  )
+                                }
+                                indeterminate={
+                                  getFilteredUsers().some((u) =>
+                                    selectedUsers.has(u.employeeNumber)
+                                  ) &&
+                                  !getFilteredUsers().every((u) =>
+                                    selectedUsers.has(u.employeeNumber)
+                                  )
+                                }
+                                onChange={(e) => handleSelectAll(e.target.checked)}
+                                sx={{ color: accentColor }}
+                              />
+                            </PremiumTableCell>
+                            <PremiumTableCell isHeader sx={{ color: accentColor }}>
+                              Employee Number
+                            </PremiumTableCell>
+                            <PremiumTableCell isHeader sx={{ color: accentColor }}>
+                              Name
+                            </PremiumTableCell>
+                            <PremiumTableCell isHeader sx={{ color: accentColor }}>
+                              Status
+                            </PremiumTableCell>
+                            <PremiumTableCell isHeader sx={{ color: accentColor }}>
+                              Days Count
+                            </PremiumTableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {getFilteredUsers().map((user) => (
+                            <TableRow
+                              key={user.employeeNumber}
+                              sx={{
+                                '&:nth-of-type(even)': {
+                                  bgcolor: 'rgba(254, 249, 225, 0.3)',
+                                },
+                                '&:hover': { bgcolor: 'rgba(109, 35, 35, 0.05)' },
+                                transition: 'all 0.2s ease',
+                              }}
+                            >
+                              <PremiumTableCell>
+                                <Checkbox
+                                  checked={selectedUsers.has(user.employeeNumber)}
+                                  onChange={() => handleUserSelect(user.employeeNumber)}
+                                  sx={{ color: accentColor }}
+                                />
+                              </PremiumTableCell>
+                              <PremiumTableCell>
+                                {user.employeeNumber}
+                              </PremiumTableCell>
+                              <PremiumTableCell>
+                                {user.fullName || 'N/A'}
+                              </PremiumTableCell>
+                              <PremiumTableCell>
+                                {user.hasDefaultOfficialTime ? (
+                                  <Chip
+                                    icon={<CheckCircleIcon />}
+                                    label="Has Default"
+                                    size="small"
+                                    sx={{
+                                      bgcolor: alpha('#4caf50', 0.1),
+                                      color: '#4caf50',
+                                    }}
+                                  />
+                                ) : (
+                                  <Chip
+                                    icon={<CancelIcon />}
+                                    label="No Default"
+                                    size="small"
+                                    sx={{
+                                      bgcolor: alpha('#f44336', 0.1),
+                                      color: '#f44336',
+                                    }}
+                                  />
+                                )}
+                              </PremiumTableCell>
+                              <PremiumTableCell>
+                                {user.officialTimeDaysCount}/7
+                              </PremiumTableCell>
+                            </TableRow>
+                          ))}
+                          {getFilteredUsers().length === 0 && (
+                            <TableRow>
+                              <PremiumTableCell colSpan={5} align="center" sx={{ py: 4 }}>
+                                <Typography sx={{ color: accentDark }}>
+                                  {searchQuery
+                                    ? 'No users found matching your search.'
+                                    : 'No users found.'}
+                                </Typography>
+                              </PremiumTableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </PremiumTableContainer>
+                  )}
+                </CardContent>
               </GlassCard>
             </Fade>
           )}

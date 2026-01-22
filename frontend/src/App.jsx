@@ -25,6 +25,7 @@ import {
   SystemSettingsProvider,
   useSystemSettings,
 } from "./contexts/SystemSettingsContext";
+import { SocketProvider } from "./contexts/SocketContext";
 import "@fontsource/poppins";
 import earistLogo from "./assets/earistLogo.jpg";
 import hrisLogo from "./assets/hrisLogo.png";
@@ -66,6 +67,7 @@ import AttendanceModification from "./components/ATTENDANCE/AttendanceModificati
 import AttendanceUserState from "./components/ATTENDANCE/AttendanceUserState";
 import DailyTimeRecord from "./components/ATTENDANCE/DailyTimeRecord";
 import DailyTimeRecordFaculty from "./components/ATTENDANCE/DailyTimeRecordOverall";
+import DailyTimeRecordEditor from "./components/ATTENDANCE/DailyTimeRecordEditor";
 import AttendanceForm from "./components/ATTENDANCE/AttendanceState";
 import AttendanceModule from "./components/ATTENDANCE/AttendanceModuleNonTeaching";
 import AttendanceModuleFaculty from "./components/ATTENDANCE/AttendanceModuleFaculty30hrs";
@@ -475,7 +477,7 @@ function App() {
             <Route
               path="/reset-password"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <ResetPassword />
                 </ProtectedRoute>
               }
@@ -484,7 +486,7 @@ function App() {
               path="/settings"
               element={
                 <ProtectedRoute
-                  allowedRoles={["staff", "administrator", "superadmin"]}
+                  allowedRoles={["staff", "administrator", "superadmin", "technical"]}
                 >
                   <Settings />
                 </ProtectedRoute>
@@ -495,7 +497,7 @@ function App() {
               path="/home"
               element={
                 <ProtectedRoute
-                  allowedRoles={["administrator", "superadmin", "staff"]}
+                  allowedRoles={["administrator", "superadmin", "staff", "technical"]}
                 >
                   <Home />
                 </ProtectedRoute>
@@ -504,7 +506,7 @@ function App() {
             <Route
               path="/children"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <Children />
                 </ProtectedRoute>
               }
@@ -512,7 +514,7 @@ function App() {
             <Route
               path="/voluntarywork"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <VoluntaryWork />
                 </ProtectedRoute>
               }
@@ -520,7 +522,7 @@ function App() {
             <Route
               path="/learningdev"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <LearningAndDevelopment />
                 </ProtectedRoute>
               }
@@ -528,7 +530,7 @@ function App() {
             <Route
               path="/eligibility"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <Eligibility />
                 </ProtectedRoute>
               }
@@ -536,7 +538,7 @@ function App() {
             <Route
               path="/college"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <College />
                 </ProtectedRoute>
               }
@@ -544,7 +546,7 @@ function App() {
             <Route
               path="/graduate"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <GraduateTable />
                 </ProtectedRoute>
               }
@@ -552,7 +554,7 @@ function App() {
             <Route
               path="/vocational"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <Vocational />
                 </ProtectedRoute>
               }
@@ -560,7 +562,7 @@ function App() {
             <Route
               path="/workexperience"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <WorkExperience />
                 </ProtectedRoute>
               }
@@ -569,7 +571,7 @@ function App() {
               path="/personalinfo"
               element={
                 <ProtectedRoute
-                  allowedRoles={["staff", "administrator", "superadmin"]}
+                  allowedRoles={["staff", "administrator", "superadmin", "technical"]}
                 >
                   <PersonalTable />
                 </ProtectedRoute>
@@ -578,7 +580,7 @@ function App() {
             <Route
               path="/other-information"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <OtherSkills />
                 </ProtectedRoute>
               }
@@ -587,7 +589,7 @@ function App() {
             <Route
               path="/view_attendance"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <ViewAttendanceRecord />
                 </ProtectedRoute>
               }
@@ -595,7 +597,7 @@ function App() {
             <Route
               path="/search_attendance"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <AttendanceModification />
                 </ProtectedRoute>
               }
@@ -605,7 +607,7 @@ function App() {
               path="/attendance-user-state"
               element={
                 <ProtectedRoute
-                  allowedRoles={["administrator", "superadmin", "staff"]}
+                  allowedRoles={["administrator", "superadmin", "staff", "technical"]}
                 >
                   <AttendanceUserState />
                 </ProtectedRoute>
@@ -616,7 +618,7 @@ function App() {
               path="/daily_time_record"
               element={
                 <ProtectedRoute
-                  allowedRoles={["staff", "administrator", "superadmin"]}
+                  allowedRoles={["staff", "administrator", "superadmin", "technical"]}
                 >
                   <DailyTimeRecord />
                 </ProtectedRoute>
@@ -625,8 +627,16 @@ function App() {
             <Route
               path="/daily_time_record_faculty"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <DailyTimeRecordFaculty />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/daily_time_record_editor"
+              element={
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
+                  <DailyTimeRecordEditor />
                 </ProtectedRoute>
               }
             />
@@ -634,7 +644,7 @@ function App() {
               path="/attendance_form"
               element={
                 <ProtectedRoute
-                  allowedRoles={["staff", "administrator", "superadmin"]}
+                  allowedRoles={["staff", "administrator", "superadmin", "technical"]}
                 >
                   <AttendanceForm />
                 </ProtectedRoute>
@@ -643,7 +653,7 @@ function App() {
             <Route
               path="/attendance_module"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <AttendanceModule />
                 </ProtectedRoute>
               }
@@ -651,7 +661,7 @@ function App() {
             <Route
               path="/attendance_module_faculty"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <AttendanceModuleFaculty />
                 </ProtectedRoute>
               }
@@ -660,7 +670,7 @@ function App() {
             <Route
               path="/attendance_module_faculty_40hrs"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <AttendanceModuleFaculty40 />
                 </ProtectedRoute>
               }
@@ -669,7 +679,7 @@ function App() {
             <Route
               path="/attendance_summary"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <OverallAttendancePage />
                 </ProtectedRoute>
               }
@@ -677,7 +687,7 @@ function App() {
             <Route
               path="/official_time"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <OfficialTimeForm />
                 </ProtectedRoute>
               }
@@ -687,7 +697,7 @@ function App() {
               path="/pds1"
               element={
                 <ProtectedRoute
-                  allowedRoles={["staff", "administrator", "superadmin"]}
+                  allowedRoles={["staff", "administrator", "superadmin", "technical"]}
                 >
                   <PDS1 />
                 </ProtectedRoute>
@@ -697,7 +707,7 @@ function App() {
               path="/pds2"
               element={
                 <ProtectedRoute
-                  allowedRoles={["staff", "administrator", "superadmin"]}
+                  allowedRoles={["staff", "administrator", "superadmin", "technical"]}
                 >
                   <PDS2 />
                 </ProtectedRoute>
@@ -707,7 +717,7 @@ function App() {
               path="/pds3"
               element={
                 <ProtectedRoute
-                  allowedRoles={["staff", "administrator", "superadmin"]}
+                  allowedRoles={["staff", "administrator", "superadmin", "technical"]}
                 >
                   <PDS3 />
                 </ProtectedRoute>
@@ -717,7 +727,7 @@ function App() {
               path="/pds4"
               element={
                 <ProtectedRoute
-                  allowedRoles={["staff", "administrator", "superadmin"]}
+                  allowedRoles={["staff", "administrator", "superadmin", "technical"]}
                 >
                   <PDS4 />
                 </ProtectedRoute>
@@ -727,7 +737,7 @@ function App() {
             <Route
               path="/payroll-table"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <PayrollProcess />
                 </ProtectedRoute>
               }
@@ -736,7 +746,7 @@ function App() {
             <Route
               path="/payroll-processed"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <PayrollProcessed />
                 </ProtectedRoute>
               }
@@ -745,7 +755,7 @@ function App() {
             <Route
               path="/payroll-processed-jo"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <PayrollProcessedJO />
                 </ProtectedRoute>
               }
@@ -754,7 +764,7 @@ function App() {
             <Route
               path="/payroll-released"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <PayrollReleased />
                 </ProtectedRoute>
               }
@@ -763,7 +773,7 @@ function App() {
             <Route
               path="/payroll-jo"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <PayrollJO />
                 </ProtectedRoute>
               }
@@ -772,7 +782,7 @@ function App() {
             <Route
               path="/remittance-table"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <Remittances />
                 </ProtectedRoute>
               }
@@ -781,7 +791,7 @@ function App() {
             <Route
               path="/philhealth-table"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <PhilHealthTable />
                 </ProtectedRoute>
               }
@@ -790,7 +800,7 @@ function App() {
             <Route
               path="/item-table"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <ItemTable />
                 </ProtectedRoute>
               }
@@ -799,7 +809,7 @@ function App() {
             <Route
               path="/salary-grade"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <SalaryGradeTable />
                 </ProtectedRoute>
               }
@@ -808,7 +818,7 @@ function App() {
             <Route
               path="/department-table"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <DepartmentTable />
                 </ProtectedRoute>
               }
@@ -817,7 +827,7 @@ function App() {
             <Route
               path="/department-assignment"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <DepartmentAssignment />
                 </ProtectedRoute>
               }
@@ -826,7 +836,7 @@ function App() {
             <Route
               path="/holiday"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <Holiday />
                 </ProtectedRoute>
               }
@@ -835,7 +845,7 @@ function App() {
             <Route
               path="/assessment-clearance"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <AssessmentClearance />
                 </ProtectedRoute>
               }
@@ -843,7 +853,7 @@ function App() {
             <Route
               path="/clearance"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <Clearance />
                 </ProtectedRoute>
               }
@@ -851,7 +861,7 @@ function App() {
             <Route
               path="/clearance-back"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <ClearanceBack />
                 </ProtectedRoute>
               }
@@ -860,7 +870,7 @@ function App() {
             <Route
               path="/faculty-clearance"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <FacultyClearance />
                 </ProtectedRoute>
               }
@@ -868,7 +878,7 @@ function App() {
             <Route
               path="/faculty-clearance-70-days"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <FacultyClearance70Days />
                 </ProtectedRoute>
               }
@@ -876,7 +886,7 @@ function App() {
             <Route
               path="/hrms-request-forms"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <HrmsRequestForms />
                 </ProtectedRoute>
               }
@@ -884,7 +894,7 @@ function App() {
             <Route
               path="/individual-faculty-loading"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <IndividualFacultyLoading />
                 </ProtectedRoute>
               }
@@ -892,7 +902,7 @@ function App() {
             <Route
               path="/in-service-training"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <InServiceTraining />
                 </ProtectedRoute>
               }
@@ -900,7 +910,7 @@ function App() {
             <Route
               path="/leave-card"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <LeaveCard />
                 </ProtectedRoute>
               }
@@ -908,7 +918,7 @@ function App() {
             <Route
               path="/leave-card-back"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <LeaveCardBack />
                 </ProtectedRoute>
               }
@@ -916,7 +926,7 @@ function App() {
             <Route
               path="/locator-slip"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <LocatorSlip />
                 </ProtectedRoute>
               }
@@ -924,7 +934,7 @@ function App() {
             <Route
               path="/permission-to-teach"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <PermissionToTeach />
                 </ProtectedRoute>
               }
@@ -932,7 +942,7 @@ function App() {
             <Route
               path="/request-for-id"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <RequestForID />
                 </ProtectedRoute>
               }
@@ -940,7 +950,7 @@ function App() {
             <Route
               path="/saln-front"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <SalnFront />
                 </ProtectedRoute>
               }
@@ -948,7 +958,7 @@ function App() {
             <Route
               path="/saln-back"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <SalnBack />
                 </ProtectedRoute>
               }
@@ -956,7 +966,7 @@ function App() {
             <Route
               path="/scholarship-agreement"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <ScholarshipAgreement />
                 </ProtectedRoute>
               }
@@ -964,7 +974,7 @@ function App() {
             <Route
               path="/subject"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <SubjectStillToBeTaken />
                 </ProtectedRoute>
               }
@@ -974,7 +984,7 @@ function App() {
               path="/profile"
               element={
                 <ProtectedRoute
-                  allowedRoles={["staff", "administrator", "superadmin"]}
+                  allowedRoles={["staff", "administrator", "superadmin", "technical"]}
                 >
                   <Profile />
                 </ProtectedRoute>
@@ -985,7 +995,7 @@ function App() {
               path="/announcement"
               element={
                 <ProtectedRoute
-                  allowedRoles={["staff", "administrator", "superadmin"]}
+                  allowedRoles={["staff", "administrator", "superadmin", "technical"]}
                 >
                   <AnnouncementForm />
                 </ProtectedRoute>
@@ -996,7 +1006,7 @@ function App() {
               path="/payslip"
               element={
                 <ProtectedRoute
-                  allowedRoles={["staff", "administrator", "superadmin"]}
+                  allowedRoles={["staff", "administrator", "superadmin", "technical"]}
                 >
                   <Payslip />
                 </ProtectedRoute>
@@ -1007,7 +1017,7 @@ function App() {
               path="/overall-payslip"
               element={
                 <ProtectedRoute
-                  allowedRoles={["staff", "administrator", "superadmin"]}
+                  allowedRoles={["staff", "administrator", "superadmin", "technical"]}
                 >
                   <PayslipOverall />
                 </ProtectedRoute>
@@ -1018,7 +1028,7 @@ function App() {
               path="/distribution-payslip"
               element={
                 <ProtectedRoute
-                  allowedRoles={["staff", "administrator", "superadmin"]}
+                  allowedRoles={["staff", "administrator", "superadmin", "technical"]}
                 >
                   <PayslipDistribution />
                 </ProtectedRoute>
@@ -1029,7 +1039,7 @@ function App() {
               path="/loading-overlay"
               element={
                 <ProtectedRoute
-                  allowedRoles={["staff", "administrator", "superadmin"]}
+                  allowedRoles={["staff", "administrator", "superadmin", "technical"]}
                 >
                   <LoadingOverlay />
                 </ProtectedRoute>
@@ -1040,7 +1050,7 @@ function App() {
               path="/successful-overlay"
               element={
                 <ProtectedRoute
-                  allowedRoles={["staff", "administrator", "superadmin"]}
+                  allowedRoles={["staff", "administrator", "superadmin", "technical"]}
                 >
                   <SuccessfulOverlay />
                 </ProtectedRoute>
@@ -1051,7 +1061,7 @@ function App() {
               path="admin-home"
               element={
                 <ProtectedRoute
-                  allowedRoles={["staff", "administrator", "superadmin"]}
+                  allowedRoles={["staff", "administrator", "superadmin", "technical"]}
                 >
                   <AdminHome />
                 </ProtectedRoute>
@@ -1062,7 +1072,7 @@ function App() {
               path="employee-category"
               element={
                 <ProtectedRoute
-                  allowedRoles={["staff", "administrator", "superadmin"]}
+                  allowedRoles={["staff", "administrator", "superadmin", "technical"]}
                 >
                   <EmploymentCategoryManagement />
                 </ProtectedRoute>
@@ -1084,7 +1094,7 @@ function App() {
             <Route
               path="/users-list"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["superadmin", "technical"]}>
                   <UsersList />
                 </ProtectedRoute>
               }
@@ -1094,7 +1104,7 @@ function App() {
               path="/pages-list"
               element={
                 <ProtectedRoute
-                  allowedRoles={["administrator", "superadmin", "staff"]}
+                  allowedRoles={["technical"]}
                 >
                   <PagesList />
                 </ProtectedRoute>
@@ -1104,7 +1114,7 @@ function App() {
             <Route
               path="/audit-logs"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <AuditLogs />
                 </ProtectedRoute>
               }
@@ -1113,7 +1123,7 @@ function App() {
             <Route
               path="/reports"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <Reports />
                 </ProtectedRoute>
               }
@@ -1123,7 +1133,7 @@ function App() {
               path="/employee-reports"
               element={
                 <ProtectedRoute
-                  allowedRoles={["staff", "administrator", "superadmin"]}
+                  allowedRoles={["staff", "administrator", "superadmin", "technical"]}
                 >
                   <EmployeeReports />
                 </ProtectedRoute>
@@ -1133,7 +1143,7 @@ function App() {
             <Route
               path="/system-settings"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["administrator", "superadmin", "technical"]}>
                   <SystemSetting />
                 </ProtectedRoute>
               }
@@ -1142,7 +1152,7 @@ function App() {
             <Route
               path="/payroll-formulas"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["superadmin", "technical"]}>
                   <PayrollFormulas />
                 </ProtectedRoute>
               }
@@ -1151,7 +1161,7 @@ function App() {
             <Route
               path="/admin-security"
               element={
-                <ProtectedRoute allowedRoles={["administrator", "superadmin"]}>
+                <ProtectedRoute allowedRoles={["superadmin", "technical"]}>
                   <AdminSecurity />
                 </ProtectedRoute>
               }
@@ -1234,9 +1244,11 @@ function App() {
 export default function WrappedApp() {
   return (
     <SystemSettingsProvider>
-      <Router>
-        <App />
-      </Router>
+      <SocketProvider>
+        <Router>
+          <App />
+        </Router>
+      </SocketProvider>
     </SystemSettingsProvider>
   );
 }

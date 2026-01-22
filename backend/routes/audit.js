@@ -28,7 +28,7 @@ router.delete('/audit-logs/:id', authenticateToken, (req, res) => {
   const userRole = req.user?.role;
 
   // Only allow administrators and superadmins to delete audit logs
-  if (userRole !== 'administrator' && userRole !== 'superadmin') {
+  if (userRole !== 'administrator' && userRole !== 'superadmin' && userRole !== 'technical') {
     return res.status(403).json({ error: 'Unauthorized: Only administrators can delete audit logs' });
   }
 

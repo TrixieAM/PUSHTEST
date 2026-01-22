@@ -207,10 +207,10 @@ router.post('/complete-2fa-login', (req, res) => {
            ) as fullName
     FROM users u
     LEFT JOIN person_table p ON u.employeeNumber = p.agencyEmployeeNum
-    WHERE u.email = ? OR u.employeeNumber = ?
+    WHERE u.employeeNumber = ? AND u.email = ?
   `;
 
-  db.query(query, [email, employeeNumber], (err, result) => {
+  db.query(query, [employeeNumber, email], (err, result) => {
     if (err) {
       console.error('Database error:', err);
       return res.status(500).json({ error: 'Database error' });

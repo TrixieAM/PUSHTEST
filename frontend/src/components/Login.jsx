@@ -242,7 +242,7 @@ const Login = () => {
             setShowPasswordPrompt(true);
             setShow2FA(false);
           } else {
-            if (decoded.role === "superadmin" || decoded.role === "administrator") {
+            if (decoded.role === "superadmin" || decoded.role === "administrator" || decoded.role === "technical") {
               window.location.href = "/admin-home";
             } else {
               window.location.href = "/home";
@@ -334,7 +334,7 @@ const Login = () => {
                 setIsDefaultPassword(true);
                 setShowPasswordPrompt(true);
               } else {
-                if (decoded.role === "superadmin" || decoded.role === "administrator") {
+                if (decoded.role === "superadmin" || decoded.role === "administrator" || decoded.role === "technical") {
                   window.location.href = "/admin-home";
                 } else {
                   window.location.href = "/home";
@@ -390,7 +390,7 @@ const Login = () => {
                   setIsDefaultPassword(true);
                   setShowPasswordPrompt(true);
                 } else {
-                  if (decoded.role === "superadmin" || decoded.role === "administrator") {
+                  if (decoded.role === "superadmin" || decoded.role === "administrator" || decoded.role === "technical") {
                     window.location.href = "/admin-home";
                   } else {
                     window.location.href = "/home";
@@ -1011,7 +1011,7 @@ const Login = () => {
               }}
               onClick={() => {
                 const decoded = JSON.parse(atob(localStorage.getItem("token").split(".")[1]));
-                if (decoded.role === "superadmin" || decoded.role === "administrator") {
+                if (decoded.role === "superadmin" || decoded.role === "administrator" || decoded.role === "technical") {
                   window.location.href = "/admin-settings?tab=security";
                 } else {
                   window.location.href = "/settings?tab=security";
@@ -1094,7 +1094,7 @@ const Login = () => {
               onClick={() => {
                 setShowLaterModal(false);
                 const decoded = JSON.parse(atob(localStorage.getItem("token").split(".")[1]));
-                if (decoded.role === "superadmin" || decoded.role === "administrator") {
+                if (decoded.role === "superadmin" || decoded.role === "administrator" || decoded.role === "technical") {
                   window.location.href = "/admin-home";
                 } else {
                   window.location.href = "/home";

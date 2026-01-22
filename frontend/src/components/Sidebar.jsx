@@ -89,6 +89,8 @@ import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import logo from "../assets/logo.PNG";
 import { getAuthHeaders } from "../utils/auth";
+import usePageAccesses from "../hooks/usePageAccesses";
+import { getAllComponentIdentifiers, getComponentIdentifierForRoute } from "../utils/routeToComponentMapping";
 
 const useSystemSettings = () => {
   const [settings, setSettings] = useState({
@@ -199,6 +201,39 @@ const Sidebar = ({
 
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Get all component identifiers that need access checking
+  const allComponentIdentifiers = getAllComponentIdentifiers();
+  
+  // Check page access for all menu items
+  const { hasAccess: checkPageAccess, loading: accessLoading } = usePageAccesses(
+    allComponentIdentifiers,
+    { employeeNumber }
+  );
+
+  // Helper function to check if a route should be shown based on page access
+  const shouldShowMenuItem = (route) => {
+    // Always show home, admin-home, and profile
+    if (route === '/home' || route === '/admin-home' || route === '/profile') {
+      return true;
+    }
+    
+    // Don't show anything while loading access data
+    if (accessLoading) {
+      return false;
+    }
+    
+    const componentIdentifier = getComponentIdentifierForRoute(route);
+    
+    // If no component identifier mapping, show by default (for backward compatibility)
+    if (!componentIdentifier) {
+      return true;
+    }
+    
+    // Check access using the hook - only show if user has access
+    // Returns false if no access, so item will be completely hidden
+    return checkPageAccess(componentIdentifier) === true;
+  };
 
   useEffect(() => {
     const storedUser = localStorage.getItem("username");
@@ -962,6 +997,7 @@ const Sidebar = ({
             </ListItem>
 
             {/* ATTENDANCE */}
+            {shouldShowMenuItem("/attendance-user-state") && (
             <ListItem
               button
               component={Link}
@@ -1012,8 +1048,10 @@ const Sidebar = ({
               </ListItemIcon>
               <ListItemText primary="Attendance" sx={{ marginLeft: "-10px" }} />
             </ListItem>
+            )}
 
             {/* DAILY TIME RECORD */}
+            {shouldShowMenuItem("/daily_time_record") && (
             <ListItem
               button
               component={Link}
@@ -1067,8 +1105,10 @@ const Sidebar = ({
                 sx={{ marginLeft: "-10px" }}
               />
             </ListItem>
+            )}
 
             {/* PAYSLIP */}
+            {shouldShowMenuItem("/payslip") && (
             <ListItem
               button
               component={Link}
@@ -1118,6 +1158,7 @@ const Sidebar = ({
               </ListItemIcon>
               <ListItemText primary="Payslip" sx={{ marginLeft: "-10px" }} />
             </ListItem>
+            )}
 
             {userRole !== "" && (
               <>
@@ -1151,6 +1192,7 @@ const Sidebar = ({
                 <Collapse in={open5} timeout="auto" unmountOnExit>
                   <List component="div" disablePadding sx={{ pl: 5.4 }}>
                     {/* PDS1 */}
+                    {shouldShowMenuItem("/pds1") && (
                     <ListItem
                       button
                       component={Link}
@@ -1204,8 +1246,10 @@ const Sidebar = ({
                         sx={{ marginLeft: "-10px" }}
                       />
                     </ListItem>
+                    )}
 
                     {/* PDS2 */}
+                    {shouldShowMenuItem("/pds2") && (
                     <ListItem
                       button
                       component={Link}
@@ -1259,8 +1303,10 @@ const Sidebar = ({
                         sx={{ marginLeft: "-10px" }}
                       />
                     </ListItem>
+                    )}
 
                     {/* PDS3 */}
+                    {shouldShowMenuItem("/pds3") && (
                     <ListItem
                       button
                       component={Link}
@@ -1314,8 +1360,10 @@ const Sidebar = ({
                         sx={{ marginLeft: "-10px" }}
                       />
                     </ListItem>
+                    )}
 
                     {/* PDS4 */}
+                    {shouldShowMenuItem("/pds4") && (
                     <ListItem
                       button
                       component={Link}
@@ -1369,9 +1417,11 @@ const Sidebar = ({
                         sx={{ marginLeft: "-10px" }}
                       />
                     </ListItem>
+                    )}
                   </List>
                 </Collapse>
                    {/* Settings */}
+                    {shouldShowMenuItem("/settings") && (
                     <ListItem
                       button
                       component={Link}
@@ -1423,6 +1473,7 @@ const Sidebar = ({
                         sx={{ marginLeft: "6px" }}
                       />
                     </ListItem>
+                    )}
               </>
             )}
 
@@ -1451,7 +1502,7 @@ const Sidebar = ({
             </>
 
             {/* System Administration */}
-            {(userRole === "administrator" || userRole === "superadmin") && (
+            {(userRole === "administrator" || userRole === "superadmin" || userRole === "technical") && (
               <>
                 <ListItem
                   button
@@ -1484,8 +1535,8 @@ const Sidebar = ({
 
                 <Collapse in={openSystemAdmin} timeout="auto" unmountOnExit>
                   <List component="div" disablePadding sx={{ pl: 5.4 }}>
-                    {/* Reports */}
-                    <ListItem
+                    {/* Reports - Hidden */}
+                    {/* <ListItem
                       button
                       component={Link}
                       to="/reports"
@@ -1534,10 +1585,10 @@ const Sidebar = ({
                         primary="Reports"
                         sx={{ marginLeft: "-10px" }}
                       />
-                    </ListItem>
+                    </ListItem> */}
 
-                    {/* User Management */}
-                    {hasUsersListAccess && (
+                    {/* User Management - Hidden for administrators */}
+                    {shouldShowMenuItem("/users-list") && userRole !== "administrator" && (
                       <ListItem
                         button
                         component={Link}
@@ -1592,6 +1643,7 @@ const Sidebar = ({
 
 
                     {/* Registration */}
+                    {shouldShowMenuItem("/registration") && (
                     <ListItem
                       button
                       component={Link}
@@ -1643,8 +1695,10 @@ const Sidebar = ({
                         sx={{ marginLeft: "-10px" }}
                       />
                     </ListItem>
+                    )}
 
                     {/* Employment Category */}
+                    {shouldShowMenuItem("/employee-category") && (
                     <ListItem
                       button
                       component={Link}
@@ -1695,8 +1749,10 @@ const Sidebar = ({
                         sx={{ marginLeft: "-10px" }}
                       />
                     </ListItem>
+                    )}
 
                     {/* Password Management */}
+                    {shouldShowMenuItem("/reset-password") && (
                     <ListItem
                       button
                       component={Link}
@@ -1748,13 +1804,15 @@ const Sidebar = ({
                         sx={{ marginLeft: "-10px" }}
                       />
                     </ListItem>
+                    )}
 
-                    {/* Payroll Formulas */}
-                    <ListItem
-                      button
-                      component={Link}
-                      to="/payroll-formulas"
-                      onClick={() => handleItemClick("payroll-formulas")}
+                    {/* Payroll Formulas - Hidden for administrators */}
+                    {shouldShowMenuItem("/payroll-formulas") && userRole !== "administrator" && (
+                      <ListItem
+                        button
+                        component={Link}
+                        to="/payroll-formulas"
+                        onClick={() => handleItemClick("payroll-formulas")}
                       sx={{
                         bgcolor:
                           selectedItem === "payroll-formulas"
@@ -1800,13 +1858,15 @@ const Sidebar = ({
                         sx={{ marginLeft: "-10px" }}
                       />
                     </ListItem>
+                    )}
 
-                    {/* Admin Security */}
-                    <ListItem
-                      button
-                      component={Link}
-                      to="/admin-security"
-                      onClick={() => handleItemClick("admin-security")}
+                    {/* Admin Security - Hidden for administrators */}
+                    {shouldShowMenuItem("/admin-security") && userRole !== "administrator" && (
+                      <ListItem
+                        button
+                        component={Link}
+                        to="/admin-security"
+                        onClick={() => handleItemClick("admin-security")}
                       sx={{
                         bgcolor:
                           selectedItem === "admin-security"
@@ -1852,6 +1912,7 @@ const Sidebar = ({
                         sx={{ marginLeft: "-10px" }}
                       />
                     </ListItem>
+                    )}
                   </List>
                 </Collapse>
               </>
@@ -1954,6 +2015,7 @@ const Sidebar = ({
                 <Collapse in={open} timeout="auto" unmountOnExit>
                   <List component="div" disablePadding sx={{ pl: 5.4 }}>
                     {/* PERSONAL INFO */}
+                    {shouldShowMenuItem("/personalinfo") && (
                     <ListItem
                       button
                       component={Link}
@@ -2007,8 +2069,10 @@ const Sidebar = ({
                         sx={{ marginLeft: "-10px" }}
                       />
                     </ListItem>
+                    )}
 
                     {/* CHILDREN */}
+                    {shouldShowMenuItem("/children") && (
                     <ListItem
                       button
                       component={Link}
@@ -2062,8 +2126,10 @@ const Sidebar = ({
                         sx={{ marginLeft: "-10px" }}
                       />
                     </ListItem>
+                    )}
 
                     {/* COLLEGE */}
+                    {shouldShowMenuItem("/college") && (
                     <ListItem
                       button
                       component={Link}
@@ -2117,8 +2183,10 @@ const Sidebar = ({
                         sx={{ marginLeft: "-10px" }}
                       />
                     </ListItem>
+                    )}
 
                     {/* GRADUATE */}
+                    {shouldShowMenuItem("/graduate") && (
                     <ListItem
                       button
                       component={Link}
@@ -2172,8 +2240,10 @@ const Sidebar = ({
                         sx={{ marginLeft: "-10px" }}
                       />
                     </ListItem>
+                    )}
 
                     {/* VOCATIONAL */}
+                    {shouldShowMenuItem("/vocational") && (
                     <ListItem
                       button
                       component={Link}
@@ -2227,8 +2297,10 @@ const Sidebar = ({
                         sx={{ marginLeft: "-10px" }}
                       />
                     </ListItem>
+                    )}
 
                     {/* LEARNING & DEVELOPMENT */}
+                    {shouldShowMenuItem("/learningdev") && (
                     <ListItem
                       button
                       component={Link}
@@ -2282,8 +2354,10 @@ const Sidebar = ({
                         sx={{ marginLeft: "-10px" }}
                       />
                     </ListItem>
+                    )}
 
                     {/* ELIGIBILITY */}
+                    {shouldShowMenuItem("/eligibility") && (
                     <ListItem
                       button
                       component={Link}
@@ -2337,8 +2411,10 @@ const Sidebar = ({
                         sx={{ marginLeft: "-10px" }}
                       />
                     </ListItem>
+                    )}
 
                     {/* VOLUNTARY WORK */}
+                    {shouldShowMenuItem("/voluntarywork") && (
                     <ListItem
                       button
                       component={Link}
@@ -2392,8 +2468,10 @@ const Sidebar = ({
                         sx={{ marginLeft: "-10px" }}
                       />
                     </ListItem>
+                    )}
 
                     {/* WORK EXPERIENCE */}
+                    {shouldShowMenuItem("/workexperience") && (
                     <ListItem
                       button
                       component={Link}
@@ -2447,8 +2525,10 @@ const Sidebar = ({
                         sx={{ marginLeft: "-10px" }}
                       />
                     </ListItem>
+                    )}
 
                     {/* OTHER INFORMATION */}
+                    {shouldShowMenuItem("/other-information") && (
                     <ListItem
                       button
                       component={Link}
@@ -2502,6 +2582,7 @@ const Sidebar = ({
                         sx={{ marginLeft: "-10px" }}
                       />
                     </ListItem>
+                    )}
                   </List>
                 </Collapse>
               </>

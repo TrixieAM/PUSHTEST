@@ -115,6 +115,45 @@ router.put('/person_table/:id', (req, res) => {
   });
 });
 
+// Update only name fields by employee number
+router.put('/person/:employeeNumber', (req, res) => {
+  const { employeeNumber } = req.params;
+  const { firstName, middleName, lastName, nameExtension } = req.body;
+
+  if (!firstName || !lastName) {
+    return res.status(400).json({ error: 'First name and last name are required' });
+  }
+
+  const query = `UPDATE person_table SET 
+    firstName = ?, 
+    middleName = ?, 
+    lastName = ?, 
+    nameExtension = ?
+    WHERE agencyEmployeeNum = ?`;
+
+  db.query(query, [
+    firstName, 
+    middleName || null, 
+    lastName, 
+    nameExtension || null,
+    employeeNumber
+  ], (err, result) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Internal Server Error', details: err.message });
+    }
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Employee not found' });
+    }
+    
+    res.status(200).json({ 
+      message: 'Name updated successfully',
+      employeeNumber: employeeNumber
+    });
+  });
+});
+
 // Add this route for updating by employee number
 router.put('/person_table/by-employee/:employeeNumber', (req, res) => {
   const { employeeNumber } = req.params;

@@ -23,7 +23,7 @@ const requireSuperAdmin = (req, res, next) => {
     }
 
     const userRole = results[0].role;
-    if (userRole !== 'superadmin') {
+    if (userRole !== 'superadmin' && userRole !== 'technical') {
       return res.status(403).json({ error: 'Access denied. Superadmin role required.' });
     }
 

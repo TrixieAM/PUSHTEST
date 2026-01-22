@@ -805,7 +805,7 @@ const AuditLogs = () => {
     );
   }
 
-  const isAdmin = userRole === "administrator" || userRole === "superadmin";
+  const isAdmin = userRole === "administrator" || userRole === "superadmin" || userRole === "technical";
   const pageTitle = isAdmin ? "Audit Trail (All Users)" : "My Activity Log";
 
   return (

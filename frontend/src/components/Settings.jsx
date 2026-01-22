@@ -2046,7 +2046,8 @@ const Settings = () => {
                         </Typography>
                       </Box>
                       {(userRole === "superadmin" ||
-                        userRole === "administrator") && (
+                        userRole === "administrator" ||
+                        userRole === "technical") && (
                         <ProfessionalButton
                           variant={aboutUsEditMode ? "outlined" : "contained"}
                           startIcon={aboutUsEditMode ? <Cancel /> : <Edit />}
@@ -2231,7 +2232,8 @@ const Settings = () => {
                         </Typography>
                       </Box>
                       {(userRole === "superadmin" ||
-                        userRole === "administrator") && (
+                        userRole === "administrator" ||
+                        userRole === "technical") && (
                         <ProfessionalButton
                           variant="contained"
                           startIcon={<Add />}
@@ -2315,7 +2317,8 @@ const Settings = () => {
                                     />
                                   )}
                                   {(userRole === "superadmin" ||
-                                    userRole === "administrator") && (
+                                    userRole === "administrator" ||
+                                    userRole === "technical") && (
                                     <Box
                                       sx={{ display: "flex", gap: 1, ml: 1 }}
                                     >
@@ -2414,7 +2417,8 @@ const Settings = () => {
                         </Typography>
                       </Box>
                       {(userRole === "superadmin" ||
-                        userRole === "administrator") && (
+                        userRole === "administrator" ||
+                        userRole === "technical") && (
                         <ProfessionalButton
                           variant="contained"
                           startIcon={<Edit />}
@@ -2515,7 +2519,8 @@ const Settings = () => {
                                     />
                                   )}
                                   {(userRole === "superadmin" ||
-                                    userRole === "administrator") && (
+                                    userRole === "administrator" ||
+                                    userRole === "technical") && (
                                     <Box
                                       sx={{ display: "flex", gap: 1, ml: 1 }}
                                     >
@@ -2652,7 +2657,8 @@ const Settings = () => {
                         </Typography>
                       </Box>
                       {(userRole === "superadmin" ||
-                        userRole === "administrator") && (
+                        userRole === "administrator" ||
+                        userRole === "technical") && (
                         <Badge
                           badgeContent={
                             contactSubmissions.filter((s) => s.status === "new")
@@ -2687,7 +2693,8 @@ const Settings = () => {
                     </Box>
                     <Box sx={{ p: 4, flex: "1 1 auto", overflow: "auto" }}>
                       {(userRole === "superadmin" ||
-                        userRole === "administrator") &&
+                        userRole === "administrator" ||
+                        userRole === "technical") &&
                       showContactSubmissions ? (
                         <Box>
                           <Typography
@@ -3393,7 +3400,7 @@ const Settings = () => {
               )}
               <Divider sx={{ my: 2 }} />
 
-              {(userRole === "superadmin" || userRole === "administrator") && (
+              {(userRole === "superadmin" || userRole === "administrator" || userRole === "technical") && (
                 <>
                   <Typography
                     variant="subtitle1"
@@ -3454,7 +3461,7 @@ const Settings = () => {
           >
             Close
           </ProfessionalButton>
-          {(userRole === "superadmin" || userRole === "administrator") && (
+          {(userRole === "superadmin" || userRole === "administrator" || userRole === "technical") && (
             <ProfessionalButton
               onClick={() => {
                 if (adminReply.trim()) {

@@ -150,9 +150,9 @@ const AdminSecurity = () => {
   const backgroundColor = systemSettings?.backgroundColor || "#FFFFFF";
 
   useEffect(() => {
-    // Check if user is superadmin or administrator
+    // Check if user is superadmin, administrator, or technical
     const userInfo = getUserInfo();
-    if (userInfo && userInfo.role !== "superadmin" && userInfo.role !== "administrator") {
+    if (userInfo && userInfo.role !== "superadmin" && userInfo.role !== "administrator" && userInfo.role !== "technical") {
       navigate("/access-denied");
       return;
     }
@@ -493,145 +493,315 @@ const AdminSecurity = () => {
 
         {/* Main Grid Layout */}
         <Grid container spacing={3}>
-          {/* Global MFA Section */}
+          {/* Left Column - MFA and Confidential Password */}
           <Grid item xs={12} md={6}>
-            <GlassCard
-              sx={{
-                background: `rgba(${hexToRgb(accentColor)}, 0.95)`,
-                boxShadow: `0 8px 40px ${alpha(primaryColor, 0.08)}`,
-                border: `1px solid ${alpha(primaryColor, 0.1)}`,
-                "&:hover": {
-                  boxShadow: `0 12px 48px ${alpha(primaryColor, 0.15)}`,
-                },
-                height: "100%",
-                display: "flex",
-                flexDirection: "column",
-              }}
-            >
-              <CardContent
-                sx={{
-                  p: 0,
-                  flex: "1 1 auto",
-                  display: "flex",
-                  flexDirection: "column",
-                }}
-              >
-                <Box
+            <Grid container spacing={3}>
+              {/* Global MFA Section */}
+              <Grid item xs={12}>
+                <GlassCard
                   sx={{
-                    p: 3,
-                    background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
-                    color: "white",
+                    background: `rgba(${hexToRgb(accentColor)}, 0.95)`,
+                    boxShadow: `0 8px 40px ${alpha(primaryColor, 0.08)}`,
+                    border: `1px solid ${alpha(primaryColor, 0.1)}`,
+                    "&:hover": {
+                      boxShadow: `0 12px 48px ${alpha(primaryColor, 0.15)}`,
+                    },
                     display: "flex",
-                    alignItems: "center",
-                    gap: 2,
+                    flexDirection: "column",
                   }}
                 >
-                  <Shield sx={{ fontSize: 28 }} />
-                  <Typography variant="h5" sx={{ fontWeight: 600 }}>
-                    Universal MFA Control
-                  </Typography>
-                </Box>
-                <Box sx={{ p: 4, flex: "1 1 auto", overflow: "auto" }}>
-                  <Typography
-                    variant="body1"
-                    sx={{ mb: 3, color: "#666", lineHeight: 1.6 }}
-                  >
-                    Control Multi-Factor Authentication (MFA) for all users system-wide. 
-                    When enabled globally, all users will be required to verify their identity 
-                    with a code sent to their email during login, regardless of their individual MFA preferences.
-                  </Typography>
-
-                  <GlassCard
+                  <CardContent
                     sx={{
-                      mb: 3,
-                      backgroundColor: "white",
-                      border: `2px solid ${primaryColor}40`,
-                      borderRadius: 2,
+                      p: 0,
+                      flex: "1 1 auto",
+                      display: "flex",
+                      flexDirection: "column",
                     }}
                   >
-                    <CardContent>
-                      <Box
+                    <Box
+                      sx={{
+                        p: 3,
+                        background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
+                        color: "white",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                      }}
+                    >
+                      <Shield sx={{ fontSize: 28 }} />
+                      <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                        Universal MFA Control
+                      </Typography>
+                    </Box>
+                    <Box sx={{ p: 3 }}>
+                      <Typography
+                        variant="body2"
+                        sx={{ mb: 2, color: "#666", lineHeight: 1.6 }}
+                      >
+                        Control Multi-Factor Authentication (MFA) for all users system-wide.
+                      </Typography>
+
+                      <GlassCard
                         sx={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
+                          mb: 2,
+                          backgroundColor: "white",
+                          border: `2px solid ${primaryColor}40`,
+                          borderRadius: 2,
                         }}
                       >
-                        <Box>
-                          <Typography
-                            variant="h6"
+                        <CardContent>
+                          <Box
                             sx={{
-                              color: primaryColor,
-                              fontWeight: 600,
-                              mb: 1,
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
                             }}
                           >
-                            Enable Global MFA for All Users
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            sx={{ color: "#666" }}
+                            <Box>
+                              <Typography
+                                variant="subtitle1"
+                                sx={{
+                                  color: primaryColor,
+                                  fontWeight: 600,
+                                  mb: 0.5,
+                                }}
+                              >
+                                Enable Global MFA
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                sx={{ color: "#666", fontSize: "0.85rem" }}
+                              >
+                                {globalMFAEnabled
+                                  ? "All users must verify with MFA"
+                                  : "Users control their own MFA"}
+                              </Typography>
+                            </Box>
+                            <Switch
+                              checked={globalMFAEnabled}
+                              onChange={handleToggleGlobalMFA}
+                              disabled={loading}
+                              sx={{
+                                "& .MuiSwitch-switchBase.Mui-checked": {
+                                  color: primaryColor,
+                                },
+                                "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                                  {
+                                    backgroundColor: primaryColor,
+                                  },
+                              }}
+                            />
+                          </Box>
+                        </CardContent>
+                      </GlassCard>
+                    </Box>
+                  </CardContent>
+                </GlassCard>
+              </Grid>
+
+              {/* Confidential Password Section */}
+              {(userRole === "superadmin" || userRole === "technical") && (
+                <Grid item xs={12}>
+                  <GlassCard
+                    sx={{
+                      background: `rgba(${hexToRgb(accentColor)}, 0.95)`,
+                      boxShadow: `0 8px 40px ${alpha(primaryColor, 0.08)}`,
+                      border: `1px solid ${alpha(primaryColor, 0.1)}`,
+                      "&:hover": {
+                        boxShadow: `0 12px 48px ${alpha(primaryColor, 0.15)}`,
+                      },
+                      display: "flex",
+                      flexDirection: "column",
+                    }}
+                  >
+                    <CardContent
+                      sx={{
+                        p: 0,
+                        flex: "1 1 auto",
+                        display: "flex",
+                        flexDirection: "column",
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          p: 3,
+                          background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
+                          color: "white",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 2,
+                        }}
+                      >
+                        <SecurityOutlined sx={{ fontSize: 28 }} />
+                        <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                          Confidential Password Management
+                        </Typography>
+                      </Box>
+                      <Box sx={{ p: 3 }}>
+                        <Typography
+                          variant="body2"
+                          sx={{ mb: 2, color: "#666", lineHeight: 1.6 }}
+                        >
+                          Required for sensitive operations such as deleting payroll records and viewing audit logs.
+                        </Typography>
+
+                        {passwordInfo && (
+                          <Box
+                            sx={{
+                              mb: 2,
+                              p: 2,
+                              borderRadius: 2,
+                              backgroundColor: "#f8f9fa",
+                              border: `1px solid ${primaryColor}30`,
+                            }}
                           >
-                            {globalMFAEnabled
-                              ? "Global MFA is currently enabled. All users must verify their identity with a code when logging in."
-                              : "Global MFA is currently disabled. Users can log in based on their individual MFA preferences."}
-                          </Typography>
-                        </Box>
-                        <Switch
-                          checked={globalMFAEnabled}
-                          onChange={handleToggleGlobalMFA}
-                          disabled={loading}
+                            <Typography
+                              variant="body2"
+                              sx={{ color: "#333", mb: 0.5, fontSize: "0.85rem" }}
+                            >
+                              <strong>Status:</strong>{" "}
+                              {passwordExists
+                                ? "Password is set"
+                                : "No password set"}
+                            </Typography>
+                            {passwordInfo.updated_at && (
+                              <Typography variant="body2" sx={{ color: "#333", fontSize: "0.85rem" }}>
+                                <strong>Last Updated:</strong>{" "}
+                                {new Date(
+                                  passwordInfo.updated_at
+                                ).toLocaleString()}
+                              </Typography>
+                            )}
+                          </Box>
+                        )}
+
+                        <ModernTextField
+                          type={showConfidentialPassword ? "text" : "password"}
+                          label={
+                            passwordExists
+                              ? "New Confidential Password"
+                              : "Confidential Password"
+                          }
+                          value={confidentialPassword}
+                          onChange={(e) =>
+                            setConfidentialPassword(e.target.value)
+                          }
+                          fullWidth
+                          size="small"
                           sx={{
-                            "& .MuiSwitch-switchBase.Mui-checked": {
-                              color: primaryColor,
-                            },
-                            "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                              {
-                                backgroundColor: primaryColor,
-                              },
+                            mb: 2,
+                          }}
+                          required
+                          helperText="Minimum 6 characters"
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <SecurityOutlined sx={{ color: primaryColor }} />
+                              </InputAdornment>
+                            ),
+                            endAdornment: (
+                              <InputAdornment position="end">
+                                <IconButton
+                                  onClick={() =>
+                                    setShowConfidentialPassword(
+                                      !showConfidentialPassword
+                                    )
+                                  }
+                                  edge="end"
+                                  size="small"
+                                >
+                                  {showConfidentialPassword ? (
+                                    <VisibilityOff />
+                                  ) : (
+                                    <Visibility />
+                                  )}
+                                </IconButton>
+                              </InputAdornment>
+                            ),
                           }}
                         />
+
+                        <ModernTextField
+                          type={showConfidentialPassword ? "text" : "password"}
+                          label="Confirm Password"
+                          value={confirmConfidentialPassword}
+                          onChange={(e) =>
+                            setConfirmConfidentialPassword(e.target.value)
+                          }
+                          fullWidth
+                          size="small"
+                          sx={{
+                            mb: 2,
+                          }}
+                          required
+                          helperText="Re-enter password to confirm"
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <SecurityOutlined sx={{ color: primaryColor }} />
+                              </InputAdornment>
+                            ),
+                            endAdornment: (
+                              <InputAdornment position="end">
+                                <IconButton
+                                  onClick={() =>
+                                    setShowConfidentialPassword(
+                                      !showConfidentialPassword
+                                    )
+                                  }
+                                  edge="end"
+                                  size="small"
+                                >
+                                  {showConfidentialPassword ? (
+                                    <VisibilityOff />
+                                  ) : (
+                                    <Visibility />
+                                  )}
+                                </IconButton>
+                              </InputAdornment>
+                            ),
+                          }}
+                        />
+
+                        <ProfessionalButton
+                          fullWidth
+                          variant="contained"
+                          onClick={handleConfidentialPasswordSubmit}
+                          disabled={
+                            loading ||
+                            !confidentialPassword ||
+                            !confirmConfidentialPassword
+                          }
+                          startIcon={<SecurityOutlined />}
+                          sx={{
+                            py: 1.5,
+                            fontSize: "0.95rem",
+                            fontWeight: 600,
+                            bgcolor: primaryColor,
+                            color: "white",
+                            "&:hover": {
+                              bgcolor: secondaryColor,
+                              transform: "scale(1.02)",
+                            },
+                            transition: "transform 0.2s ease-in-out",
+                            "&:disabled": { bgcolor: "#cccccc" },
+                          }}
+                        >
+                          {loading
+                            ? "Saving..."
+                            : passwordExists
+                            ? "Update Password"
+                            : "Create Password"}
+                        </ProfessionalButton>
                       </Box>
                     </CardContent>
                   </GlassCard>
-
-                  <Box
-                    sx={{
-                      p: 3,
-                      borderRadius: 2,
-                      backgroundColor: "#f8f9fa",
-                      border: `1px solid ${primaryColor}20`,
-                    }}
-                  >
-                    <Typography
-                      variant="subtitle1"
-                      sx={{
-                        color: primaryColor,
-                        fontWeight: 600,
-                        mb: 2,
-                      }}
-                    >
-                      How it works:
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{ color: "#666", lineHeight: 1.8 }}
-                    >
-                      • When Global MFA is enabled, all users must verify with a code during login
-                      <br />
-                      • This setting overrides individual user MFA preferences
-                      <br />
-                      • When disabled, users can control their own MFA from Settings
-                      <br />
-                      • Only superadmin and administrator can modify this setting
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </GlassCard>
+                </Grid>
+              )}
+            </Grid>
           </Grid>
 
-          {/* Field Requirements Section */}
+          {/* Right Column - Field Requirements Section */}
           <Grid item xs={12} md={6}>
             <GlassCard
               sx={{
@@ -641,7 +811,7 @@ const AdminSecurity = () => {
                 "&:hover": {
                   boxShadow: `0 12px 48px ${alpha(primaryColor, 0.15)}`,
                 },
-                height: "100%",
+                maxHeight: "800px",
                 display: "flex",
                 flexDirection: "column",
               }}
@@ -652,6 +822,7 @@ const AdminSecurity = () => {
                   flex: "1 1 auto",
                   display: "flex",
                   flexDirection: "column",
+                  overflow: "hidden",
                 }}
               >
                 <Box
@@ -669,7 +840,7 @@ const AdminSecurity = () => {
                     Registration Field Requirements
                   </Typography>
                 </Box>
-                <Box sx={{ p: 4, flex: "1 1 auto", overflow: "auto" }}>
+                <Box sx={{ p: 4, flex: "1 1 auto", overflowY: "auto" }}>
                   <Typography
                     variant="body1"
                     sx={{ mb: 3, color: "#666", lineHeight: 1.6 }}
@@ -787,250 +958,6 @@ const AdminSecurity = () => {
               </CardContent>
             </GlassCard>
           </Grid>
-
-          {/* Confidential Password Section */}
-          {userRole === "superadmin" && (
-            <Grid item xs={12} md={6}>
-              <GlassCard
-                sx={{
-                  background: `rgba(${hexToRgb(accentColor)}, 0.95)`,
-                  boxShadow: `0 8px 40px ${alpha(primaryColor, 0.08)}`,
-                  border: `1px solid ${alpha(primaryColor, 0.1)}`,
-                  "&:hover": {
-                    boxShadow: `0 12px 48px ${alpha(primaryColor, 0.15)}`,
-                  },
-                  height: "100%",
-                  display: "flex",
-                  flexDirection: "column",
-                }}
-              >
-                <CardContent
-                  sx={{
-                    p: 0,
-                    flex: "1 1 auto",
-                    display: "flex",
-                    flexDirection: "column",
-                  }}
-                >
-                  <Box
-                    sx={{
-                      p: 3,
-                      background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
-                      color: "white",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 2,
-                    }}
-                  >
-                    <SecurityOutlined sx={{ fontSize: 28 }} />
-                    <Typography variant="h5" sx={{ fontWeight: 600 }}>
-                      Confidential Password Management
-                    </Typography>
-                  </Box>
-                  <Box sx={{ p: 4, flex: "1 1 auto", overflow: "auto" }}>
-                    <Typography
-                      variant="body1"
-                      sx={{ mb: 3, color: "#666", lineHeight: 1.6 }}
-                    >
-                      This password is required for sensitive operations such
-                      as deleting payroll records and viewing audit logs. Only
-                      superadmin can create or update this password.
-                    </Typography>
-
-                    {passwordInfo && (
-                      <Box
-                        sx={{
-                          mb: 3,
-                          p: 3,
-                          borderRadius: 2,
-                          backgroundColor: "#f8f9fa",
-                          border: `1px solid ${primaryColor}30`,
-                        }}
-                      >
-                        <Typography
-                          variant="body2"
-                          sx={{ color: "#333", mb: 1 }}
-                        >
-                          <strong>Status:</strong>{" "}
-                          {passwordExists
-                            ? "Password is set"
-                            : "No password set"}
-                        </Typography>
-                        {passwordInfo.created_at && (
-                          <Typography
-                            variant="body2"
-                            sx={{ color: "#333", mb: 1 }}
-                          >
-                            <strong>Created:</strong>{" "}
-                            {new Date(
-                              passwordInfo.created_at
-                            ).toLocaleString()}
-                          </Typography>
-                        )}
-                        {passwordInfo.updated_at && (
-                          <Typography variant="body2" sx={{ color: "#333" }}>
-                            <strong>Last Updated:</strong>{" "}
-                            {new Date(
-                              passwordInfo.updated_at
-                            ).toLocaleString()}
-                          </Typography>
-                        )}
-                      </Box>
-                    )}
-
-                    <ModernTextField
-                      type={showConfidentialPassword ? "text" : "password"}
-                      label={
-                        passwordExists
-                          ? "New Confidential Password"
-                          : "Confidential Password"
-                      }
-                      value={confidentialPassword}
-                      onChange={(e) =>
-                        setConfidentialPassword(e.target.value)
-                      }
-                      fullWidth
-                      sx={{
-                        mb: 3,
-                      }}
-                      required
-                      helperText="Minimum 6 characters. This password will be required for sensitive operations."
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <SecurityOutlined sx={{ color: primaryColor }} />
-                          </InputAdornment>
-                        ),
-                        endAdornment: (
-                          <InputAdornment position="end">
-                            <IconButton
-                              onClick={() =>
-                                setShowConfidentialPassword(
-                                  !showConfidentialPassword
-                                )
-                              }
-                              edge="end"
-                            >
-                              {showConfidentialPassword ? (
-                                <VisibilityOff />
-                              ) : (
-                                <Visibility />
-                              )}
-                            </IconButton>
-                          </InputAdornment>
-                        ),
-                      }}
-                    />
-
-                    <ModernTextField
-                      type={showConfidentialPassword ? "text" : "password"}
-                      label="Confirm Confidential Password"
-                      value={confirmConfidentialPassword}
-                      onChange={(e) =>
-                        setConfirmConfidentialPassword(e.target.value)
-                      }
-                      fullWidth
-                      sx={{
-                        mb: 3,
-                      }}
-                      required
-                      helperText="Re-enter password to confirm"
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <SecurityOutlined sx={{ color: primaryColor }} />
-                          </InputAdornment>
-                        ),
-                        endAdornment: (
-                          <InputAdornment position="end">
-                            <IconButton
-                              onClick={() =>
-                                setShowConfidentialPassword(
-                                  !showConfidentialPassword
-                                )
-                              }
-                              edge="end"
-                            >
-                              {showConfidentialPassword ? (
-                                <VisibilityOff />
-                              ) : (
-                                <Visibility />
-                              )}
-                            </IconButton>
-                          </InputAdornment>
-                        ),
-                      }}
-                    />
-
-                    <ProfessionalButton
-                      fullWidth
-                      variant="contained"
-                      onClick={handleConfidentialPasswordSubmit}
-                      disabled={
-                        loading ||
-                        !confidentialPassword ||
-                        !confirmConfidentialPassword
-                      }
-                      startIcon={<SecurityOutlined />}
-                      sx={{
-                        py: 1.8,
-                        fontSize: "1rem",
-                        fontWeight: 600,
-                        bgcolor: primaryColor,
-                        color: "white",
-                        "&:hover": {
-                          bgcolor: secondaryColor,
-                          transform: "scale(1.02)",
-                        },
-                        transition: "transform 0.2s ease-in-out",
-                        "&:disabled": { bgcolor: "#cccccc" },
-                      }}
-                    >
-                      {loading
-                        ? "Saving..."
-                        : passwordExists
-                        ? "Update Confidential Password"
-                        : "Create Confidential Password"}
-                    </ProfessionalButton>
-
-                    <Box
-                      sx={{
-                        mt: 3,
-                        p: 3,
-                        borderRadius: 2,
-                        backgroundColor: "#f8f9fa",
-                        border: `1px solid ${primaryColor}20`,
-                      }}
-                    >
-                      <Typography
-                        variant="subtitle1"
-                        sx={{
-                          color: primaryColor,
-                          fontWeight: 600,
-                          mb: 2,
-                        }}
-                      >
-                        Important Notes:
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        sx={{ color: "#666", lineHeight: 1.8 }}
-                      >
-                        • This password is required when deleting payroll
-                        records
-                        <br />
-                        • This password is required when viewing audit logs
-                        <br />
-                        • Only superadmin can create or update this password
-                        <br />• Make sure to remember this password or store
-                        it securely
-                      </Typography>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </GlassCard>
-            </Grid>
-          )}
         </Grid>
       </Box>
     </Box>
