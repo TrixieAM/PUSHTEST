@@ -19,6 +19,10 @@ import {
   Tooltip,
   Typography,
   CircularProgress as MCircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import earistLogo from '../../assets/earistLogo.png';
 import { useSystemSettings } from '../../hooks/useSystemSettings';
@@ -100,6 +104,11 @@ const DailyTimeRecord = () => {
   const [officialTimes, setOfficialTimes] = useState({});
   const dtrRef = React.useRef(null);
   const [selectedMonth, setSelectedMonth] = useState(null);
+
+  // Year selector (mirrors DailyTimeRecordOverall / AttendanceState)
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const currentYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i);
 
   // Use a single constant width (in) for DTR rendering/capture (same as Overall)
   const DTR_WIDTH_IN = '8.7in';
@@ -375,9 +384,8 @@ const DailyTimeRecord = () => {
   ];
 
   const handleMonthClick = (monthIndex) => {
-    const year = new Date().getFullYear();
-    const start = new Date(Date.UTC(year, monthIndex, 1));
-    const end = new Date(Date.UTC(year, monthIndex + 1, 0));
+    const start = new Date(Date.UTC(selectedYear, monthIndex, 1));
+    const end = new Date(Date.UTC(selectedYear, monthIndex + 1, 0));
     setStartDate(start.toISOString().substring(0, 10));
     setEndDate(end.toISOString().substring(0, 10));
     setSelectedMonth(monthIndex);
@@ -1011,51 +1019,94 @@ const DailyTimeRecord = () => {
             </Box>
 
             <Box sx={{ p: 4 }}>
-              <Box
-                sx={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: 1,
-                  mb: 3,
-                  justifyContent: 'center',
-                }}
-              >
-                {months.map((month, index) => {
-                  const isSelected = selectedMonth === index;
-                  return (
-                    <ProfessionalButton
-                      key={month}
-                      variant={isSelected ? 'contained' : 'outlined'}
-                      size="medium"
-                      onClick={() => handleMonthClick(index)}
+              {/* Year & Month Selector (align with Overall view) */}
+              <Box sx={{ mb: 3 }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    alignItems: { xs: 'flex-start', sm: 'center' },
+                    justifyContent: 'space-between',
+                    gap: 2,
+                    mb: 2,
+                  }}
+                >
+                  <Typography
+                    variant="subtitle1"
+                    sx={{
+                      color: textPrimaryColor,
+                      fontWeight: 600,
+                    }}
+                  >
+                    Select Month & Year
+                  </Typography>
+                  <FormControl sx={{ minWidth: 140 }}>
+                    <InputLabel sx={{ fontWeight: 600 }}>Year</InputLabel>
+                    <Select
+                      value={selectedYear}
+                      label="Year"
+                      onChange={(e) => setSelectedYear(e.target.value)}
                       sx={{
-                        borderColor: isSelected
-                          ? accentColor
-                          : accentColor,
-                        backgroundColor: isSelected
-                          ? accentColor
-                          : 'transparent',
-                        color: isSelected
-                          ? textSecondaryColor
-                          : textPrimaryColor,
-                        py: 1.5,
-                        fontWeight: 600,
-                        '&:hover': {
-                          backgroundColor: isSelected
-                            ? accentDark
-                            : alpha(accentColor, 0.1),
-                          borderWidth: 2,
+                        backgroundColor: 'white',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: accentColor,
                         },
-                        transition: 'all 0.3s ease',
-                        boxShadow: isSelected
-                          ? `0 4px 12px ${alpha(accentColor, 0.3)}`
-                          : 'none',
+                        borderRadius: 2,
+                        fontWeight: 600,
                       }}
                     >
-                      {month}
-                    </ProfessionalButton>
-                  );
-                })}
+                      {yearOptions.map((yearOption) => (
+                        <MenuItem key={yearOption} value={yearOption}>
+                          {yearOption}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Box>
+
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 1,
+                    justifyContent: 'center',
+                  }}
+                >
+                  {months.map((month, index) => {
+                    const isSelected = selectedMonth === index;
+                    return (
+                      <ProfessionalButton
+                        key={month}
+                        variant={isSelected ? 'contained' : 'outlined'}
+                        size="medium"
+                        onClick={() => handleMonthClick(index)}
+                        sx={{
+                          borderColor: accentColor,
+                          backgroundColor: isSelected
+                            ? accentColor
+                            : 'transparent',
+                          color: isSelected
+                            ? textSecondaryColor
+                            : textPrimaryColor,
+                          py: 1.5,
+                          fontWeight: 600,
+                          '&:hover': {
+                            backgroundColor: isSelected
+                              ? accentDark
+                              : alpha(accentColor, 0.1),
+                            borderWidth: 2,
+                          },
+                          transition: 'all 0.3s ease',
+                          boxShadow: isSelected
+                            ? `0 4px 12px ${alpha(accentColor, 0.3)}`
+                            : 'none',
+                        }}
+                      >
+                        {month}
+                      </ProfessionalButton>
+                    );
+                  })}
+                </Box>
               </Box>
 
               <Box

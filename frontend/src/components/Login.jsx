@@ -37,11 +37,16 @@ import LoadingOverlay from "../components/LoadingOverlay";
 import logo from "../assets/logo.PNG";
 import bg from "../assets/EaristBG.PNG";
 
+// UI shows "2013-" but backend/database expects digits only like "20134507"
+const EMPLOYEE_NUMBER_PREFIX_DISPLAY = "2013-";
+const EMPLOYEE_NUMBER_PREFIX_VALUE = "2013";
 
 const Login = () => {
   const [showIntro, setShowIntro] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({ employeeNumber: "", password: "" });
+  const [employeeLast4, setEmployeeLast4] = useState("");
+  const [resolvedEmployeeNumber, setResolvedEmployeeNumber] = useState("");
+  const [formData, setFormData] = useState({ password: "" });
   const [errMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [show2FA, setShow2FA] = useState(false);
@@ -75,7 +80,20 @@ const Login = () => {
   const lightText = "#FFF8E7";
   const darkText = "#4B0000";
   const mediumText = "#800020";
+  const placeholderGray = "rgba(0, 0, 0, 0.45)";
 
+  const fullEmployeeNumberDisplay = React.useMemo(() => {
+    return `${EMPLOYEE_NUMBER_PREFIX_DISPLAY}${employeeLast4}`;
+  }, [employeeLast4]);
+
+  const fullEmployeeNumberValue = React.useMemo(() => {
+    return `${EMPLOYEE_NUMBER_PREFIX_VALUE}${employeeLast4}`;
+  }, [employeeLast4]);
+
+  const employeeNumberForRequests = React.useMemo(() => {
+    // Prefer whatever employee number the backend recognizes (from login response).
+    return resolvedEmployeeNumber || fullEmployeeNumberValue;
+  }, [resolvedEmployeeNumber, fullEmployeeNumberValue]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -172,6 +190,13 @@ const Login = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleEmployeeNumberChange = e => {
+    const raw = e.target.value ?? "";
+    const digitsOnly = String(raw).replace(/\D/g, "");
+    setEmployeeLast4(digitsOnly.slice(-4));
+    setResolvedEmployeeNumber("");
+  };
+
 
   // Send 2FA code
   const send2FACode = async (email, empNumber) => {
@@ -224,7 +249,7 @@ const Login = () => {
         const loginRes = await fetch(`${API_BASE_URL}/complete-2fa-login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: userEmail, employeeNumber: formData.employeeNumber }),
+          body: JSON.stringify({ email: userEmail, employeeNumber: employeeNumberForRequests }),
         });
         const loginData = await loginRes.json();
 
@@ -280,7 +305,7 @@ const Login = () => {
 
   const handleLogin = async e => {
     e.preventDefault();
-    if (!formData.employeeNumber || !formData.password) {
+    if (!employeeLast4 || employeeLast4.length !== 4 || !formData.password) {
       setErrorMessage("Please fill all credentials");
       return;
     }
@@ -289,13 +314,23 @@ const Login = () => {
     setLoading(true);
     setErrorMessage("");
     try {
-      const response = await fetch(`${API_BASE_URL}/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-      const data = await response.json();
+      const tryLogin = async (employeeNumber) => {
+        const payload = { employeeNumber, password: formData.password };
+        const response = await fetch(`${API_BASE_URL}/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json();
+        return { response, data, employeeNumberAttempted: employeeNumber };
+      };
+
+      // Backend/database expects digits only, e.g. "20134507" (no dash).
+      let { response, data, employeeNumberAttempted } = await tryLogin(fullEmployeeNumberValue);
+
       if (response.ok) {
+        const canonicalEmp = data.employeeNumber || employeeNumberAttempted;
+        setResolvedEmployeeNumber(canonicalEmp);
         setUserEmail(data.email);
         
         // Check MFA settings: First check global MFA, then individual preference
@@ -320,7 +355,7 @@ const Login = () => {
             const loginRes = await fetch(`${API_BASE_URL}/complete-2fa-login`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ email: data.email, employeeNumber: formData.employeeNumber }),
+              body: JSON.stringify({ email: data.email, employeeNumber: canonicalEmp }),
             });
             const loginData = await loginRes.json();
             
@@ -345,7 +380,7 @@ const Login = () => {
             }
           } else {
             // Global MFA is enabled, check individual user preference
-            const prefResponse = await fetch(`${API_BASE_URL}/api/user-preferences/${formData.employeeNumber}`);
+            const prefResponse = await fetch(`${API_BASE_URL}/api/user-preferences/${canonicalEmp}`);
             
             let mfaEnabled = true; // Default to enabled when global MFA is on
             
@@ -368,7 +403,7 @@ const Login = () => {
             if (mfaEnabled) {
               // Individual MFA is enabled, send code and show 2FA modal
               console.log('Individual MFA is enabled, sending verification code');
-              await send2FACode(data.email, formData.employeeNumber);
+              await send2FACode(data.email, canonicalEmp);
               setShow2FA(true);
             } else {
               // User has individually disabled MFA, complete login directly
@@ -376,7 +411,7 @@ const Login = () => {
               const loginRes = await fetch(`${API_BASE_URL}/complete-2fa-login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email: data.email, employeeNumber: formData.employeeNumber }),
+                body: JSON.stringify({ email: data.email, employeeNumber: canonicalEmp }),
               });
               const loginData = await loginRes.json();
               
@@ -404,10 +439,10 @@ const Login = () => {
         } catch (prefErr) {
           console.error('Error checking MFA settings:', prefErr);
           // Default to enabled if error (for security)
-          await send2FACode(data.email, formData.employeeNumber);
+          await send2FACode(data.email, canonicalEmp);
           setShow2FA(true);
         }
-      } else setErrorMessage(data.error || "Invalid credentials");
+      } else setErrorMessage(data.error || data.message || "Invalid credentials");
     } catch {
       setErrorMessage("Connection error. Please try again.");
     } finally {
@@ -634,26 +669,41 @@ const Login = () => {
 
               <form onSubmit={handleLogin}>
                 <TextField
-                  name="employeeNumber"
-                  placeholder="Employee Number"
+                  name="employeeLast4"
+                  placeholder="Last 4 digits"
                   fullWidth
+                  value={employeeLast4}
+                  inputProps={{ maxLength: 4, inputMode: "numeric" }}
                   sx={{
                     mb: 3,
+                    "& .MuiInputBase-input::placeholder": {
+                      color: placeholderGray,
+                      opacity: 1,
+                    },
                     "& .MuiOutlinedInput-root": {
                       borderRadius: 2,
-                      background: "rgba(128,0,32,0.1)",
-                      "& fieldset": { borderColor: mediumText },
-                      "&.Mui-focused fieldset": { borderColor: mediumText },
+                      background: "rgba(0,0,0,0.04)",
+                      "& fieldset": { borderColor: placeholderGray },
+                      "&.Mui-focused fieldset": { borderColor: placeholderGray },
+                      "& .MuiInputAdornment-root": {
+                        marginRight: 0,
+                      },
+                      "& .MuiOutlinedInput-input": {
+                        paddingLeft: 0,
+                      },
                     },
                   }}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <BadgeOutlined sx={{ color: mediumText }} />
+                        <BadgeOutlined sx={{ color: placeholderGray, mr: 0.75 }} />
+                        <Typography sx={{ ml: 0, fontWeight: 700, color: placeholderGray }}>
+                          {EMPLOYEE_NUMBER_PREFIX_DISPLAY}
+                        </Typography>
                       </InputAdornment>
                     ),
                   }}
-                  onChange={handleChanges}
+                  onChange={handleEmployeeNumberChange}
                 />
                 <TextField
                   name="password"
@@ -662,17 +712,21 @@ const Login = () => {
                   type={showPassword ? "text" : "password"}
                   sx={{
                     mb: 2,
+                    "& .MuiInputBase-input::placeholder": {
+                      color: placeholderGray,
+                      opacity: 1,
+                    },
                     "& .MuiOutlinedInput-root": {
                       borderRadius: 2,
-                      background: "rgba(128,0,32,0.1)",
-                      "& fieldset": { borderColor: mediumText },
-                      "&.Mui-focused fieldset": { borderColor: mediumText },
+                      background: "rgba(0,0,0,0.04)",
+                      "& fieldset": { borderColor: placeholderGray },
+                      "&.Mui-focused fieldset": { borderColor: placeholderGray },
                     },
                   }}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <LockOutlined sx={{ color: mediumText }} />
+                        <LockOutlined sx={{ color: placeholderGray }} />
                       </InputAdornment>
                     ),
                   }}
@@ -916,17 +970,21 @@ const Login = () => {
             {twoFactorError && <Alert icon={<ErrorOutline />} severity="error" sx={{ mb: 2 }}>{twoFactorError}</Alert>}
             <TextField
               fullWidth
-              placeholder="• • • • • •"
+              placeholder="••••••"
               value={pin}
               onChange={e => setPin(e.target.value.replace(/\D/g, ""))}
-              inputProps={{ maxLength: 6, style: { letterSpacing: "1rem", fontSize: "2rem", textAlign: "center" } }}
+              inputProps={{ maxLength: 6, style: { letterSpacing: "0.15rem", fontSize: "1.6rem", textAlign: "center" } }}
               sx={{
                 mb: 2,
+                "& .MuiInputBase-input::placeholder": {
+                  color: placeholderGray,
+                  opacity: 1,
+                },
                 "& .MuiOutlinedInput-root": {
                   borderRadius: 2,
-                  "& fieldset": { borderColor: mediumText },
-                  "&:hover fieldset": { borderColor: mediumText },
-                  "&.Mui-focused fieldset": { borderColor: mediumText },
+                  "& fieldset": { borderColor: placeholderGray },
+                  "&:hover fieldset": { borderColor: placeholderGray },
+                  "&.Mui-focused fieldset": { borderColor: placeholderGray },
                 },
               }}
             />
@@ -957,7 +1015,7 @@ const Login = () => {
                   borderColor: "#000",
                 },
               }}
-              onClick={() => send2FACode(userEmail, formData.employeeNumber)}
+              onClick={() => send2FACode(userEmail, employeeNumberForRequests)}
               disabled={resendLoading || codeTimer > 0}
             >
               {codeTimer > 0 ? `Resend in ${formatTime(codeTimer)}` : resendLoading ? "Sending..." : "Resend Code"}
@@ -1012,7 +1070,7 @@ const Login = () => {
               onClick={() => {
                 const decoded = JSON.parse(atob(localStorage.getItem("token").split(".")[1]));
                 if (decoded.role === "superadmin" || decoded.role === "administrator" || decoded.role === "technical") {
-                  window.location.href = "/admin-settings?tab=security";
+                  window.location.href = "/settings?tab=security";
                 } else {
                   window.location.href = "/settings?tab=security";
                 }

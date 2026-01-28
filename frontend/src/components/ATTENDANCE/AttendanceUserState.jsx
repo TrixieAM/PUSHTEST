@@ -36,6 +36,9 @@ import {
   alpha,
   styled,
   CardHeader,
+  FormControl,
+  InputLabel,
+  Select,
 } from '@mui/material';
 import {
   EventNote,
@@ -193,6 +196,12 @@ const AttendanceUserState = () => {
   const [sortOrder, setSortOrder] = useState('desc');
   const [showScrollTop, setShowScrollTop] = useState(false);
 
+  // Year / month selector (mirrors AttendanceState)
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(null);
+  const currentYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i);
+
   const getAuthHeaders = () => {
     const token = localStorage.getItem('token');
     return {
@@ -204,16 +213,26 @@ const AttendanceUserState = () => {
   };
 
   const months = [
-   "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
-    "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
+    'JAN',
+    'FEB',
+    'MAR',
+    'APR',
+    'MAY',
+    'JUN',
+    'JUL',
+    'AUG',
+    'SEP',
+    'OCT',
+    'NOV',
+    'DEC',
   ];
 
   const handleMonthClick = (monthIndex) => {
-    const year = new Date().getFullYear();
-    const start = new Date(Date.UTC(year, monthIndex, 1));
-    const end = new Date(Date.UTC(year, monthIndex + 1, 0));
+    const start = new Date(Date.UTC(selectedYear, monthIndex, 1));
+    const end = new Date(Date.UTC(selectedYear, monthIndex + 1, 0));
     setStartDate(start.toISOString().substring(0, 10));
     setEndDate(end.toISOString().substring(0, 10));
+    setSelectedMonth(monthIndex);
   };
 
   const handleFilterClick = (event) => {
@@ -578,55 +597,88 @@ const AttendanceUserState = () => {
 
               <Divider sx={{ my: 3, borderColor: 'rgba(109,35,35,0.1)' }} />
 
-              {/* Month Selection */}
-                 <Box sx={{ mb: 2 }}>
-                               <Typography
-                               variant="h6"
-                               gutterBottom
-                               sx={{
-                                 color: accentColor,
-                                 display: "flex",
-                                 alignItems: "center",
-                                 mb: 2,
-                               }}
-                             >
-                               <CalendarToday sx={{ mr: 2, fontSize: 24 }} />
-                               <b>Month:</b> <i>(select month to search employee records)</i>
-                             </Typography>
-                             <Box
-                               sx={{
-                                 display: "grid",
-                                 gridTemplateColumns: {
-                                   xs: "repeat(3, 1fr)",
-                                   sm: "repeat(6, 1fr)",
-                                   md: "repeat(12, 1fr)",
-                                 },
-                                 gap: 1.5,
-                               }}
-                             >
-                               {months.map((month, index) => (
-                                 <ProfessionalButton
-                                   key={month}
-                                   variant="outlined"
-                                   size="small"
-                                   onClick={() => handleMonthClick(index)}
-                                   sx={{
-                                     borderColor: accentColor,
-                                     color: accentColor,
-                                     minWidth: "auto",
-                                     fontSize: "0.875rem",
-                                     fontWeight: 500,
-                                     py: 1,
-                                     "&:hover": {
-                                       backgroundColor: alpha(accentColor, 0.1),
-                                     },
-                                   }}
-                                 >
-                                   {month}
-                                 </ProfessionalButton>
-                               ))}
-                             </Box>
-                           </Box>
+              {/* Month & Year Selection - single row, year at end */}
+              <Box sx={{ mb: 2 }}>
+                <Typography
+                  variant="h6"
+                  gutterBottom
+                  sx={{
+                    color: accentColor,
+                    display: 'flex',
+                    alignItems: 'center',
+                    mb: 2,
+                  }}
+                >
+                  <CalendarToday sx={{ mr: 2, fontSize: 24 }} />
+                  <b>Month & Year:</b>{' '}
+                  <i>(select month and year to search your records)</i>
+                </Typography>
+
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(13, minmax(0, 1fr))', // 12 months + Year
+                    gap: 1.25,
+                    width: '100%',
+                    alignItems: 'stretch',
+                  }}
+                >
+                  {months.map((monthLabel, index) => {
+                    const isSelected = selectedMonth === index;
+                    return (
+                      <ProfessionalButton
+                        key={monthLabel}
+                        variant={isSelected ? 'contained' : 'outlined'}
+                        size="small"
+                        onClick={() => handleMonthClick(index)}
+                        sx={{
+                          borderColor: accentColor,
+                          backgroundColor: isSelected
+                            ? accentColor
+                            : 'transparent',
+                          color: isSelected ? textSecondaryColor : accentColor,
+                          width: '100%',
+                          minWidth: 0,
+                          fontSize: '0.875rem',
+                          fontWeight: 500,
+                          py: 1,
+                          px: 0.5,
+                          '&:hover': {
+                            backgroundColor: isSelected
+                              ? alpha(accentColor, 0.9)
+                              : alpha(accentColor, 0.1),
+                          },
+                        }}
+                      >
+                        {monthLabel}
+                      </ProfessionalButton>
+                    );
+                  })}
+                  {/* Year selector placed at the end of the months row */}
+                  <FormControl size="small" sx={{ width: '100%', minWidth: 0 }}>
+                    <InputLabel sx={{ fontWeight: 600 }}>Year</InputLabel>
+                    <Select
+                      value={selectedYear}
+                      label="Year"
+                      onChange={(e) => setSelectedYear(e.target.value)}
+                      sx={{
+                        backgroundColor: 'white',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: accentColor,
+                        },
+                        borderRadius: 2,
+                        fontWeight: 600,
+                      }}
+                    >
+                      {yearOptions.map((yearOption) => (
+                        <MenuItem key={yearOption} value={yearOption}>
+                          {yearOption}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Box>
+              </Box>
            
                            {/* Quick Select */}
                            <Box>

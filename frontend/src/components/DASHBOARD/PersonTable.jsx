@@ -405,7 +405,7 @@ const PersonTable = () => {
     permanent_houseBlockLotNum: '',
     permanent_streetName: '',
     permanent_subdivisionOrVillage: '',
-    permanent_barangayName: '',
+    permanent_barangay: '',
     permanent_cityOrMunicipality: '',
     permanent_provinceName: '',
     permanent_zipcode: '',
@@ -770,8 +770,7 @@ const PersonTable = () => {
       editPerson.permanent_streetName !== originalPerson.permanent_streetName ||
       editPerson.permanent_subdivisionOrVillage !==
         originalPerson.permanent_subdivisionOrVillage ||
-      editPerson.permanent_barangayName !==
-        originalPerson.permanent_barangayName ||
+      editPerson.permanent_barangay !== originalPerson.permanent_barangay ||
       editPerson.permanent_cityOrMunicipality !==
         originalPerson.permanent_cityOrMunicipality ||
       editPerson.permanent_provinceName !==
@@ -879,7 +878,7 @@ const PersonTable = () => {
         'permanent_houseBlockLotNum',
         'permanent_streetName',
         'permanent_subdivisionOrVillage',
-        'permanent_barangayName',
+        'permanent_barangay',
         'permanent_cityOrMunicipality',
         'permanent_provinceName',
         'permanent_zipcode',
@@ -980,7 +979,7 @@ const PersonTable = () => {
           permanent_streetName: 'Permanent Address - Street Name',
           permanent_subdivisionOrVillage:
             'Permanent Address - Subdivision/Village',
-          permanent_barangayName: 'Permanent Address - Barangay',
+          permanent_barangay: 'Permanent Address - Barangay',
           permanent_cityOrMunicipality: 'Permanent Address - City/Municipality',
           permanent_provinceName: 'Permanent Address - Province',
           permanent_zipcode: 'Permanent Address - Zip Code',
@@ -2125,13 +2124,6 @@ const PersonTable = () => {
                                     )
                                   }
                                   sx={{ mt: 1, width: '100%' }}
-                                  InputProps={{
-                                    startAdornment: (
-                                      <InputAdornment position="start">
-                                        📞
-                                      </InputAdornment>
-                                    ),
-                                  }}
                                 />
                               ) : (
                                 editPerson.telephone || 'Not specified'
@@ -2156,13 +2148,6 @@ const PersonTable = () => {
                                     )
                                   }
                                   sx={{ mt: 1, width: '100%' }}
-                                  InputProps={{
-                                    startAdornment: (
-                                      <InputAdornment position="start">
-                                        📱
-                                      </InputAdornment>
-                                    ),
-                                  }}
                                 />
                               ) : (
                                 editPerson.mobileNum || 'Not specified'
@@ -2188,13 +2173,6 @@ const PersonTable = () => {
                                     )
                                   }
                                   sx={{ mt: 1, width: '100%' }}
-                                  InputProps={{
-                                    startAdornment: (
-                                      <InputAdornment position="start">
-                                        ✉️
-                                      </InputAdornment>
-                                    ),
-                                  }}
                                 />
                               ) : (
                                 editPerson.emailAddress || 'Not specified'
@@ -2414,7 +2392,7 @@ const PersonTable = () => {
                         variant="subtitle1"
                         sx={{ fontWeight: 'bold', mb: 2, color: '#6D2323' }}
                       >
-                        🏠 Permanent Address
+                        Permanent Address
                       </Typography>
                       <List dense>
                         <ListItem sx={{ py: 0.5 }}>
@@ -2505,11 +2483,11 @@ const PersonTable = () => {
                                 <TextField
                                   size="small"
                                   value={
-                                    editPerson.permanent_barangayName || ''
+                                    editPerson.permanent_barangay || ''
                                   }
                                   onChange={(e) =>
                                     handleChange(
-                                      'permanent_barangayName',
+                                      'permanent_barangay',
                                       e.target.value,
                                       true
                                     )
@@ -2517,8 +2495,7 @@ const PersonTable = () => {
                                   sx={{ mt: 1, width: '100%' }}
                                 />
                               ) : (
-                                editPerson.permanent_barangayName ||
-                                'Not specified'
+                                editPerson.permanent_barangay || 'Not specified'
                               )
                             }
                           />
@@ -2613,7 +2590,7 @@ const PersonTable = () => {
                           color: '#6D2323',
                         }}
                       >
-                        🏡 Residential Address
+                        Residential Address
                       </Typography>
                       <List dense>
                         <ListItem sx={{ py: 0.5 }}>
@@ -2840,7 +2817,7 @@ const PersonTable = () => {
                         variant="subtitle1"
                         sx={{ fontWeight: 'bold', mb: 2, color: '#6D2323' }}
                       >
-                        💑 Spouse Information
+                        Spouse Information
                       </Typography>
                       <List dense>
                         <ListItem sx={{ py: 0.5 }}>
@@ -3009,7 +2986,7 @@ const PersonTable = () => {
                           color: '#6D2323',
                         }}
                       >
-                        👨‍👩‍👧‍👦 Parents Information
+                        Parents Information
                       </Typography>
                       <List dense>
                         <ListItem sx={{ py: 0.5 }}>
@@ -3164,7 +3141,7 @@ const PersonTable = () => {
                         variant="subtitle1"
                         sx={{ fontWeight: 'bold', mb: 2, color: '#6D2323' }}
                       >
-                        🎓 Elementary Education
+                        Elementary Education
                       </Typography>
                       <List dense>
                         <ListItem sx={{ py: 0.5 }}>
@@ -3359,7 +3336,7 @@ const PersonTable = () => {
                           color: '#6D2323',
                         }}
                       >
-                        🎓 Secondary Education
+                        Secondary Education
                       </Typography>
                       <List dense>
                         <ListItem sx={{ py: 0.5 }}>

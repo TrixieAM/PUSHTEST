@@ -354,6 +354,12 @@ const LearningAndDevelopment = () => {
   
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [selectedEditEmployee, setSelectedEditEmployee] = useState(null);
+  const [employeeRecordsModal, setEmployeeRecordsModal] = useState({
+    open: false,
+    employeeId: null,
+    employeeName: '',
+    records: []
+  });
   
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -597,6 +603,24 @@ const LearningAndDevelopment = () => {
     setIsEditing(false);
   };
 
+  const handleOpenEmployeeRecordsModal = (employeeId, employeeName, records) => {
+    setEmployeeRecordsModal({
+      open: true,
+      employeeId,
+      employeeName,
+      records
+    });
+  };
+
+  const handleCloseEmployeeRecordsModal = () => {
+    setEmployeeRecordsModal({
+      open: false,
+      employeeId: null,
+      employeeName: '',
+      records: []
+    });
+  };
+
   const handleViewModeChange = (event, newMode) => {
     if (newMode !== null) {
       setViewMode(newMode);
@@ -647,6 +671,31 @@ const LearningAndDevelopment = () => {
     const employeeName = employeeNames[learning.person_id]?.toLowerCase() || "";
     const search = searchTerm.toLowerCase();
     return personId.includes(search) || programTitle.includes(search) || employeeName.includes(search);
+  });
+
+  const groupedData = (() => {
+    const grouped = {};
+    data.forEach((item) => {
+      if (!grouped[item.person_id]) {
+        grouped[item.person_id] = {
+          employeeId: item.person_id,
+          employeeName: employeeNames[item.person_id] || 'Unknown',
+          records: []
+        };
+      }
+      grouped[item.person_id].records.push(item);
+    });
+    return Object.values(grouped);
+  })();
+
+  const filteredGroupedData = groupedData.filter((group) => {
+    const employeeName = (group.employeeName || '').toLowerCase();
+    const employeeId = (group.employeeId || '').toString();
+    const recordText = group.records
+      .map((r) => (r.titleOfProgram || '').toLowerCase())
+      .join(' ');
+    const search = searchTerm.toLowerCase();
+    return employeeId.includes(search) || employeeName.includes(search) || recordText.includes(search);
   });
 
   return (
@@ -1090,10 +1139,16 @@ const LearningAndDevelopment = () => {
                   >
                     {viewMode === 'grid' ? (
                       <Grid container spacing={2}>
-                        {filteredData.map((learning) => (
-                          <Grid item xs={12} sm={6} md={4} key={learning.id}>
+                        {filteredGroupedData.map((group) => (
+                          <Grid item xs={12} sm={6} md={4} key={group.employeeId}>
                             <Card
-                              onClick={() => handleOpenModal(learning)}
+                              onClick={() =>
+                                handleOpenEmployeeRecordsModal(
+                                  group.employeeId,
+                                  group.employeeName,
+                                  group.records
+                                )
+                              }
                               sx={{
                                 cursor: "pointer",
                                 border: "1px solid rgba(109, 35, 35, 0.1)",
@@ -1119,41 +1174,33 @@ const LearningAndDevelopment = () => {
                                     fontSize: '0.7rem',
                                     fontWeight: 'bold'
                                   }}>
-                                    ID: {learning.person_id}
+                                    ID: {group.employeeId}
                                   </Typography>
                                 </Box>
                                 
                                 <Typography variant="body2" fontWeight="bold" color="#333" mb={0.5} noWrap>
-                                  {employeeNames[learning.person_id] || 'Loading...'}
+                                  {group.employeeName}
                                 </Typography>
                                 
-                                <Typography variant="body2" fontWeight="bold" color="#333" mb={1} sx={{ flexGrow: 1, wordBreak: 'break-word' }}>
-                                  {learning.titleOfProgram || 'No Program'}
+                                <Typography variant="body2" color="#555" sx={{ flexGrow: 1 }}>
+                                  {group.records.length} {group.records.length === 1 ? 'Program' : 'Programs'}
                                 </Typography>
-                                
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, flexWrap: 'nowrap', overflow: 'hidden' }}>
-                                  <CalendarToday sx={{ fontSize: 12, color: '#000', mr: 0.25, flexShrink: 0 }} />
-                                  <Typography variant="caption" color="#000" fontSize="0.7rem" sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                    {learning.dateFrom?.split('T')[0] || learning.dateFrom || '----'}
-                                  </Typography>
-                                  <Typography variant="caption" color="#000" fontSize="0.7rem" sx={{ mx: 0.25, flexShrink: 0 }}>
-                                    to
-                                  </Typography>
-                                  <CalendarToday sx={{ fontSize: 12, color: '#000', mr: 0.25, flexShrink: 0 }} />
-                                  <Typography variant="caption" color="#000" fontSize="0.7rem" sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                    {learning.dateTo?.split('T')[0] || learning.dateTo || '----'}
-                                  </Typography>
-                                </Box>
                               </CardContent>
                             </Card>
                           </Grid>
                         ))}
                       </Grid>
                     ) : (
-                      filteredData.map((learning) => (
+                      filteredGroupedData.map((group) => (
                         <Card
-                          key={learning.id}
-                          onClick={() => handleOpenModal(learning)}
+                          key={group.employeeId}
+                          onClick={() =>
+                            handleOpenEmployeeRecordsModal(
+                              group.employeeId,
+                              group.employeeName,
+                              group.records
+                            )
+                          }
                           sx={{
                             cursor: "pointer",
                             border: "1px solid rgba(109, 35, 35, 0.1)",
@@ -1178,29 +1225,15 @@ const LearningAndDevelopment = () => {
                                   display: 'block',
                                   mb: 0.5
                                 }}>
-                                  ID: {learning.person_id}
+                                  ID: {group.employeeId}
                                 </Typography>
                                 <Typography variant="body2" fontWeight="bold" color="#333" sx={{ mb: 0.5 }}>
-                                  {employeeNames[learning.person_id] || 'Loading...'}
+                                  {group.employeeName}
                                 </Typography>
                                 
-                                <Typography variant="body2" fontWeight="bold" color="#333" sx={{ mb: 0.5, wordBreak: 'break-word' }}>
-                                  {learning.titleOfProgram || 'No Program'}
+                                <Typography variant="body2" color="#555">
+                                  {group.records.length} {group.records.length === 1 ? 'Program' : 'Programs'}
                                 </Typography>
-                                
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                  <CalendarToday sx={{ fontSize: 14, color: '#000', mr: 0.25 }} />
-                                  <Typography variant="caption" color="#000" fontSize="0.75rem">
-                                    {learning.dateFrom?.split('T')[0] || learning.dateFrom || '----'}
-                                  </Typography>
-                                  <Typography variant="caption" color="#000" fontSize="0.75rem" sx={{ mx: 0.25 }}>
-                                    to
-                                  </Typography>
-                                  <CalendarToday sx={{ fontSize: 14, color: '#000', mr: 0.25 }} />
-                                  <Typography variant="caption" color="#000" fontSize="0.75rem">
-                                    {learning.dateTo?.split('T')[0] || learning.dateTo || '----'}
-                                  </Typography>
-                                </Box>
                               </Box>
                             </Box>
                           </Box>
@@ -1208,7 +1241,7 @@ const LearningAndDevelopment = () => {
                       ))
                     )}
                     
-                    {filteredData.length === 0 && (
+                    {filteredGroupedData.length === 0 && (
                       <Box textAlign="center" py={4}>
                         <Typography variant="h6" color={accentColor} fontWeight="bold" sx={{ mb: 1 }}>
                           No Records Found
@@ -1224,6 +1257,113 @@ const LearningAndDevelopment = () => {
             </Fade>
           </Grid>
         </Grid>
+
+        {/* Employee Programs Modal */}
+        <Modal
+          open={employeeRecordsModal.open}
+          onClose={handleCloseEmployeeRecordsModal}
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <GlassCard
+            settings={settings}
+            sx={{
+              width: "90%",
+              maxWidth: "900px",
+              maxHeight: "90vh",
+              overflowY: 'auto',
+            }}
+          >
+            <Box
+              sx={{
+                p: 4,
+                background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
+                color: accentColor,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center" }}>
+                <LightbulbIcon sx={{ fontSize: "1.8rem", mr: 2 }} />
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                    Programs of {employeeRecordsModal.employeeName}
+                  </Typography>
+                  <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                    Employee ID: {employeeRecordsModal.employeeId} | {employeeRecordsModal.records.length} {employeeRecordsModal.records.length === 1 ? 'Program' : 'Programs'}
+                  </Typography>
+                </Box>
+              </Box>
+              <IconButton onClick={handleCloseEmployeeRecordsModal} sx={{ color: accentColor }}>
+                <Close />
+              </IconButton>
+            </Box>
+
+            <Box sx={{ p: 4 }}>
+              {employeeRecordsModal.records.length > 0 ? (
+                <Grid container spacing={2}>
+                  {employeeRecordsModal.records.map((learning) => (
+                    <Grid item xs={12} sm={6} md={4} key={learning.id}>
+                      <Card
+                        onClick={() => handleOpenModal(learning)}
+                        sx={{
+                          cursor: "pointer",
+                          border: "1px solid rgba(109, 35, 35, 0.1)",
+                          height: "100%",
+                          display: 'flex',
+                          flexDirection: 'column',
+                          "&:hover": { 
+                            borderColor: accentColor,
+                            transform: 'translateY(-2px)',
+                            transition: 'all 0.2s ease',
+                            boxShadow: '0 4px 8px rgba(109,35,35,0.15)'
+                          },
+                        }}
+                      >
+                        <CardContent sx={{ p: 2, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                          <Typography variant="body2" fontWeight="bold" color="#333" mb={0.5} noWrap>
+                            {learning.titleOfProgram || 'No Program'}
+                          </Typography>
+                          
+                          <Typography variant="body2" color="#555" mb={0.5}>
+                            {learning.typeOfLearningDevelopment || '—'}
+                          </Typography>
+                          
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, flexWrap: 'nowrap', overflow: 'hidden' }}>
+                            <CalendarToday sx={{ fontSize: 12, color: '#000', mr: 0.25, flexShrink: 0 }} />
+                            <Typography variant="caption" color="#000" fontSize="0.7rem" sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {learning.dateFrom?.split('T')[0] || learning.dateFrom || '----'}
+                            </Typography>
+                            <Typography variant="caption" color="#000" fontSize="0.7rem" sx={{ mx: 0.25, flexShrink: 0 }}>
+                              to
+                            </Typography>
+                            <CalendarToday sx={{ fontSize: 12, color: '#000', mr: 0.25, flexShrink: 0 }} />
+                            <Typography variant="caption" color="#000" fontSize="0.7rem" sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {learning.dateTo?.split('T')[0] || learning.dateTo || '----'}
+                            </Typography>
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  ))}
+                </Grid>
+              ) : (
+                <Box textAlign="center" py={4}>
+                  <Typography variant="h6" color={accentColor} fontWeight="bold" sx={{ mb: 1 }}>
+                    No Records Found
+                  </Typography>
+                  <Typography variant="body2" color={grayColor}>
+                    This employee doesn't have any learning records yet.
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          </GlassCard>
+        </Modal>
 
         {/* Edit Learning Modal */}
         <Modal

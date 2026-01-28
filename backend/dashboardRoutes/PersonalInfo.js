@@ -181,7 +181,7 @@ router.put('/person_table/by-employee/:employeeNumber', (req, res) => {
   const {
     firstName, middleName, lastName, nameExtension, birthDate, placeOfBirth, sex, civilStatus, citizenship, heightCm, weightKg, bloodType,
     gsisNum, pagibigNum, philhealthNum, sssNum, tinNum, agencyEmployeeNum,
-    permanent_houseBlockLotNum, permanent_streetName, permanent_subdivisionOrVillage, permanent_barangayName, permanent_cityOrMunicipality,
+    permanent_houseBlockLotNum, permanent_streetName, permanent_subdivisionOrVillage, permanent_barangay, permanent_barangayName, permanent_cityOrMunicipality,
     permanent_provinceName, permanent_zipcode, residential_houseBlockLotNum, residential_streetName, residential_subdivisionOrVillage, residential_barangayName,
     residential_cityOrMunicipality, residential_provinceName, residential_zipcode, telephone, mobileNum, emailAddress,
     spouseFirstName, spouseMiddleName, spouseLastName, spouseNameExtension,
@@ -193,6 +193,9 @@ router.put('/person_table/by-employee/:employeeNumber', (req, res) => {
     secondaryNameOfSchool, secondaryDegree, secondaryPeriodFrom, secondaryPeriodTo,
     secondaryHighestAttained, secondaryYearGraduated, secondaryScholarshipAcademicHonorsReceived
   } = req.body;
+
+  // Backward compat: some clients send `permanent_barangayName`
+  const permanentBarangayValue = permanent_barangay ?? permanent_barangayName;
 
   const query = `UPDATE person_table SET 
     firstName = ?, middleName = ?, lastName = ?, nameExtension = ?, birthDate = ?, placeOfBirth = ?, sex = ?, civilStatus = ?, citizenship = ?, heightCm = ?, weightKg = ?, bloodType = ?, 
@@ -209,7 +212,7 @@ router.put('/person_table/by-employee/:employeeNumber', (req, res) => {
   db.query(query, [
     firstName, middleName, lastName, nameExtension, birthDate, placeOfBirth, sex, civilStatus, citizenship, heightCm, weightKg, bloodType,
     gsisNum, pagibigNum, philhealthNum, sssNum, tinNum, agencyEmployeeNum,
-    permanent_houseBlockLotNum, permanent_streetName, permanent_subdivisionOrVillage, permanent_barangayName, permanent_cityOrMunicipality, permanent_provinceName, permanent_zipcode,
+    permanent_houseBlockLotNum, permanent_streetName, permanent_subdivisionOrVillage, permanentBarangayValue, permanent_cityOrMunicipality, permanent_provinceName, permanent_zipcode,
     residential_houseBlockLotNum, residential_streetName, residential_subdivisionOrVillage, residential_barangayName, residential_cityOrMunicipality, residential_provinceName, residential_zipcode,
     telephone, mobileNum, emailAddress,
     spouseFirstName, spouseMiddleName, spouseLastName, spouseNameExtension, spouseOccupation, spouseEmployerBusinessName, spouseBusinessAddress, spouseTelephone,

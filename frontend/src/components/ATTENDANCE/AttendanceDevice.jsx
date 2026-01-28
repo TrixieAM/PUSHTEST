@@ -160,6 +160,12 @@ const ViewAttendanceRecord = () => {
   const [viewMode, setViewMode] = useState('single');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
+  // Department filter (All Users)
+  const [departments, setDepartments] = useState([]);
+  const [departmentAssignmentsMap, setDepartmentAssignmentsMap] = useState({});
+  const [departmentCodeFilter, setDepartmentCodeFilter] = useState('');
+  const [loadingDepartments, setLoadingDepartments] = useState(false);
+
   // Pagination states
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
@@ -180,6 +186,15 @@ const ViewAttendanceRecord = () => {
       filtered = filtered.filter((u) => !u.records || u.records.length === 0);
     }
 
+    // Apply department filter
+    if (departmentCodeFilter) {
+      filtered = filtered.filter((u) => {
+        const deptCode = departmentAssignmentsMap?.[u.employeeNumber] || '';
+        if (departmentCodeFilter === '__UNASSIGNED__') return !deptCode;
+        return deptCode === departmentCodeFilter;
+      });
+    }
+
     if (!searchQuery || searchQuery.trim() === '') return filtered;
     const q = searchQuery.trim().toLowerCase();
     return filtered.filter((user) => {
@@ -191,6 +206,9 @@ const ViewAttendanceRecord = () => {
   };
 
   const filteredUsers = getFilteredUsers();
+  const selectedCountInFiltered = filteredUsers.reduce((count, user) => {
+    return selectedUsers.has(user.employeeNumber) ? count + 1 : count;
+  }, 0);
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / rowsPerPage));
   const paginatedUsers = filteredUsers.slice(
     (currentPage - 1) * rowsPerPage,
@@ -260,6 +278,40 @@ const ViewAttendanceRecord = () => {
     };
   };
 
+  const fetchDepartmentsAndAssignments = async () => {
+    setLoadingDepartments(true);
+    try {
+      const [deptResponse, assignmentResponse] = await Promise.all([
+        axios.get(`${API_BASE_URL}/api/department-table`, getAuthHeaders()),
+        axios.get(`${API_BASE_URL}/api/department-assignment`, getAuthHeaders()),
+      ]);
+
+      const deptList = Array.isArray(deptResponse.data) ? deptResponse.data : [];
+      deptList.sort((a, b) =>
+        String(a?.code || '').localeCompare(String(b?.code || '')),
+      );
+      setDepartments(deptList);
+
+      const assignments = Array.isArray(assignmentResponse.data)
+        ? assignmentResponse.data
+        : [];
+      const map = {};
+      assignments.forEach((a) => {
+        if (!a?.employeeNumber) return;
+        map[String(a.employeeNumber)] = a.code || '';
+      });
+      setDepartmentAssignmentsMap(map);
+    } catch (error) {
+      console.error('Error fetching departments/assignments:', error);
+      // Keep UI usable even if this fails
+      setDepartments([]);
+      setDepartmentAssignmentsMap({});
+      showSnackbar('Failed to load departments for filtering', 'warning');
+    } finally {
+      setLoadingDepartments(false);
+    }
+  };
+
   const showSnackbar = (message, severity = 'success') => {
     setSnackbar({ open: true, message, severity });
   };
@@ -267,6 +319,12 @@ const ViewAttendanceRecord = () => {
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
   };
+
+  // Load departments + assignments when switching to All Users mode
+  useEffect(() => {
+    if (viewMode !== 'multiple') return;
+    fetchDepartmentsAndAssignments();
+  }, [viewMode]);
 
   const fetchRecords = async (showLoading = true) => {
     if (!personID || !startDate || !endDate) return;
@@ -316,7 +374,27 @@ const ViewAttendanceRecord = () => {
         getAuthHeaders(),
       );
 
-      const users = usersResponse.data || [];
+      let users = usersResponse.data || [];
+
+      // If a department is selected, apply it BEFORE fetching DTR (performance + "before sending")
+      if (
+        departmentCodeFilter &&
+        Object.keys(departmentAssignmentsMap || {}).length === 0 &&
+        !loadingDepartments
+      ) {
+        // Ensure we have assignments map available
+        await fetchDepartmentsAndAssignments();
+      }
+
+      if (departmentCodeFilter) {
+        const deptMap = departmentAssignmentsMap || {};
+        users = users.filter((u) => {
+          const empNo = String(u?.PersonID ?? '');
+          const deptCode = deptMap[empNo] || '';
+          if (departmentCodeFilter === '__UNASSIGNED__') return !deptCode;
+          return deptCode === departmentCodeFilter;
+        });
+      }
 
       showSnackbar(`Found ${users.length} users in device records`, 'info');
 
@@ -615,6 +693,7 @@ const ViewAttendanceRecord = () => {
     setError('');
     setAllUsersDTR([]);
     setSelectedUsers(new Set());
+    setDepartmentCodeFilter('');
     setSelectedMonth(null); // Add this line
   };
 
@@ -935,6 +1014,50 @@ const ViewAttendanceRecord = () => {
                     Click any option below to automatically set the date range:
                   </Typography>
 
+                  {/* Department Filter (All Users) */}
+                  {viewMode === 'multiple' && (
+                    <Box sx={{ mb: 3, display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                      <FormControl
+                        sx={{ minWidth: 320, backgroundColor: 'white' }}
+                        disabled={loadingDepartments}
+                      >
+                        <InputLabel>Department</InputLabel>
+                        <Select
+                          value={departmentCodeFilter}
+                          label="Department"
+                          onChange={(e) => {
+                            setDepartmentCodeFilter(e.target.value);
+                            setCurrentPage(1);
+                          }}
+                        >
+                          <MenuItem value="">All Departments</MenuItem>
+                          <MenuItem value="__UNASSIGNED__">Unassigned</MenuItem>
+                          {departments.map((d) => (
+                            <MenuItem key={d.id ?? d.code} value={d.code}>
+                              {d.code}
+                              {d.description ? ` - ${d.description}` : ''}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                      <ProfessionalButton
+                        variant="outlined"
+                        onClick={fetchDepartmentsAndAssignments}
+                        disabled={loadingDepartments}
+                        startIcon={
+                          loadingDepartments ? (
+                            <CircularProgress size={18} />
+                          ) : (
+                            <Refresh />
+                          )
+                        }
+                        sx={{ borderColor: accentColor, color: textPrimaryColor }}
+                      >
+                        Refresh Departments
+                      </ProfessionalButton>
+                    </Box>
+                  )}
+
                   {/* Quick Filters Row */}
                   <Box
                     sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}
@@ -1183,7 +1306,7 @@ const ViewAttendanceRecord = () => {
                     <ProfessionalButton
                       variant="contained"
                       onClick={handleBulkSendToDTR}
-                      disabled={selectedUsers.size === 0}
+                      disabled={selectedCountInFiltered === 0}
                       startIcon={<Send />}
                       sx={{
                         backgroundColor: '#4caf50',
@@ -1191,7 +1314,7 @@ const ViewAttendanceRecord = () => {
                         '&:hover': { backgroundColor: '#45a049' },
                       }}
                     >
-                      View DTR ({selectedUsers.size})
+                      View DTR ({selectedCountInFiltered})
                     </ProfessionalButton>
                   )}
                 </Box>
@@ -1252,12 +1375,12 @@ const ViewAttendanceRecord = () => {
                         variant="outlined"
                         onClick={() =>
                           handleSelectAll(
-                            selectedUsers.size !== filteredUsers.length,
+                            selectedCountInFiltered !== filteredUsers.length,
                           )
                         }
                         sx={{ borderColor: accentColor, color: accentColor }}
                       >
-                        {selectedUsers.size === filteredUsers.length
+                        {selectedCountInFiltered === filteredUsers.length
                           ? 'Deselect All'
                           : 'Select All'}
                       </ProfessionalButton>
@@ -1319,12 +1442,12 @@ const ViewAttendanceRecord = () => {
                             <PremiumTableCell isHeader>
                               <Checkbox
                                 checked={
-                                  selectedUsers.size === filteredUsers.length &&
+                                  selectedCountInFiltered === filteredUsers.length &&
                                   filteredUsers.length > 0
                                 }
                                 indeterminate={
-                                  selectedUsers.size > 0 &&
-                                  selectedUsers.size < filteredUsers.length
+                                  selectedCountInFiltered > 0 &&
+                                  selectedCountInFiltered < filteredUsers.length
                                 }
                                 onChange={(e) =>
                                   handleSelectAll(e.target.checked)
@@ -1336,6 +1459,12 @@ const ViewAttendanceRecord = () => {
                               sx={{ color: textPrimaryColor }}
                             >
                               Employee Number
+                            </PremiumTableCell>
+                            <PremiumTableCell
+                              isHeader
+                              sx={{ color: textPrimaryColor }}
+                            >
+                              Department
                             </PremiumTableCell>
                             <PremiumTableCell
                               isHeader
@@ -1395,6 +1524,23 @@ const ViewAttendanceRecord = () => {
                               </PremiumTableCell>
                               <PremiumTableCell>
                                 {user.employeeNumber}
+                              </PremiumTableCell>
+                              <PremiumTableCell>
+                                {(() => {
+                                  const dept =
+                                    departmentAssignmentsMap?.[
+                                      user.employeeNumber
+                                    ] || '';
+                                  return dept ? (
+                                    <Chip label={dept} size="small" />
+                                  ) : (
+                                    <Chip
+                                      label="Unassigned"
+                                      size="small"
+                                      variant="outlined"
+                                    />
+                                  );
+                                })()}
                               </PremiumTableCell>
                               <PremiumTableCell>
                                 {searchQuery

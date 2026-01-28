@@ -88,7 +88,7 @@ app.use(express.json());
 // Define allowed origins
 const allowedOrigins = [
   'http://localhost:5137',
-  'http://192.168.20.16:5137', // Local dev
+  'http://192.168.50.48:5137', // Local dev
   'http://192.168.50.50:5137', // LAN
   'http://136.239.248.42:5137', // Public
 ];
