@@ -129,6 +129,7 @@ const AdminSecurity = () => {
     password: true,
     middleName: false,
     nameExtension: false,
+    department: false,
   });
 
   const employeeNumber = localStorage.getItem("employeeNumber");
@@ -859,6 +860,7 @@ const AdminSecurity = () => {
                       { key: "password", label: "Password" },
                       { key: "middleName", label: "Middle Name" },
                       { key: "nameExtension", label: "Name Extension" },
+                      { key: "department", label: "Department" },
                     ].map((field) => (
                       <GlassCard
                         key={field.key}

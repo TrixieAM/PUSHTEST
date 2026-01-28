@@ -5,6 +5,7 @@ const nodemailer = require('nodemailer');
 const multer = require('multer');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
+const { notifyPayrollChanged } = require('../socket/socketService');
 
 
 // Configure multer for handling file uploads
@@ -181,6 +182,11 @@ router.post(
         } catch (e) {
           console.error('Audit log error:', e);
         }
+
+        notifyPayrollChanged('sent', {
+          module: 'payslip',
+          employeeNumber,
+        });
 
 
         res.json({ success: true, message: 'Payslip sent successfully' });
@@ -376,6 +382,12 @@ EARIST HR Testing Team`,
           results.push({ employeeNumber, success: false, error: err.message });
         }
       }
+
+      const sentCount = results.filter((r) => r.success).length;
+      notifyPayrollChanged('sent', {
+        module: 'payslip-bulk',
+        sentCount,
+      });
 
 
       res.json({ success: true, results });

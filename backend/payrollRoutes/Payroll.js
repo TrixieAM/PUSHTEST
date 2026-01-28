@@ -2,6 +2,7 @@ const db = require("../db");
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const { notifyPayrollChanged } = require('../socket/socketService');
 
 
 function authenticateToken(req, res, next) {
@@ -762,6 +763,10 @@ router.put(
                           .json({ error: 'Internal server error' });
                       }
 
+                      notifyPayrollChanged('updated', {
+                        module: 'payroll-processing',
+                        employeeNumber,
+                      });
 
                       res.json({
                         message: 'Payroll record updated successfully',
@@ -807,6 +812,11 @@ router.delete(
 
 
       logAudit(req.user, 'delete', 'Payroll Processing', id, employeeNumber);
+      notifyPayrollChanged('deleted', {
+        module: 'payroll-processing',
+        id,
+        employeeNumber,
+      });
       res.json({ message: 'Payroll record deleted successfully' });
     });
   }
@@ -915,6 +925,10 @@ router.post('/add-rendered-time', authenticateToken, async (req, res) => {
       );
     }
 
+    notifyPayrollChanged('imported', {
+      module: 'payroll-processing',
+      count: attendanceData.length,
+    });
 
     res
       .status(200)
@@ -1139,6 +1153,11 @@ router.post('/finalized-payroll', authenticateToken, (req, res) => {
         employeeNumbers
       );
 
+      notifyPayrollChanged('finalized', {
+        module: 'payroll-processed',
+        inserted: result.affectedRows,
+        updated: updateResult.affectedRows,
+      });
 
       res.json({
         message: 'Finalized payroll inserted and status updated successfully.',
@@ -1179,6 +1198,8 @@ router.delete('/payroll-processed/:id', authenticateToken, (req, res) => {
       // Audit log
       logAudit(req.user, 'delete', 'payroll_processed', id, employeeNumber);
 
+      notifyPayrollChanged('deleted', { module: 'payroll-processed', id });
+
       res.json({
         message: 'Deleted and status updated.',
         deleted: results.affectedRows,
@@ -1217,6 +1238,8 @@ router.delete('/finalized-payroll/:id', authenticateToken, (req, res) => {
 
       // Audit log
       logAudit(req.user, 'delete', 'payroll_processed', id, employeeNumber);
+
+      notifyPayrollChanged('deleted', { module: 'payroll-processed', id });
 
       res.json({
         message: 'Deleted and status updated.',

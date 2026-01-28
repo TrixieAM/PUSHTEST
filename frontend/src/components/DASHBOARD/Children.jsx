@@ -2,6 +2,7 @@ import API_BASE_URL from '../../apiConfig';
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { getAuthHeaders } from '../../utils/auth';
+import { useSocket } from '../../contexts/SocketContext';
 import {
   Container,
   Typography,
@@ -62,6 +63,21 @@ import {
   createThemedButton,
   createThemedTextField,
 } from '../../utils/theme';
+
+// Stable themed components (avoid recreating styled components on every render)
+const ThemedCard = styled(Card, {
+  shouldForwardProp: (prop) => prop !== 'settings',
+})(({ settings = {} }) => createThemedCard(settings));
+
+const ThemedButton = styled(Button, {
+  shouldForwardProp: (prop) => prop !== 'settings',
+})(({ settings = {}, variant = 'contained' }) =>
+  createThemedButton(settings, variant),
+);
+
+const ThemedTextField = styled(TextField, {
+  shouldForwardProp: (prop) => prop !== 'settings',
+})(({ settings = {} }) => createThemedTextField(settings));
 
 // Employee Autocomplete Component
 const EmployeeAutocomplete = ({
@@ -215,11 +231,10 @@ const EmployeeAutocomplete = ({
     }
   };
 
-  const ModernTextField = styled(TextField)(() => createThemedTextField(settings));
-
   return (
     <Box sx={{ position: 'relative', width: '100%' }} ref={dropdownRef}>
-      <ModernTextField
+      <ThemedTextField
+        settings={settings}
         ref={inputRef}
         value={query}
         onChange={handleInputChange}
@@ -314,6 +329,8 @@ const EmployeeAutocomplete = ({
 };
 
 const Children = () => {
+  const { socket, connected } = useSocket();
+  const refreshChildrenRef = useRef(null);
   // Get settings from context
   const { settings } = useSystemSettings();
   
@@ -359,14 +376,10 @@ const Children = () => {
 
   const navigate = useNavigate();
   
-  // Create themed styled components using system settings
-  const GlassCard = styled(Card)(() => createThemedCard(settings));
-  
-  const ProfessionalButton = styled(Button)(({ variant = 'contained' }) => 
-    createThemedButton(settings, variant)
-  );
-
-  const ModernTextField = styled(TextField)(() => createThemedTextField(settings));
+  // Use stable themed components
+  const GlassCard = ThemedCard;
+  const ProfessionalButton = ThemedButton;
+  const ModernTextField = ThemedTextField;
   
   // Color scheme from settings (for compatibility)
   const primaryColor = settings.accentColor || '#FEF9E1';
@@ -410,6 +423,25 @@ const Children = () => {
       showSnackbar('Failed to fetch children records. Please try again.', 'error');
     }
   };
+
+  // Keep latest fetch function for Socket.IO handler
+  useEffect(() => {
+    refreshChildrenRef.current = fetchChildren;
+  });
+
+  // Realtime: refresh when anyone changes children records
+  useEffect(() => {
+    if (!socket || !connected) return;
+
+    const handleChanged = () => {
+      refreshChildrenRef.current?.();
+    };
+
+    socket.on('childrenTableChanged', handleChanged);
+    return () => {
+      socket.off('childrenTableChanged', handleChanged);
+    };
+  }, [socket, connected]);
 
   const groupChildrenByEmployee = () => {
     const grouped = {};
@@ -664,17 +696,18 @@ const Children = () => {
 
   return (
     <Box sx={{ 
-      py: 4,
-      mt: -5,
-      width: '1600px',
+      py: { xs: 2, md: 4 },
+      mt: { xs: 0, md: -5 },
+      width: '100%',
+      maxWidth: '1600px',
       mx: 'auto',
-      overflow: 'hidden',
+      overflowX: 'hidden',
     }}>
-      <Box sx={{ px: 6 }}>
+      <Box sx={{ px: { xs: 2, sm: 3, md: 6 } }}>
         {/* Header */}
         <Fade in timeout={500}>
           <Box sx={{ mb: 4 }}>
-            <GlassCard>
+            <GlassCard settings={settings}>
               <Box
                 sx={{
                   p: 5,
@@ -767,7 +800,7 @@ const Children = () => {
           {/* Add New Child Section */}
           <Grid item xs={12} lg={6}>
             <Fade in timeout={700}>
-              <GlassCard sx={{ height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
+              <GlassCard settings={settings} sx={{ height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
                 <Box
                   sx={{
                     p: 4,
@@ -852,7 +885,7 @@ const Children = () => {
                               <Typography
                                 variant="caption"
                                 sx={{
-                                  color: grayColor,
+                                  color: settings.textPrimaryColor || '#A31D1D',
                                   fontSize: '12px',
                                   lineHeight: 1.2,
                                 }}
@@ -994,7 +1027,7 @@ const Children = () => {
           {/* Employee Children Records Section */}
           <Grid item xs={12} lg={6}>
             <Fade in timeout={900}>
-              <GlassCard sx={{ height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
+              <GlassCard settings={settings} sx={{ height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
                 <Box
                   sx={{
                     p: 4,
@@ -1248,6 +1281,7 @@ const Children = () => {
           }}
         >
           <GlassCard
+            settings={settings}
             sx={{
               width: "90%",
               maxWidth: "800px",
@@ -1379,6 +1413,7 @@ const Children = () => {
           }}
         >
           <GlassCard
+            settings={settings}
             sx={{
               width: "90%",
               maxWidth: "900px",
@@ -1498,7 +1533,7 @@ const Children = () => {
                               <Typography
                                 variant="caption"
                                 sx={{
-                                  color: grayColor,
+                                  color: settings.textPrimaryColor || '#A31D1D',
                                   fontSize: '12px',
                                   lineHeight: 1.2,
                                 }}

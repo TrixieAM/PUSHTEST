@@ -27,6 +27,7 @@ import SuccessfulOverlay from '../SuccessfulOverlay';
 import { useSystemSettings } from '../../hooks/useSystemSettings';
 import usePageAccess from '../../hooks/usePageAccess';
 import AccessDenied from '../AccessDenied';
+import usePayrollRealtimeRefresh from '../../hooks/usePayrollRealtimeRefresh';
 import {
   CloudUpload,
   DeleteForever,
@@ -330,83 +331,89 @@ const PayrollProcessed = () => {
     return Math.min(Math.max(contentHeight, minHeight), maxHeight);
   };
 
-  useEffect(() => {
-    const fetchDepartments = async () => {
-      try {
-        const response = await axios.get(
-          `${API_BASE_URL}/api/department-table`,
-          getAuthHeaders(),
-        );
-        setDepartments(response.data);
-      } catch (err) {
-        console.error('Error fetching departments:', err);
+  const fetchDepartments = async () => {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/department-table`,
+        getAuthHeaders(),
+      );
+      setDepartments(response.data);
+    } catch (err) {
+      console.error('Error fetching departments:', err);
+    }
+  };
+
+  const fetchFinalizedPayroll = async () => {
+    try {
+      const res = await axios.get(
+        `${API_BASE_URL}/PayrollRoute/payroll-processed`,
+        getAuthHeaders(),
+      );
+
+      // Filter for Job Order employees only (employmentCategory = 0)
+      // employmentCategory: 0 = Job Order, 1 = Regular, -1 = Not set
+      const joData = res.data.filter((item) => item.employmentCategory === 0);
+
+      setFinalizedData(joData);
+      setFilteredFinalizedData(joData);
+
+      // Calculate summary data
+      const totalNet = joData.reduce(
+        (sum, item) => sum + parseFloat(item.netSalary || 0),
+        0,
+      );
+
+      setSummaryData((prev) => ({
+        totalEmployees: joData.length,
+        processedEmployees: joData.length,
+        totalReleased: prev.totalReleased, // Will be updated by useEffect
+        totalNetSalary: totalNet,
+      }));
+
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching finalized payroll:', err);
+      setError('An error occurred while fetching the finalized payroll.');
+      setLoading(false);
+    }
+  };
+
+  const fetchReleasedPayroll = async () => {
+    try {
+      const res = await axios.get(
+        `${API_BASE_URL}/PayrollReleasedRoute/released-payroll`,
+        getAuthHeaders(),
+      );
+      // Build a set of composite keys to uniquely identify released records
+      const releasedKeys = new Set();
+      if (Array.isArray(res.data)) {
+        res.data.forEach((record) => {
+          const key = getRecordKey(record);
+          releasedKeys.add(key);
+        });
       }
-    };
+      setReleasedIdSet(releasedKeys);
+    } catch (err) {
+      console.error('Error fetching released payroll for disable logic:', err);
+    }
+  };
+
+  usePayrollRealtimeRefresh(() => {
+    fetchDepartments();
+    fetchFinalizedPayroll();
+    fetchReleasedPayroll();
+  });
+
+  useEffect(() => {
     fetchDepartments();
   }, []);
 
   useEffect(() => {
-    const fetchFinalizedPayroll = async () => {
-      try {
-        const res = await axios.get(
-          `${API_BASE_URL}/PayrollRoute/payroll-processed`,
-          getAuthHeaders(),
-        );
-
-        // Filter for Job Order employees only (employmentCategory = 0)
-        // employmentCategory: 0 = Job Order, 1 = Regular, -1 = Not set
-        const joData = res.data.filter((item) => item.employmentCategory === 0);
-
-        setFinalizedData(joData);
-        setFilteredFinalizedData(joData);
-
-        // Calculate summary data
-        const totalNet = joData.reduce(
-          (sum, item) => sum + parseFloat(item.netSalary || 0),
-          0,
-        );
-
-        setSummaryData((prev) => ({
-          totalEmployees: joData.length,
-          processedEmployees: joData.length,
-          totalReleased: prev.totalReleased, // Will be updated by useEffect
-          totalNetSalary: totalNet,
-        }));
-
-        setLoading(false);
-      } catch (err) {
-        console.error('Error fetching finalized payroll:', err);
-        setError('An error occurred while fetching the finalized payroll.');
-        setLoading(false);
-      }
-    };
     fetchFinalizedPayroll();
   }, []);
 
   // Fetch released payroll IDs to disable delete on those records
   useEffect(() => {
-    const fetchReleasedPayroll = async () => {
-      try {
-        const res = await axios.get(
-          `${API_BASE_URL}/PayrollReleasedRoute/released-payroll`,
-          getAuthHeaders(),
-        );
-        // Build a set of composite keys to uniquely identify released records
-        const releasedKeys = new Set();
-        if (Array.isArray(res.data)) {
-          res.data.forEach((record) => {
-            const key = getRecordKey(record);
-            releasedKeys.add(key);
-          });
-        }
-        setReleasedIdSet(releasedKeys);
-      } catch (err) {
-        console.error(
-          'Error fetching released payroll for disable logic:',
-          err,
-        );
-      }
-    };
     fetchReleasedPayroll();
   }, []);
 

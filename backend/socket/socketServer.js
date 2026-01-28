@@ -14,7 +14,7 @@ function initializeSocket(server) {
       origin: function (origin, callback) {
         const allowedOrigins = [
           'http://localhost:5137',
-          'http://192.168.50.54:5137',
+          'http://192.168.50.48:5137',
           'http://192.168.50.45:5137',
           'http://136.239.248.42:5137',
           'http://192.168.50.97:5137',

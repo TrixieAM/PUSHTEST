@@ -6,6 +6,7 @@ const uploads = multer({ dest: "uploads/" });
 const router = express.Router();
 const fs = require("fs");
 //require('dotenv').config(); // Load environment variables
+const socketService = require("../socket/socketService");
 
 //MYSQL CONNECTION
 
@@ -55,6 +56,12 @@ router.post("/vocational-table", (req, res) => {
       console.error("Database error:", err);
       return res.status(500).send("Internal Server Error");
     }
+
+    socketService.notifyVocationalChanged("created", {
+      id: result.insertId,
+      person_id,
+    });
+
     res.status(201).send({ message: "Vocational record created", id: result.insertId });
   });
 });
@@ -68,6 +75,12 @@ router.put("/vocational-table/:id", (req, res) => {
       console.error("Database error:", err);
       return res.status(500).send("Internal Server Error");
     }
+
+    socketService.notifyVocationalChanged("updated", {
+      id: Number(id),
+      person_id,
+    });
+
     res.status(200).send({ message: "Vocational record updated" });
   });
 });
@@ -80,6 +93,9 @@ router.delete("/vocational-table/:id", (req, res) => {
       console.error("Database error:", err);
       return res.status(500).send("Internal Server Error");
     }
+
+    socketService.notifyVocationalChanged("deleted", { id: Number(id) });
+
     res.status(200).send({ message: "Vocational record deleted" });
   });
 });

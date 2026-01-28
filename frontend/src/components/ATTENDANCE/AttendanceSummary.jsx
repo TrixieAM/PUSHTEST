@@ -1,6 +1,7 @@
 import API_BASE_URL from '../../apiConfig';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { useSocket } from '../../contexts/SocketContext';
 import {
   TextField,
   Button,
@@ -63,6 +64,8 @@ import { useSystemSettings } from '../../hooks/useSystemSettings';
 import { useCRUDButtonStyles, useCRUDButtonStylesOutlined } from '../../hooks/useCRUDButtonStyles';
 import usePageAccess from '../../hooks/usePageAccess';
 import AccessDenied from '../AccessDenied';
+import LoadingOverlay from '../LoadingOverlay';
+import SuccessfulOverlay from '../SuccessfulOverlay';
 
 // Helper function to convert hex to rgb
 const hexToRgb = (hex) => {
@@ -318,12 +321,14 @@ const StyledModal = ({
 };
 
 const OverallAttendance = () => {
+  const { socket, connected } = useSocket();
   const { settings } = useSystemSettings();
   const saveButtonStyles = useCRUDButtonStyles('save');
   const editButtonStyles = useCRUDButtonStyles('edit');
   const deleteButtonStyles = useCRUDButtonStylesOutlined('delete');
   const [employeeNumber, setEmployeeNumber] = useState('');
   const [startDate, setStartDate] = useState('');
+  const fetchAttendanceDataRef = useRef(null);
   
   // Get colors from system settings
   const primaryColor = settings.accentColor || '#FEF9E1'; // Cards color
@@ -368,6 +373,11 @@ const OverallAttendance = () => {
   const [loading, setLoading] = useState(false);
   const [showRegularConfirm, setShowRegularConfirm] = useState(false);
   const [confirmRegularChecked, setConfirmRegularChecked] = useState(false);
+  const [processingOverlay, setProcessingOverlay] = useState(false);
+  const [processingMessage, setProcessingMessage] = useState('');
+  const [successOverlay, setSuccessOverlay] = useState(false);
+  const [successRedirect, setSuccessRedirect] = useState('');
+  const [successAction, setSuccessAction] = useState('send');
 
   // Modal state
   const [modal, setModal] = useState({
@@ -457,6 +467,37 @@ const OverallAttendance = () => {
     }
   };
 
+  // Keep latest fetch function for Socket.IO handler
+  useEffect(() => {
+    fetchAttendanceDataRef.current = fetchAttendanceData;
+  });
+
+  // Realtime: refresh when attendance data changes
+  useEffect(() => {
+    if (!socket || !connected) return;
+
+    const handleAttendanceChanged = (payload) => {
+      const changedPersonIDs = Array.isArray(payload?.personIDs)
+        ? payload.personIDs
+        : payload?.personID
+          ? [payload.personID]
+          : [];
+
+      if (employeeNumber && changedPersonIDs.length > 0 && !changedPersonIDs.includes(employeeNumber)) {
+        return;
+      }
+
+      if (employeeNumber && startDate && endDate) {
+        fetchAttendanceDataRef.current?.();
+      }
+    };
+
+    socket.on('attendanceChanged', handleAttendanceChanged);
+    return () => {
+      socket.off('attendanceChanged', handleAttendanceChanged);
+    };
+  }, [socket, connected, employeeNumber, startDate, endDate]);
+
   const updateRecord = async () => {
     if (!editRecord || !editRecord.totalRenderedTimeMorning) return;
 
@@ -521,6 +562,8 @@ const OverallAttendance = () => {
     }
 
     setIsSubmitting(true);
+    setProcessingOverlay(true);
+    setProcessingMessage('Submitting Regular payroll...');
 
     try {
       const filteredRecords = [];
@@ -559,6 +602,7 @@ const OverallAttendance = () => {
             `Employee(s) not eligible for Regular payroll:\n\n${invalidList}\n\nContact HR Department to update employment category.`,
             'warning'
           );
+          setProcessingOverlay(false);
           setIsSubmitting(false);
           return;
         }
@@ -573,6 +617,7 @@ const OverallAttendance = () => {
           },
           true
         );
+        setProcessingOverlay(false);
         return;
       }
 
@@ -581,6 +626,7 @@ const OverallAttendance = () => {
       console.error('Error submitting to payroll:', error);
       handleSubmissionError(error);
     } finally {
+      setProcessingOverlay(false);
       setIsSubmitting(false);
     }
   };
@@ -605,6 +651,7 @@ const OverallAttendance = () => {
           'Required fields missing. Check Employee Number, Start Date, and End Date.',
           'error'
         );
+        setProcessingOverlay(false);
         return;
       }
 
@@ -642,15 +689,10 @@ const OverallAttendance = () => {
       );
 
       if (submitResponse.status === 200 || submitResponse.status === 201) {
-        showModal(
-          'Submission Successful',
-          `${payload.length} Regular payroll record(s) submitted successfully.`,
-          'success',
-          () => {
-            closeModal();
-            navigate('/payroll-table');
-          }
-        );
+        setProcessingOverlay(false);
+        setSuccessAction('send');
+        setSuccessRedirect('/payroll-table');
+        setSuccessOverlay(true);
       } else {
         throw new Error(`Unexpected response status: ${submitResponse.status}`);
       }
@@ -690,6 +732,8 @@ const OverallAttendance = () => {
     }
 
     setIsSubmittingJO(true);
+    setProcessingOverlay(true);
+    setProcessingMessage('Submitting JO payroll...');
 
     try {
       const filteredRecords = [];
@@ -728,6 +772,7 @@ const OverallAttendance = () => {
             `Employees not eligible for JO payroll:\n\n${invalidList}\n\nContact HR to update employment status.`,
             'warning'
           );
+          setProcessingOverlay(false);
           setIsSubmittingJO(false);
           return;
         }
@@ -742,6 +787,7 @@ const OverallAttendance = () => {
           },
           true
         );
+        setProcessingOverlay(false);
         return;
       }
 
@@ -750,6 +796,7 @@ const OverallAttendance = () => {
       console.error('Error submitting Payroll JO:', error);
       handlePayrollJOError(error);
     } finally {
+      setProcessingOverlay(false);
       setIsSubmittingJO(false);
     }
   };
@@ -796,6 +843,7 @@ const OverallAttendance = () => {
           `Records already exist:\n\n${duplicateList}`,
           'warning'
         );
+        setProcessingOverlay(false);
         return;
       }
 
@@ -871,16 +919,12 @@ const OverallAttendance = () => {
             'error'
           );
         }
+        setProcessingOverlay(false);
       } else {
-        showModal(
-          'Submission Successful',
-          `${successCount} JO payroll record(s) submitted successfully.`,
-          'success',
-          () => {
-            closeModal();
-            navigate('/payroll-jo');
-          }
-        );
+        setProcessingOverlay(false);
+        setSuccessAction('send');
+        setSuccessRedirect('/payroll-jo');
+        setSuccessOverlay(true);
       }
     } catch (error) {
       handlePayrollJOError(error);
@@ -1255,7 +1299,6 @@ const OverallAttendance = () => {
                 >
                   <TableHead>
                     <TableRow sx={{ bgcolor: 'rgba(254, 249, 225, 0.7)' }}>
-                      <PremiumTableCell isHeader sx={{ color: accentColor }}>ID</PremiumTableCell>
                       <PremiumTableCell isHeader sx={{ color: accentColor }}>Department</PremiumTableCell>
                       <PremiumTableCell isHeader sx={{ color: accentColor }}>Employee Number</PremiumTableCell>
                       <PremiumTableCell isHeader sx={{ color: accentColor }}>Start Date</PremiumTableCell>
@@ -1285,7 +1328,6 @@ const OverallAttendance = () => {
                           transition: 'all 0.2s ease'
                         }}
                       >
-                        <PremiumTableCell>{record.id}</PremiumTableCell>
                         <PremiumTableCell>{record.code}</PremiumTableCell>
                         <PremiumTableCell>
                           {editRecord && editRecord.id === record.id ? (
@@ -1779,6 +1821,19 @@ const OverallAttendance = () => {
           type={modal.type}
           onConfirm={modal.onConfirm}
           showCancel={modal.showCancel}
+        />
+
+        <LoadingOverlay open={processingOverlay} message={processingMessage || 'Processing...'} />
+        <SuccessfulOverlay
+          open={successOverlay}
+          action={successAction}
+          showOkButton
+          onClose={() => {
+            setSuccessOverlay(false);
+            if (successRedirect) {
+              navigate(successRedirect);
+            }
+          }}
         />
       </Box>
     </Box>

@@ -40,6 +40,7 @@ import SuccessfulOverlay from '../SuccessfulOverlay';
 import { useSystemSettings } from '../../hooks/useSystemSettings';
 import usePageAccess from '../../hooks/usePageAccess';
 import AccessDenied from '../AccessDenied';
+import usePayrollRealtimeRefresh from '../../hooks/usePayrollRealtimeRefresh';
 import {
   Email,
   Payment,
@@ -303,60 +304,67 @@ const PayrollReleased = () => {
     return Math.min(Math.max(contentHeight, minHeight), maxHeight);
   };
 
+  const fetchDepartments = async () => {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/department-table`,
+        getAuthHeaders()
+      );
+      setDepartments(response.data);
+    } catch (err) {
+      console.error('Error fetching departments:', err);
+    }
+  };
+
+  const fetchReleasedPayroll = async () => {
+    try {
+      const res = await axios.get(
+        `${API_BASE_URL}/PayrollReleasedRoute/released-payroll`,
+        getAuthHeaders()
+      );
+      const data = Array.isArray(res.data) ? res.data : [];
+      setReleasedData(data);
+      setFilteredReleasedData(data);
+      // Also populate the key set for cross-page disable logic parity
+      const keys = new Set();
+      data.forEach((record) => keys.add(getRecordKey(record)));
+      setReleasedIdSet(keys);
+
+      // Calculate summary data
+      const totalGross = data.reduce(
+        (sum, item) => sum + parseFloat(item.grossSalary || 0),
+        0
+      );
+      const totalNet = data.reduce(
+        (sum, item) => sum + parseFloat(item.netSalary || 0),
+        0
+      );
+
+      setSummaryData({
+        totalReleased: data.length,
+        totalEmployees: data.length,
+        totalGrossSalary: totalGross,
+        totalNetSalary: totalNet,
+      });
+
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching released payroll:', err);
+      setError('An error occurred while fetching the released payroll.');
+      setLoading(false);
+    }
+  };
+
+  usePayrollRealtimeRefresh(() => {
+    fetchDepartments();
+    fetchReleasedPayroll();
+  });
+
   useEffect(() => {
-    const fetchDepartments = async () => {
-      try {
-        const response = await axios.get(
-          `${API_BASE_URL}/api/department-table`,
-          getAuthHeaders()
-        );
-        setDepartments(response.data);
-      } catch (err) {
-        console.error('Error fetching departments:', err);
-      }
-    };
     fetchDepartments();
   }, []);
 
   useEffect(() => {
-    const fetchReleasedPayroll = async () => {
-      try {
-        const res = await axios.get(
-          `${API_BASE_URL}/PayrollReleasedRoute/released-payroll`,
-          getAuthHeaders()
-        );
-        const data = Array.isArray(res.data) ? res.data : [];
-        setReleasedData(data);
-        setFilteredReleasedData(data);
-        // Also populate the key set for cross-page disable logic parity
-        const keys = new Set();
-        data.forEach((record) => keys.add(getRecordKey(record)));
-        setReleasedIdSet(keys);
-        
-        // Calculate summary data
-        const totalGross = data.reduce(
-          (sum, item) => sum + parseFloat(item.grossSalary || 0),
-          0
-        );
-        const totalNet = data.reduce(
-          (sum, item) => sum + parseFloat(item.netSalary || 0),
-          0
-        );
-
-        setSummaryData({
-          totalReleased: data.length,
-          totalEmployees: data.length,
-          totalGrossSalary: totalGross,
-          totalNetSalary: totalNet,
-        });
-        
-        setLoading(false);
-      } catch (err) {
-        console.error('Error fetching released payroll:', err);
-        setError('An error occurred while fetching the released payroll.');
-        setLoading(false);
-      }
-    };
     fetchReleasedPayroll();
   }, []);
 

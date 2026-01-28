@@ -49,6 +49,7 @@ import { Refresh, Download } from '@mui/icons-material';
 import { useSystemSettings } from '../../hooks/useSystemSettings';
 import usePageAccess from '../../hooks/usePageAccess';
 import AccessDenied from '../AccessDenied';
+import usePayrollRealtimeRefresh from '../../hooks/usePayrollRealtimeRefresh';
 
 // Helper function to convert hex to rgb
 const hexToRgb = (hex) => {
@@ -197,6 +198,28 @@ const Payslip = forwardRef(({ employee }, ref) => {
     };
   };
 
+  const fetchPayrollData = async () => {
+    if (!personID) return;
+    try {
+      setLoading(true);
+      const res = await axios.get(
+        `${API_BASE_URL}/PayrollReleasedRoute/released-payroll-detailed`,
+        getAuthHeaders()
+      );
+      setAllPayroll(res.data); // ✅ just store everything
+      setDisplayEmployee(null); // ✅ don't auto-display until month is chosen
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching payroll:', err);
+      setError('Failed to fetch payroll data. Please try again.');
+      setLoading(false);
+    }
+  };
+
+  usePayrollRealtimeRefresh(() => {
+    if (!employee) fetchPayrollData();
+  });
+
   useEffect(() => {
     // Retrieve and decode the token from local storage
     const token = localStorage.getItem('token');
@@ -212,24 +235,7 @@ const Payslip = forwardRef(({ employee }, ref) => {
 
   useEffect(() => {
     if (!employee) {
-      const fetchData = async () => {
-        try {
-          setLoading(true);
-          const res = await axios.get(
-            `${API_BASE_URL}/PayrollReleasedRoute/released-payroll-detailed`,
-            getAuthHeaders()
-          );
-          setAllPayroll(res.data); // ✅ just store everything
-          setDisplayEmployee(null); // ✅ don't auto-display until month is chosen
-          setLoading(false);
-        } catch (err) {
-          console.error('Error fetching payroll:', err);
-          setError('Failed to fetch payroll data. Please try again.');
-          setLoading(false);
-        }
-      };
-
-      if (personID) fetchData();
+      fetchPayrollData();
     }
   }, [employee, personID]);
 

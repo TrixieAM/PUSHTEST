@@ -53,6 +53,7 @@ import SuccessfulOverlay from '../SuccessfulOverlay';
 import { useSystemSettings } from '../../hooks/useSystemSettings';
 import usePageAccess from '../../hooks/usePageAccess';
 import AccessDenied from '../AccessDenied';
+import usePayrollRealtimeRefresh from '../../hooks/usePayrollRealtimeRefresh';
 import SearchIcon from '@mui/icons-material/Search';
 import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
 import {
@@ -281,6 +282,12 @@ const PayrollJO = () => {
     fetchFinalizedPayroll();
     fetchDepartments(); // Add this line
   }, []);
+
+  usePayrollRealtimeRefresh(() => {
+    fetchPayrollData();
+    fetchFinalizedPayroll();
+    fetchDepartments();
+  });
 
   const fetchPayrollData = async () => {
     try {

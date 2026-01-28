@@ -4,6 +4,11 @@ const db = require('../db');
 const { upload } = require('../middleware/upload');
 const path = require('path');
 const fs = require('fs');
+const {
+  broadcastToRoles,
+  notifyMultipleUsers,
+  notifyAnnouncementChanged,
+} = require('../socket/socketService');
 
 // GET all announcements
 router.get('/api/announcements', (req, res) => {
@@ -33,6 +38,22 @@ router.post('/api/announcements', upload.single('image'), (req, res) => {
     // Create notifications for all employees
     const announcementId = result.insertId;
     const notificationDescription = `New announcement has been posted. Click to see details.`;
+
+    // Fetch the full announcement data to broadcast
+    db.query('SELECT * FROM announcements WHERE id = ?', [announcementId], (fetchErr, announcementResults) => {
+      if (!fetchErr && announcementResults.length > 0) {
+        const newAnnouncement = announcementResults[0];
+        // Broadcast announcement change to ALL users immediately (fast!)
+        notifyAnnouncementChanged('created', newAnnouncement);
+      }
+    });
+
+    // Let admin dashboards refresh in real time
+    broadcastToRoles(
+      ['administrator', 'superadmin', 'technical'],
+      'adminDashboardUpdated',
+      { source: 'announcements', action: 'created', announcementId },
+    );
     
     // Fetch all employee numbers and create notifications
     // Note: We try to be flexible here and support both `users.employeeNumber`
@@ -59,6 +80,14 @@ router.post('/api/announcements', upload.single('image'), (req, res) => {
         }
 
         if (users && users.length > 0) {
+          const employeeNumbers = Array.from(
+            new Set(
+              users
+                .map((u) => String(u.employeeNumber || '').trim())
+                .filter(Boolean),
+            ),
+          );
+
           // Create notifications for each employee using promises
           const notificationPromises = users.map((user) => {
             return new Promise((resolve) => {
@@ -114,6 +143,15 @@ router.post('/api/announcements', upload.single('image'), (req, res) => {
             const successful = results.filter(r => r.success).length;
             const failed = results.filter(r => !r.success).length;
             console.log(`Created ${successful} announcement notifications${failed > 0 ? ` (${failed} failed)` : ''}`);
+
+            // Real-time: now that notifications are inserted, notify each user room
+            if (employeeNumbers.length > 0) {
+              notifyMultipleUsers(employeeNumbers, 'notificationCreated', {
+                notification_type: 'announcement',
+                announcement_id: announcementId,
+                description: notificationDescription,
+              });
+            }
           }).catch((err) => {
             console.error('Error processing notification promises:', err);
           });
@@ -154,6 +192,22 @@ router.put('/api/announcements/:id', upload.single('image'), (req, res) => {
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Announcement not found' });
     }
+
+    // Fetch the updated announcement data to broadcast
+    db.query('SELECT * FROM announcements WHERE id = ?', [id], (fetchErr, announcementResults) => {
+      if (!fetchErr && announcementResults.length > 0) {
+        const updatedAnnouncement = announcementResults[0];
+        // Broadcast announcement change to ALL users immediately (fast!)
+        notifyAnnouncementChanged('updated', updatedAnnouncement);
+      }
+    });
+
+    broadcastToRoles(
+      ['administrator', 'superadmin', 'technical'],
+      'adminDashboardUpdated',
+      { source: 'announcements', action: 'updated', announcementId: id },
+    );
+
     res.json({ message: 'Announcement updated successfully' });
   });
 });
@@ -187,6 +241,16 @@ router.delete('/api/announcements/:id', (req, res) => {
       if (err) {
         return res.status(500).json({ error: 'Internal server error' });
       }
+
+      // Broadcast announcement deletion to ALL users immediately (fast!)
+      notifyAnnouncementChanged('deleted', { id: parseInt(id) });
+
+      broadcastToRoles(
+        ['administrator', 'superadmin', 'technical'],
+        'adminDashboardUpdated',
+        { source: 'announcements', action: 'deleted', announcementId: id },
+      );
+
       res.json({ message: 'Announcement deleted successfully' });
     });
   });

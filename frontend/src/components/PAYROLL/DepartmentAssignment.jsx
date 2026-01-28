@@ -62,6 +62,7 @@ import { useNavigate } from 'react-router-dom';
 import usePageAccess from '../../hooks/usePageAccess';
 import { styled, alpha } from '@mui/material/styles';
 import { useSystemSettings } from '../../hooks/useSystemSettings';
+import usePayrollRealtimeRefresh from '../../hooks/usePayrollRealtimeRefresh';
 
 // Helper function to convert hex to rgb
 const hexToRgb = (hex) => {
@@ -353,7 +354,12 @@ const EmployeeAutocomplete = ({
                     primary={employee.name}
                     secondary={`#${employee.employeeNumber}`}
                     primaryTypographyProps={{ fontWeight: 'bold', color: settings?.textPrimaryColor || '#6D2323' }}
-                    secondaryTypographyProps={{ color: settings?.textSecondaryColor || '#666' }}
+                    secondaryTypographyProps={{
+                      color: '#a31d1d',
+                      fontWeight: 700,
+                      fontSize: '0.9rem',
+                      lineHeight: 1.1,
+                    }}
                   />
                 </ListItem>
               ))}
@@ -492,6 +498,11 @@ const DepartmentAssignment = () => {
       console.error('Error fetching department codes', error);
     }
   };
+
+  usePayrollRealtimeRefresh(() => {
+    fetchAssignments();
+    fetchDepartmentCodes();
+  });
 
   const handleAdd = async () => {
     if (
@@ -1058,12 +1069,14 @@ const DepartmentAssignment = () => {
                               <Typography
                                 variant="caption"
                                 sx={{
-                                  color: settings.textSecondaryColor || '#666',
-                                  fontSize: '12px',
-                                  lineHeight: 1.2,
+                                  color: '#0a3d1d',
+                                  fontSize: '14px',
+                                  fontWeight: 700,
+                                  lineHeight: 1.1,
+                                  whiteSpace: 'nowrap',
                                 }}
                               >
-                                ID: {selectedEmployee.employeeNumber}
+                                #{selectedEmployee.employeeNumber}
                               </Typography>
                             </Box>
                           </Box>
@@ -1496,9 +1509,9 @@ const DepartmentAssignment = () => {
         >
           <GlassCard
             sx={{
-              width: '90%',
-              maxWidth: '900px',
-              maxHeight: '90vh',
+              width: '95%',
+              maxWidth: '1100px',
+              maxHeight: '95vh',
               display: 'flex',
               flexDirection: 'column',
               borderRadius: 2,
@@ -1809,11 +1822,31 @@ const DepartmentAssignment = () => {
                     flexShrink: 0,
                   }}
                 >
-                  <Typography variant="h6" sx={{ fontWeight: 'bold', color: settings.accentColor || '#FEF9E1' }}>
-                    {isEditing
-                      ? 'Edit Department Assignment'
-                      : 'Assignment Details'}
-                  </Typography>
+                  <Box>
+                    <Typography
+                      variant="h6"
+                      sx={{ fontWeight: 'bold', color: settings.accentColor || '#FEF9E1' }}
+                    >
+                      {isEditing
+                        ? 'Edit Department Assignment'
+                        : 'Assignment Details'}
+                    </Typography>
+                    {editAssignment && (
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          mt: 0.5,
+                          color: settings.accentColor || '#FEF9E1',
+                          opacity: 0.9,
+                        }}
+                      >
+                        {selectedEditEmployee?.name && editAssignment?.employeeNumber
+                          ? `${selectedEditEmployee.name} (#${editAssignment.employeeNumber})`
+                          : selectedEditEmployee?.name ||
+                            (editAssignment?.employeeNumber ? `#${editAssignment.employeeNumber}` : '')}
+                      </Typography>
+                    )}
+                  </Box>
                   <IconButton
                     onClick={handleCloseModal}
                     sx={{ color: settings.accentColor || '#FEF9E1' }}
@@ -1843,20 +1876,6 @@ const DepartmentAssignment = () => {
                   }}
                 >
                   <Box sx={{ mb: 3 }}>
-                    <Typography
-                      variant="h5"
-                      sx={{
-                        fontWeight: 600,
-                        mb: 2,
-                        color: settings.textPrimaryColor || textPrimaryColor,
-                        display: 'flex',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <PersonIcon sx={{ mr: 2, fontSize: 24, color: settings.primaryColor || accentColor }} />
-                      Assignment Information
-                    </Typography>
-
                     <Grid container spacing={2}>
                       <Grid item xs={12}>
                         <Typography
@@ -1977,12 +1996,16 @@ const DepartmentAssignment = () => {
                               <Typography
                                 variant="caption"
                                 sx={{
-                                  color: settings.textSecondaryColor || '#666',
-                                  fontSize: '12px',
-                                  lineHeight: 1.2,
+                                  color: '#0a3d1d',
+                                  fontSize: '14px',
+                                  fontWeight: 700,
+                                  lineHeight: 1.1,
+                                  whiteSpace: 'nowrap',
                                 }}
                               >
-                                ID: {editAssignment?.employeeNumber || 'N/A'}
+                                {editAssignment?.employeeNumber
+                                  ? `#${editAssignment.employeeNumber}`
+                                  : 'N/A'}
                               </Typography>
                             </Box>
                           </Box>

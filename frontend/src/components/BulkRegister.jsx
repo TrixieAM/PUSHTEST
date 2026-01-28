@@ -59,6 +59,7 @@ const BulkRegister = () => {
     password: true,
     middleName: false,
     nameExtension: false,
+    department: false,
   });
 
   const navigate = useNavigate();
@@ -144,6 +145,7 @@ const BulkRegister = () => {
         if (fieldRequirements.employeeNumber) requiredFields.push('employeeNumber');
         if (fieldRequirements.employmentCategory) requiredFields.push('employmentCategory');
         if (fieldRequirements.password) requiredFields.push('password');
+        if (fieldRequirements.department) requiredFields.push('department');
 
         const missingFields = requiredFields.filter(
           (field) => !(field in firstRow)
@@ -157,6 +159,7 @@ const BulkRegister = () => {
           if (!fieldRequirements.employeeNumber) optionalFields.push('employeeNumber');
           if (!fieldRequirements.employmentCategory) optionalFields.push('employmentCategory');
           if (!fieldRequirements.password) optionalFields.push('password');
+          if (!fieldRequirements.department) optionalFields.push('department');
           optionalFields.push('middleName', 'nameExtension');
 
           setErrMessage(
@@ -207,6 +210,7 @@ const BulkRegister = () => {
             password: password,
             role: 'staff',
             access_level: 'user',
+            department: user.department?.toString().trim() || null,
           };
 
           // Only include employmentCategory if it has a valid value
@@ -243,6 +247,9 @@ const BulkRegister = () => {
           }
           if (fieldRequirements.employmentCategory && !user.employmentCategory) {
             missingFields.push('employmentCategory');
+          }
+          if (fieldRequirements.department && !user.department) {
+            missingFields.push('department');
           }
 
           if (missingFields.length > 0) {
@@ -804,6 +811,7 @@ const BulkRegister = () => {
                             { key: 'employeeNumber', label: 'employeeNumber' },
                             { key: 'employmentCategory', label: 'employmentCategory' },
                             { key: 'password', label: 'password' },
+                            { key: 'department', label: 'department' },
                           ]
                             .filter((field) => fieldRequirements[field.key])
                             .map((field) => (
@@ -844,6 +852,7 @@ const BulkRegister = () => {
                             { key: 'employeeNumber', label: 'employeeNumber' },
                             { key: 'employmentCategory', label: 'employmentCategory' },
                             { key: 'password', label: 'password' },
+                            { key: 'department', label: 'department' },
                             { key: 'middleName', label: 'middleName' },
                             { key: 'nameExtension', label: 'nameExtension' },
                           ]

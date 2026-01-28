@@ -56,6 +56,7 @@ import AccessDenied from '../AccessDenied';
 import usePageAccess from '../../hooks/usePageAccess';
 import { useNavigate } from 'react-router-dom';
 import { useSystemSettings } from '../../hooks/useSystemSettings';
+import usePayrollRealtimeRefresh from '../../hooks/usePayrollRealtimeRefresh';
 
 // Helper function to convert hex to rgb
 const hexToRgb = (hex) => {
@@ -388,8 +389,20 @@ const EmployeeAutocomplete = ({
                   <ListItemText
                     primary={employee.name}
                     secondary={`#${employee.employeeNumber}`}
-                    primaryTypographyProps={{ fontWeight: 'bold', color: settings?.textPrimaryColor || '#6D2323' }}
-                    secondaryTypographyProps={{ color: settings?.textSecondaryColor || '#666' }}
+                    primaryTypographyProps={{
+                      sx: {
+                        fontWeight: 700,
+                        color: settings?.textPrimaryColor || '#6D2323',
+                      },
+                    }}
+                    secondaryTypographyProps={{
+                      sx: {
+                        color: '#a31d1d',
+                        fontWeight: 800,
+                        fontSize: '0.95rem',
+                        lineHeight: 1.1,
+                      },
+                    }}
                   />
                 </ListItem>
               ))}
@@ -615,6 +628,11 @@ const ItemTable = () => {
       showSnackbar('Failed to fetch item records. Please try again.', 'error');
     }
   };
+
+  usePayrollRealtimeRefresh(() => {
+    fetchSalaryGrades();
+    fetchItems();
+  });
 
   const validateForm = () => {
     const newErrors = {};
@@ -1141,30 +1159,6 @@ const ItemTable = () => {
                   }}
                 >
                   <Box sx={{ mb: 3 }}>
-                    <Typography
-                      variant="h5"
-                      sx={{
-                        fontWeight: 600,
-                        mb: 2,
-                        color: accentColor,
-                        display: 'flex',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <PersonIcon sx={{ mr: 2, fontSize: 24 }} />
-                      Employee Information{' '}
-                      <span
-                        style={{
-                          marginLeft: '12px',
-                          fontWeight: 400,
-                          opacity: 0.7,
-                          color: 'red',
-                        }}
-                      >
-                        *
-                      </span>
-                    </Typography>
-
                     <Grid container spacing={2}>
                       <Grid item xs={12} sm={6}>
                         <Typography
@@ -1229,12 +1223,14 @@ const ItemTable = () => {
                               <Typography
                                 variant="caption"
                                 sx={{
-                                  color: settings.textSecondaryColor || grayColor,
-                                  fontSize: '12px',
+                                  color: '#a31d1d',
+                                  fontSize: '14px',
+                                  fontWeight: 700,
                                   lineHeight: 1.2,
+                                  whiteSpace: 'nowrap',
                                 }}
                               >
-                                ID: {selectedEmployee.employeeNumber}
+                                #{selectedEmployee.employeeNumber}
                               </Typography>
                             </Box>
                           </Box>
@@ -1804,7 +1800,7 @@ const ItemTable = () => {
                   sx={{
                     p: 3,
                     background: `linear-gradient(135deg, ${settings.secondaryColor || '#6d2323'} 0%, ${settings.deleteButtonHoverColor || '#a31d1d'} 100%)`,
-                    color: settings.accentColor || '#FEF9E1',
+                    color: '#FFFFFF',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
@@ -1814,12 +1810,23 @@ const ItemTable = () => {
                     flexShrink: 0,
                   }}
                 >
-                  <Typography variant="h6" sx={{ fontWeight: 'bold', color: settings.accentColor || '#FEF9E1' }}>
-                    {isEditing ? 'Edit Item Information' : 'Item Details'}
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <FactCheckIcon sx={{ fontSize: 24, color: '#FFFFFF' }} />
+                    <Box>
+                      <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#FFFFFF', lineHeight: 1.1 }}>
+                        {isEditing ? 'Edit Item Information' : 'Item Information'}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{ color: '#FFFFFF', opacity: 0.9, lineHeight: 1.1 }}
+                      >
+                        View and manage item details
+                      </Typography>
+                    </Box>
+                  </Box>
                   <IconButton
                     onClick={handleCloseModal}
-                    sx={{ color: settings.accentColor || '#FEF9E1' }}
+                    sx={{ color: '#FFFFFF' }}
                   >
                     <Close />
                   </IconButton>
@@ -1843,20 +1850,6 @@ const ItemTable = () => {
                   },
                 }}>
                   <Box sx={{ mb: 3 }}>
-                    <Typography
-                      variant="h5"
-                      sx={{
-                        fontWeight: 600,
-                        mb: 2,
-                        color: accentColor,
-                        display: 'flex',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <PersonIcon sx={{ mr: 2, fontSize: 24 }} />
-                      Employee Information
-                    </Typography>
-
                     <Grid container spacing={2}>
                       <Grid item xs={12} sm={6}>
                         <Typography
@@ -1938,12 +1931,14 @@ const ItemTable = () => {
                               <Typography
                                 variant="caption"
                                 sx={{
-                                  color: settings.textSecondaryColor || grayColor,
-                                  fontSize: '12px',
+                                  color: '#a31d1d',
+                                  fontSize: '14px',
+                                  fontWeight: 700,
                                   lineHeight: 1.2,
+                                  whiteSpace: 'nowrap',
                                 }}
                               >
-                                ID: {selectedEditEmployee.employeeNumber}
+                                #{selectedEditEmployee.employeeNumber}
                               </Typography>
                             </Box>
                           </Box>
@@ -1976,20 +1971,6 @@ const ItemTable = () => {
 
                   <Divider sx={{ my: 3, borderColor: 'rgba(109,35,35,0.1)' }} />
 
-                  <Typography
-                    variant="h5"
-                    sx={{
-                      fontWeight: 600,
-                      mb: 3,
-                      color: accentColor,
-                      display: 'flex',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <FactCheckIcon sx={{ mr: 2, fontSize: 24 }} />
-                    Item Details
-                  </Typography>
-
                   <Grid container spacing={2}>
                     <Grid item xs={12}>
                       <Typography
@@ -2015,7 +1996,7 @@ const ItemTable = () => {
                         <Box
                           sx={{
                             p: 1.5,
-                            bgcolor: 'rgba(254, 249, 225, 0.5)',
+                            bgcolor: 'rgba(255, 255, 255, 0.85)',
                             borderRadius: 1,
                             border: '1px solid rgba(109, 35, 35, 0.2)',
                           }}
@@ -2047,7 +2028,7 @@ const ItemTable = () => {
                         <Box
                           sx={{
                             p: 1.5,
-                            bgcolor: 'rgba(254, 249, 225, 0.5)',
+                            bgcolor: 'rgba(255, 255, 255, 0.85)',
                             borderRadius: 1,
                             border: '1px solid rgba(109, 35, 35, 0.2)',
                           }}
@@ -2114,7 +2095,7 @@ const ItemTable = () => {
                         <Box
                           sx={{
                             p: 1.5,
-                            bgcolor: 'rgba(254, 249, 225, 0.5)',
+                            bgcolor: 'rgba(255, 255, 255, 0.85)',
                             borderRadius: 1,
                             border: '1px solid rgba(109, 35, 35, 0.2)',
                           }}
@@ -2157,7 +2138,7 @@ const ItemTable = () => {
                         <Box
                           sx={{
                             p: 1.5,
-                            bgcolor: 'rgba(254, 249, 225, 0.5)',
+                            bgcolor: 'rgba(255, 255, 255, 0.85)',
                             borderRadius: 1,
                             border: '1px solid rgba(109, 35, 35, 0.2)',
                           }}
@@ -2195,7 +2176,7 @@ const ItemTable = () => {
                         <Box
                           sx={{
                             p: 1.5,
-                            bgcolor: 'rgba(254, 249, 225, 0.5)',
+                            bgcolor: 'rgba(255, 255, 255, 0.85)',
                             borderRadius: 1,
                             border: '1px solid rgba(109, 35, 35, 0.2)',
                           }}

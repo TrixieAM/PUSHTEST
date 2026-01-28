@@ -1,6 +1,7 @@
 const db = require("../db");
 const express = require("express");
 const router = express.Router();
+const socketService = require("../socket/socketService");
 
 
 
@@ -73,6 +74,13 @@ router.post('/person_table', (req, res) => {
       console.error('Database error:', err);
       return res.status(500).send('Internal Server Error');
     }
+
+    // Socket.IO (Option A): notify others to refresh
+    socketService.notifyPersonalInfoChanged('created', {
+      id: result.insertId,
+      employeeNumber: agencyEmployeeNum,
+    });
+
     res.status(201).send({ message: 'Person record created', id: result.insertId });
   });
 });
@@ -111,6 +119,13 @@ router.put('/person_table/:id', (req, res) => {
       console.error('Database error:', err);
       return res.status(500).send('Internal Server Error');
     }
+
+    // Socket.IO (Option A): notify others to refresh
+    socketService.notifyPersonalInfoChanged('updated', {
+      id: Number(id),
+      employeeNumber: agencyEmployeeNum,
+    });
+
     res.status(200).send({ message: 'Person record updated' });
   });
 });
@@ -146,6 +161,12 @@ router.put('/person/:employeeNumber', (req, res) => {
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Employee not found' });
     }
+
+    // Socket.IO (Option A): notify others to refresh
+    socketService.notifyPersonalInfoChanged('updated', {
+      employeeNumber: employeeNumber,
+    });
+
     
     res.status(200).json({ 
       message: 'Name updated successfully',
@@ -205,6 +226,12 @@ router.put('/person_table/by-employee/:employeeNumber', (req, res) => {
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Employee not found' });
     }
+
+    // Socket.IO (Option A): notify others to refresh
+    socketService.notifyPersonalInfoChanged('updated', {
+      employeeNumber: employeeNumber,
+    });
+
     
     res.status(200).json({ message: 'Person record updated successfully' });
   });
@@ -221,6 +248,10 @@ router.delete('/person_table/:id', (req, res) => {
       console.error('Database error:', err);
       return res.status(500).send('Internal Server Error');
     }
+
+    // Socket.IO (Option A): notify others to refresh
+    socketService.notifyPersonalInfoChanged('deleted', { id: Number(id) });
+
     res.status(200).send({ message: 'Person record deleted' });
   });
 });
@@ -235,6 +266,10 @@ router.delete('/remove-profile-picture/:id', (req, res) => {
       console.error(err);
       return res.status(500).send({ message: 'Database error' });
     }
+
+    // Socket.IO (Option A): notify others to refresh
+    socketService.notifyPersonalInfoChanged('updated', { id: Number(id) });
+
     res.status(200).send({ message: 'Profile picture removed' });
   });
 });

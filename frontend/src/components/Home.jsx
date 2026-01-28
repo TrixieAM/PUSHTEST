@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { useSocket } from "../contexts/SocketContext";
 import {
   IconButton,
   Modal,
@@ -157,6 +158,7 @@ const useCarousel = (items, autoPlay = true, interval = 5000) => {
 const Home = () => {
   // Add the useSystemSettings hook
   const settings = useSystemSettings();
+  const { socket, connected } = useSocket();
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [username, setUsername] = useState("");
@@ -274,68 +276,158 @@ const Home = () => {
   }, [employeeNumber]);
 
   // Fetch notifications
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      if (!employeeNumber) {
-        console.log("No employeeNumber, skipping notification fetch");
-        return;
-      }
+  const fetchNotifications = useCallback(async () => {
+    if (!employeeNumber) {
+      console.log("No employeeNumber, skipping notification fetch");
+      return;
+    }
 
-      const empNum = String(employeeNumber).trim();
-      if (!empNum) return;
+    const empNum = String(employeeNumber).trim();
+    if (!empNum) return;
 
-      try {
-        console.log(`Fetching notifications for employeeNumber: ${empNum}`);
-        const [notifRes, unreadRes] = await Promise.all([
-          axios.get(`${API_BASE_URL}/api/notifications/${empNum}`),
-          axios.get(`${API_BASE_URL}/api/notifications/${empNum}/unread-count`),
-        ]);
+    try {
+      console.log(`Fetching notifications for employeeNumber: ${empNum}`);
+      const [notifRes, unreadRes] = await Promise.all([
+        axios.get(`${API_BASE_URL}/api/notifications/${empNum}`),
+        axios.get(`${API_BASE_URL}/api/notifications/${empNum}/unread-count`),
+      ]);
 
-        const filteredNotifications = Array.isArray(notifRes.data)
-          ? notifRes.data.filter(
-              (notif) => String(notif.employeeNumber).trim() === empNum
-            )
-          : [];
+      const filteredNotifications = Array.isArray(notifRes.data)
+        ? notifRes.data.filter(
+            (notif) => String(notif.employeeNumber).trim() === empNum
+          )
+        : [];
 
-        setNotifications(filteredNotifications);
-        setUnreadCount(unreadRes.data?.count || 0);
+      setNotifications(filteredNotifications);
+      setUnreadCount(unreadRes.data?.count || 0);
 
-        const announcementNotifs = filteredNotifications.filter(
-          (n) => n.notification_type === "announcement" && n.announcement_id
-        );
-        if (announcementNotifs.length > 0) {
-          try {
-            const annRes = await axios.get(`${API_BASE_URL}/api/announcements`);
-            const announcementList = Array.isArray(annRes.data)
-              ? annRes.data
-              : [];
-            const detailsMap = {};
-            announcementNotifs.forEach((notif) => {
-              const announcement = announcementList.find(
-                (ann) =>
-                  ann.id === notif.announcement_id ||
-                  ann.id === parseInt(notif.announcement_id)
-              );
-              if (announcement) {
-                detailsMap[notif.id] = announcement;
-              }
-            });
-            setAnnouncementDetails(detailsMap);
-          } catch (err) {
-            console.error("Error fetching announcement details:", err);
-          }
+      const announcementNotifs = filteredNotifications.filter(
+        (n) => n.notification_type === "announcement" && n.announcement_id
+      );
+      if (announcementNotifs.length > 0) {
+        try {
+          const annRes = await axios.get(`${API_BASE_URL}/api/announcements`);
+          const announcementList = Array.isArray(annRes.data) ? annRes.data : [];
+          const detailsMap = {};
+          announcementNotifs.forEach((notif) => {
+            const announcement = announcementList.find(
+              (ann) =>
+                ann.id === notif.announcement_id ||
+                ann.id === parseInt(notif.announcement_id)
+            );
+            if (announcement) {
+              detailsMap[notif.id] = announcement;
+            }
+          });
+          setAnnouncementDetails(detailsMap);
+        } catch (err) {
+          console.error("Error fetching announcement details:", err);
         }
-      } catch (err) {
-        console.error("Error fetching notifications:", err);
-        setNotifications([]);
-        setUnreadCount(0);
+      }
+    } catch (err) {
+      console.error("Error fetching notifications:", err);
+      setNotifications([]);
+      setUnreadCount(0);
+    }
+  }, [employeeNumber]);
+
+  // Keep latest fetch function for Socket.IO handlers
+  const fetchNotificationsRef = useRef(fetchNotifications);
+  useEffect(() => {
+    fetchNotificationsRef.current = fetchNotifications;
+  }, [fetchNotifications]);
+
+  // Initial fetch (and when employee changes)
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  // Fetch announcements function (moved before socket effect to avoid initialization error)
+  const fetchAnnouncements = useCallback(async () => {
+    try {
+      console.log('Fetching announcements from API...');
+      const res = await axios.get(`${API_BASE_URL}/api/announcements`);
+      const announcementsList = Array.isArray(res.data) ? res.data : [];
+      console.log(`Loaded ${announcementsList.length} announcements from API`);
+      setAnnouncements(announcementsList);
+    } catch (err) {
+      console.error("Error fetching announcements:", err);
+      setAnnouncements([]);
+    }
+  }, []);
+
+  // Keep latest fetchAnnouncements function for Socket.IO handlers
+  const fetchAnnouncementsRef = useRef(fetchAnnouncements);
+  useEffect(() => {
+    fetchAnnouncementsRef.current = fetchAnnouncements;
+  }, [fetchAnnouncements]);
+
+  // Universal Socket.IO: refresh notifications when server pushes updates
+  useEffect(() => {
+    if (!socket || !connected) return;
+
+    const refreshTimeoutRef = { current: null };
+    const scheduleRefresh = () => {
+      if (refreshTimeoutRef.current) return;
+      refreshTimeoutRef.current = setTimeout(() => {
+        refreshTimeoutRef.current = null;
+        if (typeof fetchNotificationsRef.current === "function") {
+          fetchNotificationsRef.current();
+        }
+      }, 250);
+    };
+
+    const handleNotificationCreated = (payload) => {
+      scheduleRefresh();
+    };
+    const handlePayrollChanged = () => scheduleRefresh();
+
+    // Handle announcement changes - update state DIRECTLY from socket (no API call = instant!)
+    const handleAnnouncementChanged = (payload) => {
+      console.log('📢 Announcement changed via socket:', payload);
+      const { action, announcement } = payload;
+      
+      if (action === "created") {
+        // Add new announcement to the beginning of the list
+        setAnnouncements((prev) => {
+          // Check if already exists (avoid duplicates)
+          const exists = prev.some((a) => a.id === announcement.id);
+          if (exists) {
+            console.log('Announcement already exists, skipping duplicate');
+            return prev;
+          }
+          console.log('Adding new announcement:', announcement);
+          return [announcement, ...prev];
+        });
+      } else if (action === "updated") {
+        // Update existing announcement in the list
+        console.log('Updating announcement:', announcement);
+        setAnnouncements((prev) =>
+          prev.map((a) => (a.id === announcement.id ? announcement : a))
+        );
+      } else if (action === "deleted") {
+        // Remove announcement from the list
+        const deletedId = announcement?.id || announcement;
+        console.log('Deleting announcement:', deletedId);
+        setAnnouncements((prev) =>
+          prev.filter((a) => a.id !== deletedId)
+        );
       }
     };
 
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 5000);
-    return () => clearInterval(interval);
-  }, [employeeNumber]);
+    socket.on("notificationCreated", handleNotificationCreated);
+    socket.on("payrollChanged", handlePayrollChanged);
+    socket.on("announcementChanged", handleAnnouncementChanged);
+
+    return () => {
+      socket.off("notificationCreated", handleNotificationCreated);
+      socket.off("payrollChanged", handlePayrollChanged);
+      socket.off("announcementChanged", handleAnnouncementChanged);
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+    };
+  }, [socket, connected]);
 
   const handleNotificationClick = async (notification) => {
     if (notification.read_status === 0) {
@@ -435,18 +527,10 @@ const Home = () => {
     if (userInfo.employeeNumber) setEmployeeNumber(userInfo.employeeNumber);
   }, []);
 
+  // Initial fetch for announcements
   useEffect(() => {
-    const fetchAnnouncements = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/api/announcements`);
-        setAnnouncements(Array.isArray(res.data) ? res.data : []);
-      } catch (err) {
-        console.error("Error fetching announcements:", err);
-        setAnnouncements([]);
-      }
-    };
     fetchAnnouncements();
-  }, []);
+  }, [fetchAnnouncements]);
 
   const handleOpenModal = (announcement) => {
     setSelectedAnnouncement(announcement);

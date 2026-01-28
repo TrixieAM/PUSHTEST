@@ -4,6 +4,7 @@ const multer = require("multer");
 const xlsx = require("xlsx");
 const fs = require("fs"); // Import file system module
 const router = express.Router();
+const socketService = require("../socket/socketService");
 
 
 
@@ -34,6 +35,12 @@ router.post("/voluntary-work", (req, res) => {
   const query = "INSERT INTO  voluntary_work_table (nameAndAddress, dateFrom, dateTo, numberOfHours, natureOfWork, person_id) VALUES (?, ?, ?, ?, ?, ?)";
   db.query(query, [nameAndAddress, dateFrom, dateTo, numberOfHours, natureOfWork, person_id], (err, result) => {
     if (err) return res.status(500).send(err);
+
+    socketService.notifyVoluntaryWorkChanged("created", {
+      id: result.insertId,
+      person_id,
+    });
+
     res.status(201).send({ message: "Item created", id: result.insertId });
   });
 });
@@ -45,6 +52,12 @@ router.put("/voluntary-work/:id", (req, res) => {
   const query = "UPDATE voluntary_work_table SET nameAndAddress = ?, dateFrom = ?, dateTo = ?, numberOfHours = ?, natureOfWork = ?, person_id = ?  WHERE id = ?";
   db.query(query, [nameAndAddress, dateFrom, dateTo, numberOfHours, natureOfWork, person_id, id], (err, result) => {
     if (err) return res.status(500).send(err);
+
+    socketService.notifyVoluntaryWorkChanged("updated", {
+      id: Number(id),
+      person_id,
+    });
+
     res.status(200).send({ message: "Item updated" });
   });
 });
@@ -55,6 +68,9 @@ router.delete("/voluntary-work/:id", (req, res) => {
   const query = "DELETE FROM voluntary_work_table WHERE id = ?";
   db.query(query, [id], (err, result) => {
     if (err) return res.status(500).send(err);
+
+    socketService.notifyVoluntaryWorkChanged("deleted", { id: Number(id) });
+
     res.status(200).send({ message: "Item deleted" });
   });
 });
@@ -105,6 +121,7 @@ router.post("/upload_voluntary_work_table", uploads.single("file"), (req, res) =
     });
 
     // Send response after insertion
+    socketService.notifyVoluntaryWorkChanged("updated", { source: "upload" });
     res.json({ message: "File uploaded and data inserted successfully into items table" });
   } catch (error) {
     console.error("Error processing XLS file:", error);

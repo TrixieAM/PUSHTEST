@@ -29,6 +29,7 @@ import LoadingOverlay from '../LoadingOverlay';
 import SuccessfulOverlay from '../SuccessfulOverlay';
 import usePageAccess from '../../hooks/usePageAccess';
 import AccessDenied from '../AccessDenied';
+import usePayrollRealtimeRefresh from '../../hooks/usePayrollRealtimeRefresh';
 
 const PhilHealthTable = () => {
   const [data, setData] = useState([]);
@@ -66,6 +67,10 @@ const PhilHealthTable = () => {
       console.error('Error fetching data:', err);
     }
   };
+
+  usePayrollRealtimeRefresh(() => {
+    fetchPhilHealthData();
+  });
 
   const handleAdd = async () => {
     setLoading(true);

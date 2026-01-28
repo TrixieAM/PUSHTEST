@@ -2,6 +2,7 @@ const db = require("../db");
 const express = require("express");
 const multer = require("multer");
 const router = express.Router();
+const socketService = require("../socket/socketService");
 
 
 
@@ -36,6 +37,12 @@ router.post("/work-experience-table", (req, res) => {
 
   db.query(query, [person_id, workDateFrom, workDateTo, workPositionTitle, workCompany, workMonthlySalary, SalaryJobOrPayGrade, StatusOfAppointment, isGovtService], (err, result) => {
     if (err) return res.status(500).send(err);
+
+    socketService.notifyWorkExperienceChanged("created", {
+      id: result.insertId,
+      person_id,
+    });
+
     res.status(201).send({ message: "Item created", id: result.insertId });
   });
 });
@@ -48,6 +55,12 @@ router.put("/work-experience-table/:id", (req, res) => {
 
   db.query(query, [person_id, workDateFrom, workDateTo, workPositionTitle, workCompany, workMonthlySalary, SalaryJobOrPayGrade, StatusOfAppointment, isGovtService, id], (err) => {
     if (err) return res.status(500).send(err);
+
+    socketService.notifyWorkExperienceChanged("updated", {
+      id: Number(id),
+      person_id,
+    });
+
     res.status(200).send({ message: "Item updated" });
   });
 });
@@ -59,6 +72,9 @@ router.delete("/work-experience-table/:id", (req, res) => {
 
   db.query(query, [id], (err) => {
     if (err) return res.status(500).send(err);
+
+    socketService.notifyWorkExperienceChanged("deleted", { id: Number(id) });
+
     res.status(200).send({ message: "Item deleted" });
   });
 });

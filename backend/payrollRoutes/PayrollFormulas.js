@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const { validateFormula } = require('../services/PayrollCalculator');
+const { notifyPayrollChanged } = require('../socket/socketService');
 
 // Audit logging function
 function logAudit(user, action, tableName, recordId, targetEmployeeNumber = null) {
@@ -211,6 +212,12 @@ router.post('/api/payroll-formulas', authenticateToken, (req, res) => {
                 result.insertId
               );
 
+              notifyPayrollChanged('created', {
+                module: 'payroll-formulas',
+                id: result.insertId,
+                formula_key,
+              });
+
               res.status(201).json(formula);
             }
           );
@@ -322,6 +329,11 @@ router.put('/api/payroll-formulas/:key', authenticateToken, (req, res) => {
                 ? JSON.parse(formula.dependencies)
                 : [];
 
+              notifyPayrollChanged('updated', {
+                module: 'payroll-formulas',
+                formula_key: key,
+              });
+
               res.json(formula);
             }
           );
@@ -369,6 +381,8 @@ router.delete('/api/payroll-formulas/:key', authenticateToken, (req, res) => {
           }
         }
       );
+
+      notifyPayrollChanged('deleted', { module: 'payroll-formulas', formula_key: key });
 
       res.json({
         success: true,

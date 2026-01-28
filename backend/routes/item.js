@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { authenticateToken, logAudit } = require('../middleware/auth');
+const { notifyPayrollChanged } = require('../socket/socketService');
 
 // GET all item table records
 router.get('/api/item-table', authenticateToken, (req, res) => {
@@ -128,6 +129,12 @@ router.post('/api/item-table', authenticateToken, (req, res) => {
         console.error('Audit log error:', e);
       }
 
+      notifyPayrollChanged('created', {
+        module: 'item-table',
+        id: result.insertId,
+        employeeID,
+      });
+
       res.json({
         message: 'Item record added successfully',
         id: result.insertId,
@@ -208,6 +215,12 @@ router.put('/api/item-table/:id', authenticateToken, (req, res) => {
         console.error('Audit log error:', e);
       }
 
+      notifyPayrollChanged('updated', {
+        module: 'item-table',
+        id,
+        employeeID,
+      });
+
       res.json({ message: 'Item record updated successfully' });
     }
   );
@@ -230,6 +243,8 @@ router.delete('/api/item-table/:id', authenticateToken, (req, res) => {
     } catch (e) {
       console.error('Audit log error:', e);
     }
+
+    notifyPayrollChanged('deleted', { module: 'item-table', id });
 
     res.json({ message: 'Item record deleted successfully' });
   });

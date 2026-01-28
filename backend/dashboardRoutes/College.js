@@ -1,6 +1,7 @@
 const db = require("../db");
 const express = require("express");
 const multer = require("multer");
+const socketService = require("../socket/socketService");
 
 const fs = require("fs"); // Import file system module
 const xlsx = require("xlsx");
@@ -59,6 +60,13 @@ router.post("/college-table", (req, res) => {
 
   db.query(query, [collegeNameOfSchool, collegeDegree, collegePeriodFrom, collegePeriodTo, collegeHighestAttained, collegeYearGraduated, collegeScholarshipAcademicHonorsReceived, person_id], (err, result) => {
     if (err) return res.status(500).send({ message: "Internal Server Error" });
+
+    // Socket.IO (Option A): notify others to refresh
+    socketService.notifyCollegeTableChanged("created", {
+      id: result.insertId,
+      person_id,
+    });
+
     res.status(201).send({ message: "College entry created", id: result.insertId });
   });
 });
@@ -82,6 +90,13 @@ router.put("/college-table/:id", (req, res) => {
 
   db.query(query, [collegeNameOfSchool, collegeDegree, collegePeriodFrom, collegePeriodTo, collegeHighestAttained, collegeYearGraduated, collegeScholarshipAcademicHonorsReceived, person_id, id], (err, result) => {
     if (err) return res.status(500).send({ message: "Internal Server Error" });
+
+    // Socket.IO (Option A): notify others to refresh
+    socketService.notifyCollegeTableChanged("updated", {
+      id: Number(id),
+      person_id,
+    });
+
     res.status(200).send({ message: "College entry updated" });
   });
 });
@@ -92,6 +107,10 @@ router.delete("/college-table/:id", (req, res) => {
   const query = "DELETE FROM college_table WHERE id = ?";
   db.query(query, [id], (err, result) => {
     if (err) return res.status(500).send({ message: "Internal Server Error" });
+
+    // Socket.IO (Option A): notify others to refresh
+    socketService.notifyCollegeTableChanged("deleted", { id: Number(id) });
+
     res.status(200).send({ message: "College entry deleted" });
   });
 });

@@ -4,6 +4,8 @@ const multer = require("multer");
 const fs = require("fs");
 const xlsx = require("xlsx");
 
+const socketService = require("../socket/socketService");
+
 
 const router = express.Router();
 
@@ -86,6 +88,12 @@ router.post("/graduate-table", (req, res) => {
         console.error("Error inserting graduate study:", err);
         return res.status(500).json({ error: "Error adding graduate study" });
       }
+
+      socketService.notifyGraduateChanged("created", {
+        id: result.insertId,
+        person_id,
+      });
+
       res.status(201).json({
         message: "Graduate study added successfully",
         id: result.insertId,
@@ -142,6 +150,12 @@ router.put("/graduate-table/:id", (req, res) => {
       if (result.affectedRows === 0) {
         return res.status(404).json({ error: "Graduate study not found" });
       }
+
+      socketService.notifyGraduateChanged("updated", {
+        id: Number(id),
+        person_id,
+      });
+
       res.json({ message: "Graduate study updated successfully" });
     }
   );
@@ -160,6 +174,9 @@ router.delete("/graduate-table/:id", (req, res) => {
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: "Graduate study not found" });
     }
+
+    socketService.notifyGraduateChanged("deleted", { id: Number(id) });
+
     res.json({ message: "Graduate study deleted successfully" });
   });
 });

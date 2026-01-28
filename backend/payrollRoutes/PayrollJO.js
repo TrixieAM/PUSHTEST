@@ -2,6 +2,7 @@ const db = require("../db");
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const { notifyPayrollChanged } = require('../socket/socketService');
 
 
 
@@ -364,6 +365,12 @@ router.post('/payroll-jo', authenticateToken, async (req, res) => {
       employeeNumber
     );
 
+    notifyPayrollChanged('created', {
+      module: 'payroll-jo',
+      id: result.insertId,
+      employeeNumber,
+    });
+
     res.status(201).json({
       message: 'JO payroll record added successfully',
       id: result.insertId,
@@ -428,6 +435,11 @@ router.put('/payroll-jo/:id', authenticateToken, (req, res) => {
         return res.status(404).json({ message: 'Payroll record not found' });
 
       logAudit(req.user, 'Update', 'payroll_processing_jo', id, employeeNumber);
+      notifyPayrollChanged('updated', {
+        module: 'payroll-jo',
+        id,
+        employeeNumber,
+      });
       res.json({ message: 'JO payroll record updated successfully' });
     }
   );
@@ -447,6 +459,7 @@ router.delete('/payroll-jo/:id', authenticateToken, (req, res) => {
       return res.status(404).json({ message: 'Payroll record not found' });
 
     logAudit(req.user, 'Delete', 'payroll_processing_jo', id, null);
+    notifyPayrollChanged('deleted', { module: 'payroll-jo', id });
     res.json({ message: 'JO payroll record deleted successfully' });
   });
 });
@@ -484,6 +497,10 @@ router.put('/payroll-jo/:id/contributions', authenticateToken, (req, res) => {
             return res.status(500).json({ message: 'Error creating remittance record' });
           }
           logAudit(req.user, 'Create', 'remittance_table', insertResult.insertId, employeeNumber);
+          notifyPayrollChanged('updated', {
+            module: 'remittance',
+            employeeNumber,
+          });
           res.json({ message: 'Contributions updated successfully' });
         }
       );
@@ -503,6 +520,10 @@ router.put('/payroll-jo/:id/contributions', authenticateToken, (req, res) => {
             return res.status(500).json({ message: 'Error updating remittance record' });
           }
           logAudit(req.user, 'Update', 'remittance_table', result[0].id, employeeNumber);
+          notifyPayrollChanged('updated', {
+            module: 'remittance',
+            employeeNumber,
+          });
           res.json({ message: 'Contributions updated successfully' });
         }
       );
@@ -730,6 +751,12 @@ router.post('/export-to-finalized', authenticateToken, async (req, res) => {
         result.insertId,
         employeeNumbers
       );
+
+      notifyPayrollChanged('finalized', {
+        module: 'payroll-jo',
+        inserted: result.affectedRows,
+        updated: updateResult.affectedRows,
+      });
 
       res.json({
         message:

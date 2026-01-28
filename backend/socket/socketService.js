@@ -6,6 +6,27 @@ const { getIO } = require('./socketServer');
  */
 
 /**
+ * Broadcast to multiple role rooms
+ * @param {Array<string>} roles - e.g. ['administrator', 'superadmin', 'technical']
+ * @param {string} eventName - Event name to emit
+ * @param {object} data - Data to send with the event
+ */
+function broadcastToRoles(roles, eventName, data) {
+  try {
+    const io = getIO();
+    const timestamp = new Date().toISOString();
+
+    roles.forEach((role) => {
+      io.to(`role:${role}`).emit(eventName, { ...data, timestamp });
+    });
+
+    console.log(`✓ Broadcasted to roles [${roles.join(', ')}]: ${eventName}`);
+  } catch (error) {
+    console.error(`Failed to broadcast to roles:`, error.message);
+  }
+}
+
+/**
  * Notify a user that their page access has been granted
  * @param {string} employeeNumber - Employee number of the user
  * @param {object} pageData - Page information that was granted
@@ -129,6 +150,154 @@ function broadcastToRole(role, eventName, data) {
   }
 }
 
+/**
+ * College table realtime notifier (Option A pattern)
+ * Called by college routes after DB changes.
+ *
+ * @param {'created'|'updated'|'deleted'} action
+ * @param {object} data - event payload (e.g. { id, person_id })
+ */
+function notifyCollegeTableChanged(action, data) {
+  broadcastToRoles(['administrator', 'superadmin', 'technical'], 'collegeTableChanged', {
+    action,
+    ...data,
+  });
+}
+
+/**
+ * Personal Info realtime notifier (Option A pattern)
+ * Called by personal info routes after DB changes.
+ *
+ * @param {'created'|'updated'|'deleted'} action
+ * @param {object} data - event payload (e.g. { id, employeeNumber })
+ */
+function notifyPersonalInfoChanged(action, data) {
+  broadcastToRoles(
+    ['staff', 'administrator', 'superadmin', 'technical'],
+    'personalInfoChanged',
+    {
+      action,
+      ...data,
+    },
+  );
+}
+
+/**
+ * Dashboard modules realtime notifiers (Option A pattern)
+ * These emit lightweight events; frontend re-fetches data.
+ */
+function notifyChildrenTableChanged(action, data) {
+  broadcastToRoles(
+    ['staff', 'administrator', 'superadmin', 'technical'],
+    'childrenTableChanged',
+    { action, ...data },
+  );
+}
+
+function notifyEligibilityChanged(action, data) {
+  broadcastToRoles(
+    ['staff', 'administrator', 'superadmin', 'technical'],
+    'eligibilityChanged',
+    { action, ...data },
+  );
+}
+
+function notifyVoluntaryWorkChanged(action, data) {
+  broadcastToRoles(
+    ['staff', 'administrator', 'superadmin', 'technical'],
+    'voluntaryWorkChanged',
+    { action, ...data },
+  );
+}
+
+function notifyVocationalChanged(action, data) {
+  broadcastToRoles(
+    ['staff', 'administrator', 'superadmin', 'technical'],
+    'vocationalChanged',
+    { action, ...data },
+  );
+}
+
+function notifyWorkExperienceChanged(action, data) {
+  broadcastToRoles(
+    ['staff', 'administrator', 'superadmin', 'technical'],
+    'workExperienceChanged',
+    { action, ...data },
+  );
+}
+
+function notifyOtherInformationChanged(action, data) {
+  broadcastToRoles(
+    ['staff', 'administrator', 'superadmin', 'technical'],
+    'otherInformationChanged',
+    { action, ...data },
+  );
+}
+
+function notifyGraduateChanged(action, data) {
+  broadcastToRoles(
+    ['staff', 'administrator', 'superadmin', 'technical'],
+    'graduateChanged',
+    { action, ...data },
+  );
+}
+
+function notifyLearningChanged(action, data) {
+  broadcastToRoles(
+    ['staff', 'administrator', 'superadmin', 'technical'],
+    'learningChanged',
+    { action, ...data },
+  );
+}
+
+/**
+ * Attendance realtime notifier
+ * Called by attendance routes after DB changes.
+ *
+ * Frontend pattern: listen to 'attendanceChanged' then re-fetch.
+ *
+ * @param {'created'|'updated'|'deleted'|'auto-sync'|'bulk-auto-sync'|'dtr-printed'|'overall-created'|'overall-updated'|'overall-deleted'} action
+ * @param {object} data - event payload (keep lightweight)
+ */
+function notifyAttendanceChanged(action, data) {
+  broadcastToRoles(
+    ['staff', 'administrator', 'superadmin', 'technical'],
+    'attendanceChanged',
+    { action, ...data },
+  );
+}
+
+/**
+ * Payroll realtime notifier (universal)
+ * Called by payroll-related routes after DB changes.
+ *
+ * Frontend pattern: listen to 'payrollChanged' then re-fetch.
+ *
+ * @param {'created'|'updated'|'deleted'|'processed'|'finalized'|'released'|'sent'|'imported'|'sync'} action
+ * @param {object} data - event payload (keep lightweight)
+ */
+function notifyPayrollChanged(action, data) {
+  broadcastToRoles(
+    ['staff', 'administrator', 'superadmin', 'technical'],
+    'payrollChanged',
+    { action, ...data },
+  );
+}
+
+/**
+ * Announcement realtime notifier (universal)
+ * Called by announcement routes after DB changes.
+ *
+ * Frontend pattern: listen to 'announcementChanged' and update state directly.
+ *
+ * @param {'created'|'updated'|'deleted'} action
+ * @param {object} announcement - Full announcement object (for created/updated) or { id } (for deleted)
+ */
+function notifyAnnouncementChanged(action, announcement) {
+  // Broadcast to ALL connected users (everyone should see announcements)
+  broadcastToAll('announcementChanged', { action, announcement });
+}
+
 module.exports = {
   notifyPageAccessGranted,
   notifyPageAccessRevoked,
@@ -136,4 +305,18 @@ module.exports = {
   notifyMultipleUsers,
   broadcastToAll,
   broadcastToRole,
+  broadcastToRoles,
+  notifyCollegeTableChanged,
+  notifyPersonalInfoChanged,
+  notifyChildrenTableChanged,
+  notifyEligibilityChanged,
+  notifyVoluntaryWorkChanged,
+  notifyVocationalChanged,
+  notifyWorkExperienceChanged,
+  notifyOtherInformationChanged,
+  notifyGraduateChanged,
+  notifyLearningChanged,
+  notifyAttendanceChanged,
+  notifyPayrollChanged,
+  notifyAnnouncementChanged,
 };

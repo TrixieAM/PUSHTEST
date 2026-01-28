@@ -53,6 +53,7 @@ const Registration = () => {
     employeeNumber: '',
     password: '',
     employmentCategory: '',
+    department: '',
   });
 
   const [errMessage, setErrorMessage] = useState();
@@ -75,7 +76,11 @@ const Registration = () => {
     password: true,
     middleName: false,
     nameExtension: false,
+    department: false,
   });
+
+  // Department codes state
+  const [departmentCodes, setDepartmentCodes] = useState([]);
 
   const navigate = useNavigate();
 
@@ -118,6 +123,31 @@ const Registration = () => {
       }
     };
     fetchFieldRequirements();
+  }, []);
+
+  // Fetch department codes
+  useEffect(() => {
+    const fetchDepartmentCodes = async () => {
+      try {
+        const token =
+          localStorage.getItem('token') || sessionStorage.getItem('token');
+        const response = await fetch(
+          `${API_BASE_URL}/api/department-table`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          setDepartmentCodes(data.map((item) => item.code));
+        }
+      } catch (err) {
+        console.error('Error fetching department codes:', err);
+      }
+    };
+    fetchDepartmentCodes();
   }, []);
 
   const handleNavigateToSetup = (page) => {
@@ -182,6 +212,7 @@ const Registration = () => {
       employeeNumber,
       password,
       employmentCategory,
+      department,
     } = formData;
 
     // Dynamic validation based on field requirements
@@ -206,6 +237,9 @@ const Registration = () => {
       employmentCategory === ''
     ) {
       missingFields.push('Employment Category');
+    }
+    if (fieldRequirements.department && !department) {
+      missingFields.push('Department');
     }
 
     if (missingFields.length > 0) {
@@ -265,6 +299,7 @@ const Registration = () => {
           employeeNumber: '',
           password: '',
           employmentCategory: '',
+          department: '',
         });
       } else {
         const errorData = await response.json();
@@ -1146,12 +1181,9 @@ const Registration = () => {
                           }}
                         />
                       </Grid>
-                    </Grid>
-                  </Box>
 
-                  <Box sx={{ mb: 4 }}>
-                    <Grid container spacing={2.5}>
-                      <Grid item xs={12}>
+                      {/* Password */}
+                      <Grid item xs={12} sm={6}>
                         <TextField
                           name="password"
                           label={`Password${fieldRequirements.password ? ' *' : ''}`}
@@ -1209,6 +1241,83 @@ const Registration = () => {
                             },
                           }}
                         />
+                      </Grid>
+
+                      {/* Department */}
+                      <Grid item xs={12} sm={6}>
+                        <FormControl
+                          fullWidth
+                          variant="outlined"
+                          sx={{
+                            '& .MuiOutlinedInput-root': {
+                              borderRadius: 2,
+                              transition: 'all 0.3s ease',
+                              '&:hover': {
+                                transform: 'translateY(-2px)',
+                              },
+                              '&:hover fieldset': {
+                                borderColor: '#8a4747',
+                                borderWidth: 2,
+                              },
+                              '&.Mui-focused': {
+                                transform: 'translateY(-2px)',
+                                boxShadow: '0 4px 12px rgba(109, 35, 35, 0.15)',
+                              },
+                              '&.Mui-focused fieldset': {
+                                borderColor: '#6d2323',
+                                borderWidth: 2,
+                              },
+                            },
+                            '& .MuiInputLabel-root.Mui-focused': {
+                              color: '#6d2323',
+                              fontWeight: 700,
+                            },
+                          }}
+                        >
+                          <InputLabel
+                            id="department-label"
+                            sx={{
+                              fontWeight: 600,
+                            }}
+                          >
+                            {`Department${fieldRequirements.department ? ' *' : ''}`}
+                          </InputLabel>
+
+                          <Select
+                            labelId="department-label"
+                            name="department"
+                            value={formData.department}
+                            label={`Department${fieldRequirements.department ? ' *' : ''}`}
+                            onChange={handleChanges}
+                            onFocus={() =>
+                              setFocusedField('department')
+                            }
+                            onBlur={() => setFocusedField(null)}
+                            displayEmpty
+                            startAdornment={
+                              <InputAdornment position="start">
+                                <Business
+                                  sx={{
+                                    color:
+                                      focusedField === 'department'
+                                        ? '#6d2323'
+                                        : '#8a4747',
+                                    transition: 'color 0.3s ease',
+                                  }}
+                                />
+                              </InputAdornment>
+                            }
+                          >
+                            <MenuItem value="" disabled>
+                              <em>Select Department</em>
+                            </MenuItem>
+                            {departmentCodes.map((code, index) => (
+                              <MenuItem key={index} value={code}>
+                                {code}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
                       </Grid>
                     </Grid>
                   </Box>

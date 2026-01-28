@@ -2,6 +2,7 @@ const db = require('../db');
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const { notifyAttendanceChanged } = require('../socket/socketService');
 
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
@@ -139,7 +140,22 @@ router.post('/api/update-attendance', authenticateToken, (req, res) => {
   });
 
   Promise.all(promises)
-    .then(() => res.json({ message: 'Records updated successfully' }))
+    .then(() => {
+      const personIDs = Array.isArray(records)
+        ? [...new Set(records.map((r) => r.personID).filter(Boolean))]
+        : [];
+      const recordIds = Array.isArray(records)
+        ? records.map((r) => r.id).filter(Boolean)
+        : [];
+
+      notifyAttendanceChanged('updated', {
+        scope: 'attendanceRecord',
+        personIDs,
+        recordIds,
+      });
+
+      res.json({ message: 'Records updated successfully' });
+    })
     .catch((err) => res.status(500).json({ error: err.message }));
 });
 
@@ -193,7 +209,6 @@ router.post('/api/attendance', authenticateToken, (req, res) => {
     res.json(records);
   });
 });
-
 
 // NEW: Send to DTR Module endpoint
 router.post('/api/send-to-dtr', authenticateToken, async (req, res) => {
@@ -350,7 +365,21 @@ router.post('/api/save-attendance', authenticateToken, (req, res) => {
   });
 
   Promise.all(promises)
-    .then((results) => res.json(results))
+    .then((results) => {
+      const saved = Array.isArray(results)
+        ? results.filter((r) => r && r.status === 'saved')
+        : [];
+
+      if (saved.length > 0) {
+        notifyAttendanceChanged('created', {
+          scope: 'attendanceRecord',
+          personIDs: [...new Set(saved.map((r) => r.personID).filter(Boolean))],
+          dates: [...new Set(saved.map((r) => r.date).filter(Boolean))],
+        });
+      }
+
+      res.json(results);
+    })
     .catch((err) => res.status(500).json({ error: err.message }));
 });
 
@@ -530,6 +559,12 @@ router.post('/api/overall_attendance', authenticateToken, (req, res) => {
         `${startDate} && ${endDate}`,
         personID
       );
+      notifyAttendanceChanged('overall-created', {
+        scope: 'overall_attendance_record',
+        personID,
+        startDate,
+        endDate,
+      });
       res
         .status(201)
         .json({
@@ -674,6 +709,13 @@ router.put(
               id,
               personID
             );
+            notifyAttendanceChanged('overall-updated', {
+              scope: 'overall_attendance_record',
+              id,
+              personID,
+              startDate,
+              endDate,
+            });
             res
               .status(200)
               .json({ message: 'Record updated successfully', data: results });
@@ -708,6 +750,11 @@ router.delete(
       }
 
       logAudit(req.user, 'delete', 'overall_attendance_record', id, personID);
+      notifyAttendanceChanged('overall-deleted', {
+        scope: 'overall_attendance_record',
+        id,
+        personID,
+      });
       res.status(200).send({ message: 'Attendance entry deleted' });
     });
   }
@@ -876,6 +923,9 @@ router.post('/api/all-attendance', authenticateToken, async (req, res) => {
 
       // AUTO-SAVE: Save records to attendanceRecord table
       try {
+        let savedCount = 0;
+        let updatedCount = 0;
+
         for (const record of records) {
           // Get existing record with all fields to compare
           const checkSql = `SELECT id, timeIN, breaktimeIN, breaktimeOUT, timeOUT, day FROM attendanceRecord WHERE personID = ? AND date = ?`;
@@ -926,6 +976,7 @@ router.post('/api/all-attendance', authenticateToken, async (req, res) => {
                       record.Date,
                       record.PersonID
                     );
+                    savedCount++;
                     resolve();
                   }
                 }
@@ -971,6 +1022,7 @@ router.post('/api/all-attendance', authenticateToken, async (req, res) => {
                         record.Date,
                         record.PersonID
                       );
+                      updatedCount++;
                       resolve();
                     }
                   }
@@ -979,6 +1031,17 @@ router.post('/api/all-attendance', authenticateToken, async (req, res) => {
             }
             // If no changes, skip update (no duplicate, no unnecessary write)
           }
+        }
+
+        if (savedCount > 0 || updatedCount > 0) {
+          notifyAttendanceChanged('auto-sync', {
+            scope: 'device-auto-save',
+            personID,
+            startDate,
+            endDate,
+            saved: savedCount,
+            updated: updatedCount,
+          });
         }
       } catch (saveError) {
         console.error('Error auto-saving records:', saveError);
@@ -1162,6 +1225,17 @@ router.post('/api/bulk-auto-save', authenticateToken, async (req, res) => {
       null
     );
 
+    if (savedCount > 0 || updatedCount > 0) {
+      notifyAttendanceChanged('bulk-auto-sync', {
+        scope: 'device-bulk-auto-save',
+        startDate,
+        endDate,
+        saved: savedCount,
+        updated: updatedCount,
+        errors: errorCount,
+      });
+    }
+
     res.json({
       success: true,
       message: `Processed ${allUsers.length} users: ${savedCount} new records saved, ${updatedCount} records updated${errorCount > 0 ? `, ${errorCount} errors` : ''}`,
@@ -1250,6 +1324,16 @@ router.post('/api/mark-dtr-printed', authenticateToken, async (req, res) => {
       `${employeeNumbers.length} records for ${year}-${month}`,
       employeeNumbers.join(', ')
     );
+
+    notifyAttendanceChanged('dtr-printed', {
+      scope: 'dtr_print_history',
+      employeeNumbers,
+      year,
+      month,
+      startDate,
+      endDate,
+      printedBy,
+    });
     
     res.json({ 
       success: true, 

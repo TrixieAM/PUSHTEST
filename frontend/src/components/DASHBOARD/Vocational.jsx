@@ -2,6 +2,7 @@ import API_BASE_URL from '../../apiConfig';
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { getAuthHeaders } from '../../utils/auth';
+import { useSocket } from '../../contexts/SocketContext';
 import {
   Container,
   Typography,
@@ -70,7 +71,20 @@ import {
 } from '../../utils/theme';
 import { alpha } from '@mui/material';
 
-// Professional styled components - will be created inside component with settings
+// Stable themed components (avoid recreating styled components on every render)
+const ThemedCard = styled(Card, {
+  shouldForwardProp: (prop) => prop !== 'settings',
+})(({ settings = {} }) => createThemedCard(settings));
+
+const ThemedButton = styled(Button, {
+  shouldForwardProp: (prop) => prop !== 'settings',
+})(({ settings = {}, variant = 'contained' }) =>
+  createThemedButton(settings, variant),
+);
+
+const ThemedTextField = styled(TextField, {
+  shouldForwardProp: (prop) => prop !== 'settings',
+})(({ settings = {} }) => createThemedTextField(settings));
 
 // Custom Year Input Component with Dropdown
 const YearInput = ({
@@ -109,9 +123,6 @@ const YearInput = ({
     }
   };
 
-  // Create themed styled component inside YearInput
-  const ModernTextField = styled(TextField)(() => createThemedTextField(settings));
-
   return (
     <FormControl fullWidth size="small" error={!!error}>
       <Typography
@@ -125,7 +136,8 @@ const YearInput = ({
       >
         {label}
       </Typography>
-      <ModernTextField
+      <ThemedTextField
+        settings={settings}
         value={value || ''}
         onChange={handleInputChange}
         disabled={disabled}
@@ -332,12 +344,10 @@ const EmployeeAutocomplete = ({
     }
   };
 
-  // Create themed styled component inside EmployeeAutocomplete
-  const ModernTextField = styled(TextField)(() => createThemedTextField(settings));
-
   return (
     <Box sx={{ position: 'relative', width: '100%' }} ref={dropdownRef}>
-      <ModernTextField
+      <ThemedTextField
+        settings={settings}
         ref={inputRef}
         value={query}
         onChange={handleInputChange}
@@ -432,6 +442,8 @@ const EmployeeAutocomplete = ({
 };
 
 const Vocational = () => {
+  const { socket, connected } = useSocket();
+  const refreshVocationalRef = useRef(null);
   const [data, setData] = useState([]);
   const [employeeNames, setEmployeeNames] = useState({});
   const [newVocational, setNewVocational] = useState({
@@ -476,14 +488,10 @@ const Vocational = () => {
   const deleteButtonStyles = useCRUDButtonStylesOutlined('delete');
   const saveButtonStyles = useCRUDButtonStyles('save');
   
-  // Create themed styled components using system settings
-  const GlassCard = styled(Card)(() => createThemedCard(settings));
-  
-  const ProfessionalButton = styled(Button)(({ variant = 'contained' }) => 
-    createThemedButton(settings, variant)
-  );
-
-  const ModernTextField = styled(TextField)(() => createThemedTextField(settings));
+  // Use stable themed components
+  const GlassCard = ThemedCard;
+  const ProfessionalButton = ThemedButton;
+  const ModernTextField = ThemedTextField;
   
   // Get colors from system settings
   const primaryColor = settings.accentColor || '#FEF9E1'; // Cards color
@@ -539,6 +547,25 @@ const Vocational = () => {
       );
     }
   };
+
+  // Keep latest fetch function for Socket.IO handler
+  useEffect(() => {
+    refreshVocationalRef.current = fetchVocationalData;
+  });
+
+  // Realtime: refresh when anyone changes vocational records
+  useEffect(() => {
+    if (!socket || !connected) return;
+
+    const handleChanged = () => {
+      refreshVocationalRef.current?.();
+    };
+
+    socket.on('vocationalChanged', handleChanged);
+    return () => {
+      socket.off('vocationalChanged', handleChanged);
+    };
+  }, [socket, connected]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -790,17 +817,18 @@ const Vocational = () => {
 
   return (
     <Box sx={{ 
-      py: 4,
-      mt: -5,
-      width: '1600px',
+      py: { xs: 2, md: 4 },
+      mt: { xs: 0, md: -5 },
+      width: '100%',
+      maxWidth: '1600px',
       mx: 'auto',
-      overflow: 'hidden',
+      overflowX: 'hidden',
     }}>
-      <Box sx={{ px: 6 }}>
+      <Box sx={{ px: { xs: 2, sm: 3, md: 6 } }}>
         {/* Header */}
         <Fade in timeout={500}>
           <Box sx={{ mb: 4 }}>
-            <GlassCard>
+            <GlassCard settings={settings}>
               <Box
                 sx={{
                   p: 5,
@@ -893,7 +921,7 @@ const Vocational = () => {
           {/* Add New Vocational Section */}
           <Grid item xs={12} lg={6}>
             <Fade in timeout={700}>
-              <GlassCard sx={{ height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
+              <GlassCard settings={settings} sx={{ height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
                 <Box
                   sx={{
                     p: 4,
@@ -978,7 +1006,7 @@ const Vocational = () => {
                               <Typography
                                 variant="caption"
                                 sx={{
-                                  color: grayColor,
+                                  color: settings.textPrimaryColor || '#A31D1D',
                                   fontSize: '12px',
                                   lineHeight: 1.2,
                                 }}
@@ -1132,7 +1160,7 @@ const Vocational = () => {
           {/* Vocational Records Section */}
           <Grid item xs={12} lg={6}>
             <Fade in timeout={900}>
-              <GlassCard sx={{ height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
+              <GlassCard settings={settings} sx={{ height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
                 <Box
                   sx={{
                     p: 4,
@@ -1385,6 +1413,7 @@ const Vocational = () => {
           }}
         >
           <GlassCard
+            settings={settings}
             sx={{
               width: "90%",
               maxWidth: "900px",
@@ -1504,7 +1533,7 @@ const Vocational = () => {
                               <Typography
                                 variant="caption"
                                 sx={{
-                                  color: grayColor,
+                                  color: settings.textPrimaryColor || '#A31D1D',
                                   fontSize: '12px',
                                   lineHeight: 1.2,
                                 }}

@@ -2,6 +2,7 @@ const db = require("../db");
 const express = require("express");
 const multer = require("multer");
 const router = express.Router();
+const socketService = require("../socket/socketService");
 
 
 
@@ -33,6 +34,12 @@ router.post("/other-information", (req, res) => {
   const query = "INSERT INTO other_information_table (specialSkills, nonAcademicDistinctions, membershipInAssociation, person_id) VALUES (?, ?, ?, ?)";
   db.query(query, [specialSkills, nonAcademicDistinctions, membershipInAssociation, person_id], (err, result) => {
     if (err) return res.status(500).send(err);
+
+    socketService.notifyOtherInformationChanged("created", {
+      id: result.insertId,
+      person_id,
+    });
+
     res.status(201).send({ message: "Record created", id: result.insertId });
   });
 });
@@ -45,6 +52,12 @@ router.put("/other-information/:id", (req, res) => {
 
   db.query(query, [specialSkills, nonAcademicDistinctions, membershipInAssociation, person_id, id], (err, result) => {
     if (err) return res.status(500).send(err);
+
+    socketService.notifyOtherInformationChanged("updated", {
+      id: Number(id),
+      person_id,
+    });
+
     res.status(200).send({ message: "Item updated" });
   });
 });
@@ -56,6 +69,9 @@ router.delete("/other-information/:id", (req, res) => {
 
   db.query(query, [id], (err) => {
     if (err) return res.status(500).send(err);
+
+    socketService.notifyOtherInformationChanged("deleted", { id: Number(id) });
+
     res.status(200).send({ message: "Item deleted" });
   });
 });

@@ -5,6 +5,7 @@ const xlsx = require('xlsx');
 const fs = require('fs');
 const { upload } = require('../middleware/upload');
 const { authenticateToken } = require('../middleware/auth');
+const socketService = require('../socket/socketService');
 
 // Helper function to insert audit logs
 function insertAuditLog(employeeNumber, action) {
@@ -92,6 +93,11 @@ router.post('/learning_and_development_table', authenticateToken, (req, res) => 
         `Added new Learning and Development record for Person ID ${person_id}`
       );
 
+      socketService.notifyLearningChanged('created', {
+        id: result.insertId,
+        person_id,
+      });
+
       res.status(201).json({
         message: 'Record successfully added',
         id: result.insertId
@@ -151,6 +157,11 @@ router.put('/learning_and_development_table/:id', authenticateToken, (req, res) 
         `Updated Learning and Development record ID ${id}`
       );
 
+      socketService.notifyLearningChanged('updated', {
+        id: Number(id),
+        person_id,
+      });
+
       res.status(200).json({ message: 'Record successfully updated' });
     }
   );
@@ -172,6 +183,7 @@ router.delete('/learning_and_development_table/:id', authenticateToken, (req, re
     }
 
     insertAuditLog('SYSTEM', `Deleted Learning and Development record ID ${id}`);
+    socketService.notifyLearningChanged('deleted', { id: Number(id) });
     res.status(200).json({ message: 'Record successfully deleted' });
   });
 });
@@ -257,6 +269,8 @@ router.post(
               fs.unlink(req.file.path, (err) => {
                 if (err) console.error('Error deleting uploaded file:', err);
               });
+
+              socketService.notifyLearningChanged('updated', { source: 'upload' });
 
               if (errorCount > 0) {
                 return res.status(207).json({

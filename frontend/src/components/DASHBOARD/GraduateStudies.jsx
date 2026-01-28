@@ -2,6 +2,7 @@ import API_BASE_URL from '../../apiConfig';
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { getAuthHeaders } from '../../utils/auth';
+import { useSocket } from '../../contexts/SocketContext';
 import {
   Container,
   Typography,
@@ -67,7 +68,20 @@ import {
 } from '../../utils/theme';
 import { alpha } from '@mui/material';
 
-// Professional styled components - will be created inside component with settings
+// Stable themed components (avoid recreating styled components on every render)
+const ThemedCard = styled(Card, {
+  shouldForwardProp: (prop) => prop !== 'settings',
+})(({ settings = {} }) => createThemedCard(settings));
+
+const ThemedButton = styled(Button, {
+  shouldForwardProp: (prop) => prop !== 'settings',
+})(({ settings = {}, variant = 'contained' }) =>
+  createThemedButton(settings, variant),
+);
+
+const ThemedTextField = styled(TextField, {
+  shouldForwardProp: (prop) => prop !== 'settings',
+})(({ settings = {} }) => createThemedTextField(settings));
 
 // Flexible Year Input Component with Dropdown
 const FlexibleYearInput = ({ value, onChange, label, disabled = false, error = false, helperText = '', settings = {} }) => {
@@ -116,19 +130,16 @@ const FlexibleYearInput = ({ value, onChange, label, disabled = false, error = f
     }
   };
 
-  // Create themed styled component inside FlexibleYearInput
-  const ModernTextField = styled(TextField)(() => createThemedTextField(settings));
-
   return (
     <Box>
       <Typography variant="body2" sx={{ fontWeight: 500, mb: 1, color: settings.textPrimaryColor || settings.primaryColor || '#6D2323' }}>
         {label}
       </Typography>
-      <ModernTextField
+      <ThemedTextField
+        settings={settings}
         value={inputValue}
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
-        onFocus={handleInputChange}
         placeholder="Enter year or select from dropdown"
         fullWidth
         size="small"
@@ -344,12 +355,10 @@ const EmployeeAutocomplete = ({
     }
   };
 
-  // Create themed styled component inside EmployeeAutocomplete
-  const ModernTextField = styled(TextField)(() => createThemedTextField(settings));
-
   return (
     <Box sx={{ position: 'relative', width: '100%' }} ref={dropdownRef}>
-      <ModernTextField
+      <ThemedTextField
+        settings={settings}
         ref={inputRef}
         value={query}
         onChange={handleInputChange}
@@ -444,6 +453,8 @@ const EmployeeAutocomplete = ({
 };
 
 const GraduateTable = () => {
+  const { socket, connected } = useSocket();
+  const refreshGraduateRef = useRef(null);
   const [data, setData] = useState([]);
   const [employeeNames, setEmployeeNames] = useState({});
   const [newGraduate, setNewGraduate] = useState({
@@ -484,14 +495,10 @@ const GraduateTable = () => {
   // Color scheme
   const { settings } = useSystemSettings();
   
-  // Create themed styled components using system settings
-  const GlassCard = styled(Card)(() => createThemedCard(settings));
-  
-  const ProfessionalButton = styled(Button)(({ variant = 'contained' }) => 
-    createThemedButton(settings, variant)
-  );
-
-  const ModernTextField = styled(TextField)(() => createThemedTextField(settings));
+  // Use stable themed components
+  const GlassCard = ThemedCard;
+  const ProfessionalButton = ThemedButton;
+  const ModernTextField = ThemedTextField;
   
   // Get colors from system settings
   const primaryColor = settings.accentColor || '#FEF9E1'; // Cards color
@@ -559,6 +566,25 @@ const GraduateTable = () => {
       showSnackbar('Failed to fetch graduate records. Please try again.', 'error');
     }
   };
+
+  // Keep latest fetch function for Socket.IO handler
+  useEffect(() => {
+    refreshGraduateRef.current = fetchGraduates;
+  });
+
+  // Realtime: refresh when anyone changes graduate records
+  useEffect(() => {
+    if (!socket || !connected) return;
+
+    const handleChanged = () => {
+      refreshGraduateRef.current?.();
+    };
+
+    socket.on('graduateChanged', handleChanged);
+    return () => {
+      socket.off('graduateChanged', handleChanged);
+    };
+  }, [socket, connected]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -766,17 +792,18 @@ const GraduateTable = () => {
 
   return (
     <Box sx={{ 
-      py: 4,
-      mt: -5,
-      width: '1600px',
+      py: { xs: 2, md: 4 },
+      mt: { xs: 0, md: -5 },
+      width: '100%',
+      maxWidth: '1600px',
       mx: 'auto',
-      overflow: 'hidden',
+      overflowX: 'hidden',
     }}>
-      <Box sx={{ px: 6 }}>
+      <Box sx={{ px: { xs: 2, sm: 3, md: 6 } }}>
         {/* Header */}
         <Fade in timeout={500}>
           <Box sx={{ mb: 4 }}>
-            <GlassCard>
+            <GlassCard settings={settings}>
               <Box
                 sx={{
                   p: 5,
@@ -869,7 +896,7 @@ const GraduateTable = () => {
           {/* Add New Graduate Section */}
           <Grid item xs={12} lg={6}>
             <Fade in timeout={700}>
-              <GlassCard sx={{ height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
+              <GlassCard settings={settings} sx={{ height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
                 <Box
                   sx={{
                     p: 4,
@@ -954,7 +981,7 @@ const GraduateTable = () => {
                               <Typography
                                 variant="caption"
                                 sx={{
-                                  color: grayColor,
+                                  color: settings.textPrimaryColor || '#A31D1D',
                                   fontSize: '12px',
                                   lineHeight: 1.2,
                                 }}
@@ -1119,7 +1146,7 @@ const GraduateTable = () => {
           {/* Graduate Records Section */}
           <Grid item xs={12} lg={6}>
             <Fade in timeout={900}>
-              <GlassCard sx={{ height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
+              <GlassCard settings={settings} sx={{ height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
                 <Box
                   sx={{
                     p: 4,
@@ -1364,6 +1391,7 @@ const GraduateTable = () => {
           }}
         >
           <GlassCard
+            settings={settings}
             sx={{
               width: "90%",
               maxWidth: "900px",
@@ -1483,7 +1511,7 @@ const GraduateTable = () => {
                               <Typography
                                 variant="caption"
                                 sx={{
-                                  color: grayColor,
+                                  color: settings.textPrimaryColor || '#A31D1D',
                                   fontSize: '12px',
                                   lineHeight: 1.2,
                                 }}

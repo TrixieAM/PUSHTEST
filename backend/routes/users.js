@@ -4,6 +4,7 @@ const db = require('../db');
 const bcrypt = require('bcryptjs');
 const { authenticateToken, logAudit } = require('../middleware/auth');
 const transporter = require('../config/email');
+const { notifyPayrollChanged } = require('../socket/socketService');
 
 // REGISTER - Updated with email notification
 router.post('/register', async (req, res) => {
@@ -16,6 +17,7 @@ router.post('/register', async (req, res) => {
     password,
     employeeNumber,
     employmentCategory,
+    department,
   } = req.body;
 
   try {
@@ -492,6 +494,41 @@ router.post('/register', async (req, res) => {
                       }
                     });
 
+                    // Create department assignment if department is provided
+                    if (department && department.trim() !== '') {
+                      const deptAssignmentQuery = `
+                        INSERT INTO department_assignment (code, name, employeeNumber)
+                        VALUES (?, ?, ?)
+                      `;
+                      db.query(
+                        deptAssignmentQuery,
+                        [department, null, employeeNumber],
+                        (deptErr, deptResult) => {
+                          if (deptErr) {
+                            console.error(
+                              `Error creating department assignment for ${employeeNumber}:`,
+                              deptErr
+                            );
+                            // Don't fail registration if department assignment fails
+                          } else {
+                            console.log(
+                              `Department assignment created for ${employeeNumber} with department ${department}`
+                            );
+                            try {
+                              notifyPayrollChanged('created', {
+                                module: 'department-assignment',
+                                id: deptResult.insertId,
+                                employeeNumber,
+                                code: department,
+                              });
+                            } catch (notifyErr) {
+                              console.error('Error notifying payroll change:', notifyErr);
+                            }
+                          }
+                        }
+                      );
+                    }
+
                     res
                       .status(200)
                       .send({ message: 'User Registered Successfully' });
@@ -531,6 +568,7 @@ router.post('/excel-register', async (req, res) => {
       password: true,
       middleName: false,
       nameExtension: false,
+      department: false,
     };
 
     try {
@@ -905,6 +943,41 @@ router.post('/excel-register', async (req, res) => {
                                 emailError
                               );
                               // Don't fail registration if email fails, just log it
+                            }
+
+                            // Create department assignment if department is provided
+                            if (user.department && user.department.trim() !== '') {
+                              const deptAssignmentQuery = `
+                                INSERT INTO department_assignment (code, name, employeeNumber)
+                                VALUES (?, ?, ?)
+                              `;
+                              db.query(
+                                deptAssignmentQuery,
+                                [user.department.trim(), null, user.employeeNumber],
+                                (deptErr, deptResult) => {
+                                  if (deptErr) {
+                                    console.error(
+                                      `Error creating department assignment for ${user.employeeNumber}:`,
+                                      deptErr
+                                    );
+                                    // Don't fail registration if department assignment fails
+                                  } else {
+                                    console.log(
+                                      `Department assignment created for ${user.employeeNumber} with department ${user.department}`
+                                    );
+                                    try {
+                                      notifyPayrollChanged('created', {
+                                        module: 'department-assignment',
+                                        id: deptResult.insertId,
+                                        employeeNumber: user.employeeNumber,
+                                        code: user.department.trim(),
+                                      });
+                                    } catch (notifyErr) {
+                                      console.error('Error notifying payroll change:', notifyErr);
+                                    }
+                                  }
+                                }
+                              );
                             }
 
                                 results.push({

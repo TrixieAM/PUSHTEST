@@ -44,6 +44,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSystemSettings } from '../../hooks/useSystemSettings';
 import usePageAccess from '../../hooks/usePageAccess';
 import AccessDenied from '../AccessDenied';
+import usePayrollRealtimeRefresh from '../../hooks/usePayrollRealtimeRefresh';
 
 // Helper function to convert hex to rgb
 const hexToRgb = (hex) => {
@@ -250,6 +251,10 @@ const SalaryGradeTable = () => {
       }
     }
   };
+
+  usePayrollRealtimeRefresh(() => {
+    fetchSalaryGrades();
+  });
 
   const addSalaryGrade = async () => {
     try {

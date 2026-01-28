@@ -44,6 +44,7 @@ import {
 import axios from 'axios';
 import API_BASE_URL from '../../apiConfig';
 import { useSystemSettings } from '../../contexts/SystemSettingsContext';
+import usePayrollRealtimeRefresh from '../../hooks/usePayrollRealtimeRefresh';
 
 // Available payroll fields
 const PAYROLL_FIELDS = [
@@ -182,6 +183,10 @@ const PayrollFormulas = () => {
       setLoading(false);
     }
   };
+
+  usePayrollRealtimeRefresh(() => {
+    fetchFormulas();
+  });
 
   const formatFormulaForDisplay = (formula) => {
     if (!formula) return '';

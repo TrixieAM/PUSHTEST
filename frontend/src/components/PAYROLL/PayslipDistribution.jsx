@@ -51,6 +51,7 @@ import SuccessfulOverlay from '../SuccessfulOverlay';
 import { useSystemSettings } from '../../hooks/useSystemSettings';
 import usePageAccess from '../../hooks/usePageAccess';
 import AccessDenied from '../AccessDenied';
+import usePayrollRealtimeRefresh from '../../hooks/usePayrollRealtimeRefresh';
 
 // Helper function to convert hex to rgb
 const hexToRgb = (hex) => {
@@ -209,25 +210,30 @@ const PayslipDistribution = forwardRef(({ employee }, ref) => {
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
 
+  const fetchPayrollData = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get(
+        `${API_BASE_URL}/PayrollReleasedRoute/released-payroll-detailed`,
+        getAuthHeaders()
+      );
+      setAllPayroll(res.data);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching payroll:', err);
+      setError('Failed to fetch payroll data. Please try again.');
+      setLoading(false);
+    }
+  };
+
+  usePayrollRealtimeRefresh(() => {
+    if (!employee) fetchPayrollData();
+  });
+
   // Fetch payroll
   useEffect(() => {
     if (!employee) {
-      const fetchData = async () => {
-        try {
-          setLoading(true);
-          const res = await axios.get(
-            `${API_BASE_URL}/PayrollReleasedRoute/released-payroll-detailed`,
-            getAuthHeaders()
-          );
-          setAllPayroll(res.data);
-          setLoading(false);
-        } catch (err) {
-          console.error('Error fetching payroll:', err);
-          setError('Failed to fetch payroll data. Please try again.');
-          setLoading(false);
-        }
-      };
-      fetchData();
+      fetchPayrollData();
     }
   }, [employee]);
 

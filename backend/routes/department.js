@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { authenticateToken, logAudit } = require('../middleware/auth');
+const { notifyPayrollChanged } = require('../socket/socketService');
 
 // GET all department table records
 router.get('/api/department-table', authenticateToken, (req, res) => {
@@ -56,6 +57,12 @@ router.post('/api/department-table', authenticateToken, (req, res) => {
       console.error('Audit log error:', e);
     }
 
+    notifyPayrollChanged('created', {
+      module: 'department-table',
+      id: result.insertId,
+      code,
+    });
+
     res.status(201).json({ id: result.insertId, code, description });
   });
 });
@@ -75,6 +82,8 @@ router.put('/api/department-table/:id', authenticateToken, (req, res) => {
       console.error('Audit log error:', e);
     }
 
+    notifyPayrollChanged('updated', { module: 'department-table', id, code });
+
     res.send('Department updated successfully');
   });
 });
@@ -90,6 +99,8 @@ router.delete('/api/department-table/:id', authenticateToken, (req, res) => {
     } catch (e) {
       console.error('Audit log error:', e);
     }
+
+    notifyPayrollChanged('deleted', { module: 'department-table', id });
 
     res.send('Department deleted successfully');
   });
@@ -154,6 +165,13 @@ router.post('/api/department-assignment', authenticateToken, (req, res) => {
       console.error('Audit log error:', e);
     }
 
+    notifyPayrollChanged('created', {
+      module: 'department-assignment',
+      id: result.insertId,
+      employeeNumber,
+      code,
+    });
+
     res.status(201).json({ id: result.insertId, code, name, employeeNumber });
   });
 });
@@ -173,6 +191,13 @@ router.put('/api/department-assignment/:id', authenticateToken, (req, res) => {
       console.error('Audit log error:', e);
     }
 
+    notifyPayrollChanged('updated', {
+      module: 'department-assignment',
+      id,
+      employeeNumber,
+      code,
+    });
+
     res.send('Department assignment updated successfully');
   });
 });
@@ -191,6 +216,8 @@ router.delete('/api/department-assignment/:id', authenticateToken, (req, res) =>
       } catch (e) {
         console.error('Audit log error:', e);
       }
+
+      notifyPayrollChanged('deleted', { module: 'department-assignment', id });
 
       res.send('Department assignment deleted successfully');
     }

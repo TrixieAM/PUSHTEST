@@ -4,6 +4,7 @@ const multer = require("multer");
 const fs = require("fs"); // Import file system module
 const router = express.Router();
 const xlsx = require("xlsx");
+const socketService = require("../socket/socketService");
 
 
 
@@ -37,6 +38,12 @@ router.post("/children-table", (req, res) => {
   const query = `INSERT INTO children_table (childrenFirstName, childrenMiddleName, childrenLastName, childrenNameExtension, dateOfBirth, person_id) VALUES (?, ?, ?, ?, ?, ?)`;
   db.query(query, [childrenFirstName, childrenMiddleName, childrenLastName, childrenNameExtension, dateOfBirth, person_id], (err, result) => {
     if (err) return res.status(500).json({ error: "Error adding child" });
+
+    socketService.notifyChildrenTableChanged("created", {
+      id: result.insertId,
+      person_id,
+    });
+
     res.status(201).json({ message: "Child added", id: result.insertId });
   });
 });
@@ -47,6 +54,12 @@ router.put("/children-table/:id", (req, res) => {
   const query = `UPDATE children_table SET childrenFirstName = ?, childrenMiddleName = ?, childrenLastName = ?, childrenNameExtension = ?, dateOfBirth = ?, person_id = ? WHERE id = ?`;
   db.query(query, [childrenFirstName, childrenMiddleName, childrenLastName, childrenNameExtension, dateOfBirth, person_id, id], (err) => {
     if (err) return res.status(500).json({ error: "Error updating child" });
+
+    socketService.notifyChildrenTableChanged("updated", {
+      id: Number(id),
+      person_id,
+    });
+
     res.json({ message: "Child updated" });
   });
 });
@@ -56,6 +69,9 @@ router.delete("/children-table/:id", (req, res) => {
   const query = `DELETE FROM children_table WHERE id = ?`;
   db.query(query, [id], (err) => {
     if (err) return res.status(500).json({ error: "Error deleting child" });
+
+    socketService.notifyChildrenTableChanged("deleted", { id: Number(id) });
+
     res.json({ message: "Child deleted" });
   });
 });

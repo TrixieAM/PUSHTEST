@@ -1,7 +1,8 @@
 /* full file with the name wrapping fix */
 import API_BASE_URL from '../../apiConfig';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
+import { useSocket } from '../../contexts/SocketContext';
 import { jwtDecode } from 'jwt-decode';
 import {
   AccessTime,
@@ -113,6 +114,7 @@ const ModernTextField = styled(TextField)(({ theme }) => ({
 }));
 
 const DailyTimeRecordFaculty = () => {
+  const { socket, connected } = useSocket();
   const { settings } = useSystemSettings();
   const [personID, setPersonID] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -121,6 +123,9 @@ const DailyTimeRecordFaculty = () => {
   const [employeeName, setEmployeeName] = useState('');
   const [officialTimes, setOfficialTimes] = useState({});
   const dtrRef = React.useRef(null);
+
+  const fetchRecordsRef = useRef(null);
+  const fetchAllUsersDTRRef = useRef(null);
 
   // Bulk printing states
   const [allUsersDTR, setAllUsersDTR] = useState([]);
@@ -307,6 +312,97 @@ const DailyTimeRecordFaculty = () => {
       console.error(err);
     }
   };
+
+  // Keep latest fetch functions for Socket.IO handler
+  useEffect(() => {
+    fetchRecordsRef.current = fetchRecords;
+    fetchAllUsersDTRRef.current = fetchAllUsersDTR;
+  });
+
+  // Realtime: refresh when attendance data changes
+  useEffect(() => {
+    if (!socket || !connected) return;
+
+    let debounceTimer = null;
+
+    const handleAttendanceChanged = (payload) => {
+      const action = payload?.action;
+
+      // Special-case: DTR print status changes should NOT trigger heavy DTR re-fetches.
+      // Backend emits: notifyAttendanceChanged('dtr-printed', { employeeNumbers, printedBy, ... })
+      if (action === 'dtr-printed') {
+        const printedEmployees = Array.isArray(payload?.employeeNumbers)
+          ? payload.employeeNumbers
+          : [];
+
+        // If we're in single-user mode, ignore if the current user isn't part of the print event.
+        if (
+          viewMode === 'single' &&
+          personID &&
+          printedEmployees.length > 0 &&
+          !printedEmployees.includes(personID)
+        ) {
+          return;
+        }
+
+        // Update UI print status map without forcing a full reload.
+        if (printedEmployees.length > 0) {
+          setPrintStatusMap((prev) => {
+            const next = new Map(prev);
+            const printedAt =
+              typeof payload?.printed_at === 'string'
+                ? payload.printed_at
+                : new Date().toISOString();
+            const printedBy = payload?.printedBy || payload?.printed_by || 'system';
+
+            printedEmployees.forEach((emp) => {
+              next.set(emp, { printed_at: printedAt, printed_by: printedBy });
+            });
+            return next;
+          });
+        }
+        return;
+      }
+
+      const changedPersonIDs = Array.isArray(payload?.personIDs)
+        ? payload.personIDs
+        : payload?.personID
+          ? [payload.personID]
+          : [];
+      const isBulkChange = action === 'bulk-auto-sync';
+
+      if (viewMode === 'single') {
+        // If we can't determine scope and it's not an explicitly-bulk change, don't refresh.
+        if (changedPersonIDs.length === 0 && !isBulkChange) return;
+
+        if (personID && changedPersonIDs.length > 0 && !changedPersonIDs.includes(personID)) {
+          return;
+        }
+
+        if (personID && startDate && endDate) {
+          fetchRecordsRef.current?.();
+        }
+        return;
+      }
+
+      // viewMode === 'multiple'
+      if (!startDate || !endDate) return;
+      if (allUsersDTR.length === 0) return; // avoid heavy refresh unless list is already loaded
+      // If we can't determine scope and it's not an explicitly-bulk change, don't refresh.
+      if (changedPersonIDs.length === 0 && !isBulkChange) return;
+
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        fetchAllUsersDTRRef.current?.();
+      }, 300);
+    };
+
+    socket.on('attendanceChanged', handleAttendanceChanged);
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      socket.off('attendanceChanged', handleAttendanceChanged);
+    };
+  }, [socket, connected, viewMode, personID, startDate, endDate, allUsersDTR.length]);
 
   // Fetch all users and their DTR data - Optimized for large datasets
   // Note: Data is already auto-saved from device, so we're just loading from database
@@ -857,7 +953,8 @@ const DailyTimeRecordFaculty = () => {
         {before}
         <span
           style={{
-            backgroundColor: alpha(accentColor, 0.25),
+            backgroundColor: '#ffeb3b', // yellow highlight for search/filter matches
+            color: '#000',
             padding: '0 3px',
             borderRadius: 2,
           }}

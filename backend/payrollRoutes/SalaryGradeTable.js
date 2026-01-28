@@ -2,6 +2,7 @@ const db = require("../db");
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const { notifyPayrollChanged } = require('../socket/socketService');
 
 
 
@@ -97,6 +98,12 @@ router.post('/salary-grade', authenticateToken, (req, res) => {
       } catch (e) {
         console.error('Audit log error:', e);
       }
+      notifyPayrollChanged('created', {
+        module: 'salary-grade',
+        id: results.insertId,
+        sg_number,
+        effectivityDate,
+      });
       res.status(200).send('Salary grade added successfully');
     }
   });
@@ -163,6 +170,12 @@ router.put('/salary-grade/:id', authenticateToken, (req, res) => {
       } catch (e) {
         console.error('Audit log error:', e);
       }
+      notifyPayrollChanged('updated', {
+        module: 'salary-grade',
+        id,
+        sg_number,
+        effectivityDate,
+      });
       res.status(200).send('Salary grade updated successfully');
     }
   });
@@ -184,6 +197,7 @@ router.delete('/salary-grade/:id', authenticateToken, (req, res) => {
       } catch (e) {
         console.error('Audit log error:', e);
       }
+      notifyPayrollChanged('deleted', { module: 'salary-grade', id });
       res.status(200).send('Salary grade deleted successfully');
     }
   });

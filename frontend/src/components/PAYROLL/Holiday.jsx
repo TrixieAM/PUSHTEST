@@ -21,6 +21,7 @@ import {
 import usePageAccess from '../../hooks/usePageAccess';
 import AccessDenied from '../AccessDenied';
 import SuccessfulOverlay from '../SuccessfulOverlay';
+import usePayrollRealtimeRefresh from '../../hooks/usePayrollRealtimeRefresh';
 
 // Get auth headers function
 const getAuthHeaders = () => {
@@ -224,6 +225,10 @@ const Holiday = () => {
       setError("Failed to fetch holiday data");
     }
   };
+
+  usePayrollRealtimeRefresh(() => {
+    fetchHoliday();
+  });
 
   const handleNewChange = (e) => {
     setNewHoliday({ ...newHoliday, [e.target.name]: e.target.value });

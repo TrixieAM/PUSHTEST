@@ -1,7 +1,6 @@
 import API_BASE_URL from '../../apiConfig';
 import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
-import * as XLSX from 'xlsx';
 import {
   Table,
   TableHead,
@@ -49,6 +48,7 @@ import { useSystemSettings } from '../../hooks/useSystemSettings';
 import usePageAccess from '../../hooks/usePageAccess';
 import { usePayrollFormulas } from '../../hooks/usePayrollFormulas';
 import AccessDenied from '../AccessDenied';
+import usePayrollRealtimeRefresh from '../../hooks/usePayrollRealtimeRefresh';
 import SearchIcon from '@mui/icons-material/Search';
 import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
 import {
@@ -393,19 +393,19 @@ const PayrollProcess = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchFinalizedPayroll = async () => {
-      try {
-        const res = await axios.get(
-          `${API_BASE_URL}/PayrollRoute/finalized-payroll`,
-          getAuthHeaders()
-        );
-        setFinalizedPayroll(res.data);
-      } catch (err) {
-        console.error('Error fetching finalized payroll data:', err);
-      }
-    };
+  const fetchFinalizedPayroll = async () => {
+    try {
+      const res = await axios.get(
+        `${API_BASE_URL}/PayrollRoute/finalized-payroll`,
+        getAuthHeaders()
+      );
+      setFinalizedPayroll(res.data);
+    } catch (err) {
+      console.error('Error fetching finalized payroll data:', err);
+    }
+  };
 
+  useEffect(() => {
     fetchFinalizedPayroll();
   }, []);
 
@@ -417,6 +417,79 @@ const PayrollProcess = () => {
         fp.endDate === fd.endDate
     )
   );
+
+  const computeSummaryForRows = (rows) => {
+    const processedEmployees = rows.filter(
+      (item) => item.status === 'Processed' || item.status === 1
+    ).length;
+    const unprocessedEmployees = rows.filter(
+      (item) => item.status !== 'Processed' && item.status !== 1
+    ).length;
+
+    const totalGrossSalary = rows.reduce(
+      (sum, item) => sum + parseFloat(item.grossSalary || 0),
+      0
+    );
+    const totalNetSalary = rows.reduce(
+      (sum, item) => sum + parseFloat(item.netSalary || 0),
+      0
+    );
+
+    return {
+      totalEmployees: rows.length,
+      processedEmployees,
+      unprocessedEmployees,
+      totalGrossSalary,
+      totalNetSalary,
+    };
+  };
+
+  const getFilteredRows = (baseRows, department, status, month, year) => {
+    let filtered = [...baseRows];
+
+    // Apply status filter
+    // If no status is selected, default to showing only unprocessed items
+    // This ensures PayrollProcessing only shows unprocessed items by default
+    if (status && status !== '') {
+      filtered = filtered.filter((record) => record.status === status);
+    } else {
+      // Default: filter out processed items
+      filtered = filtered.filter(
+        (record) => record.status !== 'Processed' && record.status !== 1
+      );
+    }
+
+    // Apply department filter
+    if (department && department !== '') {
+      filtered = filtered.filter((record) => record.department === department);
+    }
+
+    // Apply month filter based on startDate
+    if (month && month !== '') {
+      filtered = filtered.filter((record) => {
+        if (record.startDate) {
+          const recordDate = new Date(record.startDate);
+          const recordMonth = String(recordDate.getMonth() + 1).padStart(2, '0');
+          return recordMonth === month;
+        }
+        return false;
+      });
+    }
+
+    // Apply year filter based on startDate
+    if (year && year !== '') {
+      filtered = filtered.filter((record) => {
+        if (record.startDate) {
+          const recordDate = new Date(record.startDate);
+          const recordYear = recordDate.getFullYear().toString();
+          return recordYear === year;
+        }
+        return false;
+      });
+    }
+
+    return filtered;
+  };
 
   const fetchPayrollData = async (searchTerm = '') => {
     try {
@@ -484,43 +557,22 @@ const PayrollProcess = () => {
       });
 
       setDuplicateEmployeeNumbers([...duplicates]);
-      
-      // Filter out processed items by default - PayrollProcessing should only show unprocessed items
-      // Users can use the status filter if they want to see processed items
-      const unprocessedData = normalizedData.filter(
-        (item) => item.status !== 'Processed' && item.status !== 1
+
+      // Keep all data for filtering purposes
+      setData(normalizedData);
+
+      // Apply current filters to drive BOTH table and header summary widgets
+      const filtered = getFilteredRows(
+        normalizedData,
+        selectedDepartment,
+        selectedStatus,
+        selectedMonth,
+        selectedYear
       );
-      
-      setFilteredData(unprocessedData);
-      setData(normalizedData); // Keep all data for filtering purposes
-
-      // Calculate summary data using only unprocessed items (what's being displayed)
-      const totalGross = unprocessedData.reduce(
-        (sum, item) => sum + parseFloat(item.grossSalary || 0),
-        0
-      );
-
-      const totalNet = unprocessedData.reduce(
-        (sum, item) => sum + parseFloat(item.netSalary || 0),
-        0
-      );
-
-      setSummaryData({
-        totalEmployees: unprocessedData.length,
-        processedEmployees: normalizedData.filter(
-          (item) => item.status === 'Processed' || item.status === 1
-        ).length,
-        unprocessedEmployees: unprocessedData.length,
-        totalGrossSalary: totalGross,
-        totalNetSalary: totalNet,
-      });
-
-      // Check if all processed/unprocessed (based on displayed data)
-      // Since we only show unprocessed items, allUnprocessed should be true if unprocessedData has items
-      const allProcessed = unprocessedData.length === 0;
-      const allUnprocessed = unprocessedData.length > 0;
-
-      setIsPayrollProcessed(allProcessed);
+      setFilteredData(filtered);
+      setSummaryData(computeSummaryForRows(filtered));
+      setIsPayrollProcessed(filtered.length === 0);
+      setPage(0);
     } catch (err) {
       console.error('Error fetching payroll data:', err);
       setError('An error occurred while fetching the payroll data.');
@@ -529,19 +581,25 @@ const PayrollProcess = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchDepartments = async () => {
-      try {
-        const response = await axios.get(
-          `${API_BASE_URL}/api/department-table`,
-          getAuthHeaders()
-        );
-        setDepartments(response.data);
-      } catch (err) {
-        console.error('Error fetching departments:', err);
-      }
-    };
+  const fetchDepartments = async () => {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/department-table`,
+        getAuthHeaders()
+      );
+      setDepartments(response.data);
+    } catch (err) {
+      console.error('Error fetching departments:', err);
+    }
+  };
 
+  usePayrollRealtimeRefresh(() => {
+    fetchFinalizedPayroll();
+    fetchDepartments();
+    fetchPayrollData(searchTerm);
+  });
+
+  useEffect(() => {
     // Test authentication first
     testAuth();
 
@@ -639,53 +697,10 @@ const PayrollProcess = () => {
   };
 
   const applyFilters = (department, search, status, month, year) => {
-    let filtered = [...data];
-
-    // Apply status filter
-    // If no status is selected, default to showing only unprocessed items
-    // This ensures PayrollProcessing only shows unprocessed items by default
-    if (status && status !== '') {
-      filtered = filtered.filter((record) => record.status === status);
-    } else {
-      // Default: filter out processed items
-      filtered = filtered.filter(
-        (record) => record.status !== 'Processed' && record.status !== 1
-      );
-    }
-
-    // Apply department filter
-    if (department && department !== '') {
-      filtered = filtered.filter((record) => record.department === department);
-    }
-
-    // Apply month filter based on startDate
-    if (month && month !== '') {
-      filtered = filtered.filter((record) => {
-        if (record.startDate) {
-          const recordDate = new Date(record.startDate);
-          const recordMonth = String(recordDate.getMonth() + 1).padStart(
-            2,
-            '0'
-          );
-          return recordMonth === month;
-        }
-        return false;
-      });
-    }
-
-    // Apply year filter based on startDate
-    if (year && year !== '') {
-      filtered = filtered.filter((record) => {
-        if (record.startDate) {
-          const recordDate = new Date(record.startDate);
-          const recordYear = recordDate.getFullYear().toString();
-          return recordYear === year;
-        }
-        return false;
-      });
-    }
-
+    const filtered = getFilteredRows(data, department, status, month, year);
     setFilteredData(filtered);
+    setSummaryData(computeSummaryForRows(filtered));
+    setPage(0);
   };
 
   const handleSubmitPayroll = async () => {
@@ -1250,254 +1265,6 @@ const PayrollProcess = () => {
     return selectedCell.row === rowIndex && selectedCell.col === colIndex;
   };
 
-  // Export to Excel function
-  const handleExportToExcel = () => {
-    if (computedRows.length === 0) {
-      alert('No data to export.');
-      return;
-    }
-
-    // Get the month from the first record's startDate
-    const getMonthName = (dateString) => {
-      if (!dateString) return 'Unknown';
-      const date = new Date(dateString);
-      const months = [
-        'January',
-        'February',
-        'March',
-        'April',
-        'May',
-        'June',
-        'July',
-        'August',
-        'September',
-        'October',
-        'November',
-        'December',
-      ];
-      return months[date.getMonth()];
-    };
-
-    const getYear = (dateString) => {
-      if (!dateString) return new Date().getFullYear();
-      return new Date(dateString).getFullYear();
-    };
-
-    const monthName = getMonthName(computedRows[0]?.startDate);
-    const year = getYear(computedRows[0]?.startDate);
-
-    // Helper function to convert formatted string to number
-    const toNumber = (value) => {
-      if (value === null || value === undefined || value === '') return '';
-      // Remove formatting (commas, currency symbols)
-      const cleaned = String(value).replace(/[₱,\s]/g, '');
-      const num = parseFloat(cleaned);
-      return isNaN(num) ? value : num;
-    };
-
-    // Prepare headers
-    const headers = [
-      'No.',
-      'Department',
-      'Employee Number',
-      'Start Date',
-      'End Date',
-      'Name',
-      'Position',
-      'Rate NBC 594',
-      "NBC DIFF'L 597",
-      'Increment',
-      'Gross Salary',
-      'ABS',
-      'H',
-      'M',
-      'Net Salary',
-      'Withholding Tax',
-      'Total GSIS Deductions',
-      'Total Pag-ibig Deductions',
-      'PhilHealth',
-      'Total Other Deductions',
-      'Total Deductions',
-      '1st Pay',
-      '2nd Pay',
-      'RT Ins.',
-      'EC',
-      'Pay1st Compute',
-      'Pay2nd Compute',
-      'Personal Life Ret Ins',
-      'GSIS Salary Loan',
-      'GSIS Policy Loan',
-      'GSIS Arrears',
-      'CPL',
-      'MPL',
-      'EAL',
-      'MPL LITE',
-      'Emergency Loan',
-      'Pag-ibig Fund Contribution',
-      'Pag-ibig 2',
-      'Multi-Purpose Loan',
-      'Liquidating Cash',
-      'LandBank Salary Loan',
-      'Earist Credit COOP.',
-      'FEU',
-      'Status',
-    ];
-
-    // Build Excel data array with title, empty row, headers, and data
-    const excelDataArray = [];
-
-    // Title row (merged across all columns)
-    const title = `Payroll Processing - ${monthName} ${year}`;
-    const titleRow = [title, ...Array(headers.length - 1).fill('')];
-    excelDataArray.push(titleRow);
-
-    // Empty row
-    excelDataArray.push(Array(headers.length).fill(''));
-
-    // Header row
-    excelDataArray.push(headers);
-
-    // Data rows
-    computedRows.forEach((row, index) => {
-      excelDataArray.push([
-        index + 1,
-        row.department || '',
-        row.employeeNumber || '',
-        row.startDate || '',
-        row.endDate || '',
-        row.name || '',
-        row.position || '',
-        toNumber(row.rateNbc594),
-        toNumber(row.nbcDiffl597),
-        toNumber(row.increment),
-        toNumber(row.grossSalary),
-        toNumber(row.abs),
-        row.h || 0,
-        row.m || 0,
-        toNumber(row.netSalary),
-        toNumber(row.withholdingTax),
-        toNumber(row.totalGsisDeds),
-        toNumber(row.totalPagibigDeds),
-        toNumber(row.PhilHealthContribution),
-        toNumber(row.totalOtherDeds),
-        toNumber(row.totalDeductions),
-        toNumber(row.pay1st),
-        toNumber(row.pay2nd),
-        toNumber(row.rtIns),
-        toNumber(row.ec),
-        toNumber(row.pay1stCompute),
-        toNumber(row.pay2ndCompute),
-        toNumber(row.personalLifeRetIns),
-        toNumber(row.gsisSalaryLoan),
-        toNumber(row.gsisPolicyLoan),
-        toNumber(row.gsisArrears),
-        toNumber(row.cpl),
-        toNumber(row.mpl),
-        toNumber(row.eal),
-        toNumber(row.mplLite),
-        toNumber(row.emergencyLoan),
-        toNumber(row.pagibigFundCont),
-        toNumber(row.pagibig2),
-        toNumber(row.multiPurpLoan),
-        toNumber(row.liquidatingCash),
-        toNumber(row.landbankSalaryLoan),
-        toNumber(row.earistCreditCoop),
-        toNumber(row.feu),
-        row.status || '',
-      ]);
-    });
-
-    // Create worksheet from array of arrays
-    const worksheet = XLSX.utils.aoa_to_sheet(excelDataArray);
-    const workbook = XLSX.utils.book_new();
-
-    // Merge cells for title row
-    if (!worksheet['!merges']) worksheet['!merges'] = [];
-    worksheet['!merges'].push({
-      s: { r: 0, c: 0 },
-      e: { r: 0, c: headers.length - 1 },
-    });
-
-    // Set column widths
-    const colWidths = headers.map((header, idx) => {
-      const headerLength = header.length;
-      const titleLength = idx === 0 ? title.length : 0;
-      const dataLengths = computedRows.map((row, rowIdx) => {
-        let value = '';
-        if (idx === 0) value = String(rowIdx + 1);
-        else if (idx === 1) value = String(row.department || '');
-        else if (idx === 2) value = String(row.employeeNumber || '');
-        else if (idx === 3) value = String(row.startDate || '');
-        else if (idx === 4) value = String(row.endDate || '');
-        else if (idx === 5) value = String(row.name || '');
-        else if (idx === 6) value = String(row.position || '');
-        else if (idx === 7) value = String(toNumber(row.rateNbc594) || '');
-        else if (idx === 8) value = String(toNumber(row.nbcDiffl597) || '');
-        else if (idx === 9) value = String(toNumber(row.increment) || '');
-        else if (idx === 10) value = String(toNumber(row.grossSalary) || '');
-        else if (idx === 11) value = String(toNumber(row.abs) || '');
-        else if (idx === 12) value = String(row.h || '');
-        else if (idx === 13) value = String(row.m || '');
-        else if (idx === 14) value = String(toNumber(row.netSalary) || '');
-        else if (idx === 15) value = String(toNumber(row.withholdingTax) || '');
-        else if (idx === 16) value = String(toNumber(row.totalGsisDeds) || '');
-        else if (idx === 17)
-          value = String(toNumber(row.totalPagibigDeds) || '');
-        else if (idx === 18)
-          value = String(toNumber(row.PhilHealthContribution) || '');
-        else if (idx === 19) value = String(toNumber(row.totalOtherDeds) || '');
-        else if (idx === 20)
-          value = String(toNumber(row.totalDeductions) || '');
-        else if (idx === 21) value = String(toNumber(row.pay1st) || '');
-        else if (idx === 22) value = String(toNumber(row.pay2nd) || '');
-        else if (idx === 23) value = String(toNumber(row.rtIns) || '');
-        else if (idx === 24) value = String(toNumber(row.ec) || '');
-        else if (idx === 25) value = String(toNumber(row.pay1stCompute) || '');
-        else if (idx === 26) value = String(toNumber(row.pay2ndCompute) || '');
-        else if (idx === 27)
-          value = String(toNumber(row.personalLifeRetIns) || '');
-        else if (idx === 28) value = String(toNumber(row.gsisSalaryLoan) || '');
-        else if (idx === 29) value = String(toNumber(row.gsisPolicyLoan) || '');
-        else if (idx === 30) value = String(toNumber(row.gsisArrears) || '');
-        else if (idx === 31) value = String(toNumber(row.cpl) || '');
-        else if (idx === 32) value = String(toNumber(row.mpl) || '');
-        else if (idx === 33) value = String(toNumber(row.eal) || '');
-        else if (idx === 34) value = String(toNumber(row.mplLite) || '');
-        else if (idx === 35) value = String(toNumber(row.emergencyLoan) || '');
-        else if (idx === 36)
-          value = String(toNumber(row.pagibigFundCont) || '');
-        else if (idx === 37) value = String(toNumber(row.pagibig2) || '');
-        else if (idx === 38) value = String(toNumber(row.multiPurpLoan) || '');
-        else if (idx === 39)
-          value = String(toNumber(row.liquidatingCash) || '');
-        else if (idx === 40)
-          value = String(toNumber(row.landbankSalaryLoan) || '');
-        else if (idx === 41)
-          value = String(toNumber(row.earistCreditCoop) || '');
-        else if (idx === 42) value = String(toNumber(row.feu) || '');
-        else if (idx === 43) value = String(row.status || '');
-        return value.length;
-      });
-      const maxLength = Math.max(headerLength, titleLength, ...dataLengths);
-      return { wch: Math.min(Math.max(maxLength + 2, 10), 30) };
-    });
-    worksheet['!cols'] = colWidths;
-
-    // Add worksheet to workbook
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Payroll Data');
-
-    // Generate filename with month and year
-    const filename = `Payroll_${monthName}_${year}.xlsx`;
-
-    // Export file
-    XLSX.writeFile(workbook, filename);
-
-    // Show success message
-    setSuccessAction('export');
-    setSuccessOpen(true);
-    setTimeout(() => setSuccessOpen(false), 2000);
-  };
-
   // ACCESSING 2
   // Loading state
   if (accessLoading) {
@@ -1916,27 +1683,6 @@ const PayrollProcess = () => {
                     }}
                   >
                     Excel View
-                  </ProfessionalButton>
-                  <ProfessionalButton
-                    variant="outlined"
-                    size="small"
-                    startIcon={<GetApp />}
-                    onClick={handleExportToExcel}
-                    disabled={computedRows.length === 0}
-                    sx={{
-                      borderColor: accentColor,
-                      color: textPrimaryColor,
-                      '&:hover': {
-                        borderColor: accentDark,
-                        backgroundColor: alpha(accentColor, 0.1),
-                      },
-                      '&:disabled': {
-                        borderColor: alpha(accentColor, 0.3),
-                        color: alpha(textPrimaryColor, 0.5),
-                      },
-                    }}
-                  >
-                    Save to Excel
                   </ProfessionalButton>
                 </Box>
               </Box>

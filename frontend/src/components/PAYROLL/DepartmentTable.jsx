@@ -55,6 +55,7 @@ import AccessDenied from '../AccessDenied';
 import { useNavigate } from 'react-router-dom';
 import usePageAccess from '../../hooks/usePageAccess';
 import { useSystemSettings } from '../../hooks/useSystemSettings';
+import usePayrollRealtimeRefresh from '../../hooks/usePayrollRealtimeRefresh';
 
 // Helper function to convert hex to rgb
 const hexToRgb = (hex) => {
@@ -203,6 +204,10 @@ const DepartmentTable = () => {
       );
     }
   };
+
+  usePayrollRealtimeRefresh(() => {
+    fetchData();
+  });
 
   const addEntry = async () => {
     if (!newEntry.code || !newEntry.description) {
@@ -808,7 +813,7 @@ const DepartmentTable = () => {
                                       fontWeight: 'bold',
                                     }}
                                   >
-                                    ID: {department.id}
+                                    {department.code}
                                   </Typography>
                                 </Box>
 
@@ -871,7 +876,7 @@ const DepartmentTable = () => {
                                     mb: 0.5
                                   }}
                                 >
-                                  ID: {department.id}
+                                  {department.code}
                                 </Typography>
                                 <Typography
                                   variant="body2"
@@ -960,14 +965,25 @@ const DepartmentTable = () => {
                     flexShrink: 0,
                   }}
                 >
-                  <Typography variant="h6" sx={{ fontWeight: 'bold', color: settings.accentColor || '#FEF9E1' }}>
-                    {isEditing
-                      ? 'Edit Department Information'
-                      : 'Department Details'}
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Domain sx={{ fontSize: 24, color: '#FFFFFF' }} />
+                    <Box>
+                      <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#FFFFFF', lineHeight: 1.1 }}>
+                        {isEditing
+                          ? 'Edit Department Information'
+                          : 'Department Information'}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{ color: '#FFFFFF', opacity: 0.9, lineHeight: 1.1 }}
+                      >
+                        View and manage department details
+                      </Typography>
+                    </Box>
+                  </Box>
                   <IconButton
                     onClick={() => setModalOpen(false)}
-                    sx={{ color: settings.accentColor || '#FEF9E1' }}
+                    sx={{ color: '#FFFFFF' }}
                   >
                     <Close />
                   </IconButton>
@@ -995,20 +1011,6 @@ const DepartmentTable = () => {
                 >
                   <Grid container spacing={2}>
                     <Grid item xs={12}>
-                      <Typography
-                        variant="h5"
-                        sx={{
-                          fontWeight: 600,
-                          mb: 2,
-                          color: textPrimaryColor,
-                          display: 'flex',
-                          alignItems: 'center',
-                        }}
-                      >
-                        <Domain sx={{ mr: 2, fontSize: 24 }} />
-                        Department Information
-                      </Typography>
-
                       <Grid container spacing={2}>
                         <Grid item xs={12} sm={6}>
                           <Typography

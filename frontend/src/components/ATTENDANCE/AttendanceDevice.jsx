@@ -1,6 +1,7 @@
 import API_BASE_URL from '../../apiConfig';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { useSocket } from '../../contexts/SocketContext';
 import {
   Box,
   TextField,
@@ -136,6 +137,7 @@ const getDayOfWeek = (dateString) => {
 };
 
 const ViewAttendanceRecord = () => {
+  const { socket, connected } = useSocket();
   const { settings } = useSystemSettings();
   const [personID, setPersonID] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -163,6 +165,9 @@ const ViewAttendanceRecord = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [recordFilter, setRecordFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+
+  const fetchRecordsRef = useRef(null);
+  const fetchAllUsersDTRRef = useRef(null);
 
   // Filter and pagination logic
   const getFilteredUsers = () => {
@@ -211,7 +216,8 @@ const ViewAttendanceRecord = () => {
         {before}
         <span
           style={{
-            backgroundColor: alpha(accentColor, 0.25),
+            backgroundColor: '#ffeb3b', // yellow highlight for search/filter matches
+            color: '#000',
             padding: '0 3px',
             borderRadius: 2,
           }}
@@ -382,6 +388,52 @@ const ViewAttendanceRecord = () => {
       setLoadingAllUsers(false);
     }
   };
+
+  // Keep latest fetch functions for Socket.IO handler
+  useEffect(() => {
+    fetchRecordsRef.current = fetchRecords;
+    fetchAllUsersDTRRef.current = fetchAllUsersDTR;
+  });
+
+  // Realtime: refresh when attendance data changes
+  useEffect(() => {
+    if (!socket || !connected) return;
+
+    let debounceTimer = null;
+
+    const handleAttendanceChanged = (payload) => {
+      const changedPersonIDs = Array.isArray(payload?.personIDs)
+        ? payload.personIDs
+        : payload?.personID
+          ? [payload.personID]
+          : [];
+
+      if (viewMode === 'single') {
+        if (personID && changedPersonIDs.length > 0 && !changedPersonIDs.includes(personID)) {
+          return;
+        }
+        if (personID && startDate && endDate) {
+          fetchRecordsRef.current?.(false);
+        }
+        return;
+      }
+
+      // viewMode === 'multiple'
+      if (!startDate || !endDate) return;
+      if (allUsersDTR.length === 0) return; // avoid heavy refresh unless list is loaded
+
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        fetchAllUsersDTRRef.current?.();
+      }, 300);
+    };
+
+    socket.on('attendanceChanged', handleAttendanceChanged);
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      socket.off('attendanceChanged', handleAttendanceChanged);
+    };
+  }, [socket, connected, viewMode, personID, startDate, endDate, allUsersDTR.length]);
 
   // ADD: New function for bulk auto-save all users at once
   const handleBulkAutoSave = async () => {

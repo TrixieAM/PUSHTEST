@@ -2,6 +2,7 @@ import API_BASE_URL from '../../apiConfig';
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { getAuthHeaders } from '../../utils/auth';
+import { useSocket } from '../../contexts/SocketContext';
 import {
   Container,
   Typography,
@@ -66,6 +67,21 @@ import {
   createThemedTextField,
 } from '../../utils/theme';
 
+// Stable themed components (avoid recreating styled components on every render)
+const ThemedCard = styled(Card, {
+  shouldForwardProp: (prop) => prop !== 'settings',
+})(({ settings = {} }) => createThemedCard(settings));
+
+const ThemedButton = styled(Button, {
+  shouldForwardProp: (prop) => prop !== 'settings',
+})(({ settings = {}, variant = 'contained' }) =>
+  createThemedButton(settings, variant),
+);
+
+const ThemedTextField = styled(TextField, {
+  shouldForwardProp: (prop) => prop !== 'settings',
+})(({ settings = {} }) => createThemedTextField(settings));
+
 // Flexible Year Input Component with Dropdown
 const FlexibleYearInput = ({ value, onChange, label, disabled = false, error = false, helperText = '', settings = {} }) => {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -111,19 +127,16 @@ const FlexibleYearInput = ({ value, onChange, label, disabled = false, error = f
     }
   };
 
-  // Create themed styled component inside FlexibleYearInput
-  const ModernTextField = styled(TextField)(() => createThemedTextField(settings));
-
   return (
     <Box>
       <Typography variant="body2" sx={{ fontWeight: 500, mb: 1, color: settings.textPrimaryColor || settings.primaryColor || '#6d2323' }}>
         {label}
       </Typography>
-      <ModernTextField
+      <ThemedTextField
+        settings={settings}
         value={inputValue}
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
-        onFocus={handleInputChange}
         placeholder="Enter year or select from dropdown"
         fullWidth
         size="small"
@@ -340,12 +353,10 @@ const EmployeeAutocomplete = ({
     }
   };
 
-  // Create themed styled component inside EmployeeAutocomplete
-  const ModernTextField = styled(TextField)(() => createThemedTextField(settings));
-
   return (
     <Box sx={{ position: 'relative', width: '100%' }} ref={dropdownRef}>
-      <ModernTextField
+      <ThemedTextField
+        settings={settings}
         ref={inputRef}
         value={query}
         onChange={handleInputChange}
@@ -440,6 +451,7 @@ const EmployeeAutocomplete = ({
 };
 
 const College = () => {
+  const { socket, connected } = useSocket();
   // Get settings from context
   const { settings } = useSystemSettings();
   
@@ -479,15 +491,12 @@ const College = () => {
   };
 
   const navigate = useNavigate();
-  
-  // Create themed styled components using system settings
-  const GlassCard = styled(Card)(() => createThemedCard(settings));
-  
-  const ProfessionalButton = styled(Button)(({ variant = 'contained' }) => 
-    createThemedButton(settings, variant)
-  );
+  const fetchCollegesRef = useRef(null);
 
-  const ModernTextField = styled(TextField)(() => createThemedTextField(settings));
+  // Use stable themed components
+  const GlassCard = ThemedCard;
+  const ProfessionalButton = ThemedButton;
+  const ModernTextField = ThemedTextField;
   
   // Color scheme from settings (for compatibility)
   const primaryColor = settings.accentColor || '#FEF9E1';
@@ -549,6 +558,25 @@ const College = () => {
       showSnackbar('Failed to fetch college records. Please try again.', 'error');
     }
   };
+
+  // Keep latest fetch function for Socket.IO handler
+  useEffect(() => {
+    fetchCollegesRef.current = fetchColleges;
+  });
+
+  // Socket.IO: when anyone changes college records, refresh this page
+  useEffect(() => {
+    if (!socket || !connected) return;
+
+    const handleCollegeChanged = () => {
+      fetchCollegesRef.current?.();
+    };
+
+    socket.on('collegeTableChanged', handleCollegeChanged);
+    return () => {
+      socket.off('collegeTableChanged', handleCollegeChanged);
+    };
+  }, [socket, connected]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -635,9 +663,9 @@ const College = () => {
 
   const handleChange = (field, value, isEdit = false) => {
     if (isEdit) {
-      setEditCollege({ ...editCollege, [field]: value });
+      setEditCollege((prev) => ({ ...(prev || {}), [field]: value }));
     } else {
-      setNewCollege({ ...newCollege, [field]: value });
+      setNewCollege((prev) => ({ ...prev, [field]: value }));
       if (errors[field]) {
         setErrors(prev => {
           const newErrors = { ...prev };
@@ -649,7 +677,7 @@ const College = () => {
   };
 
   const handleEmployeeChange = (employeeNumber) => {
-    setNewCollege({ ...newCollege, person_id: employeeNumber });
+    setNewCollege((prev) => ({ ...prev, person_id: employeeNumber }));
     setErrors(prev => {
       const newErrors = { ...prev };
       delete newErrors.person_id;
@@ -662,7 +690,7 @@ const College = () => {
   };
 
   const handleEditEmployeeChange = (employeeNumber) => {
-    setEditCollege({ ...editCollege, person_id: employeeNumber });
+    setEditCollege((prev) => ({ ...(prev || {}), person_id: employeeNumber }));
   };
 
   const handleEditEmployeeSelect = (employee) => {
@@ -756,17 +784,18 @@ const College = () => {
 
   return (
     <Box sx={{ 
-      py: 4,
-      mt: -5,
-      width: '1600px',
+      py: { xs: 2, md: 4 },
+      mt: { xs: 0, md: -5 },
+      width: '100%',
+      maxWidth: '1600px',
       mx: 'auto',
-      overflow: 'hidden',
+      overflowX: 'hidden',
     }}>
-      <Box sx={{ px: 6 }}>
+      <Box sx={{ px: { xs: 2, sm: 3, md: 6 } }}>
         {/* Header */}
         <Fade in timeout={500}>
           <Box sx={{ mb: 4 }}>
-            <GlassCard>
+            <GlassCard settings={settings}>
               <Box
                 sx={{
                   p: 5,
@@ -859,7 +888,7 @@ const College = () => {
           {/* Add New College Section */}
           <Grid item xs={12} lg={6}>
             <Fade in timeout={700}>
-              <GlassCard sx={{ height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
+              <GlassCard settings={settings} sx={{ height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
                 <Box
                   sx={{
                     p: 4,
@@ -944,7 +973,7 @@ const College = () => {
                               <Typography
                                 variant="caption"
                                 sx={{
-                                  color: grayColor,
+                                  color: settings.textPrimaryColor || '#A31D1D',
                                   fontSize: '12px',
                                   lineHeight: 1.2,
                                 }}
@@ -994,6 +1023,7 @@ const College = () => {
                         College Name <span style={{ color: 'red' }}>*</span>
                       </Typography>
                       <ModernTextField
+                        settings={settings}
                         value={newCollege.collegeNameOfSchool}
                         onChange={(e) => handleChange("collegeNameOfSchool", e.target.value)}
                         fullWidth
@@ -1008,6 +1038,7 @@ const College = () => {
                         Degree <span style={{ color: 'red' }}>*</span>
                       </Typography>
                       <ModernTextField
+                        settings={settings}
                         value={newCollege.collegeDegree}
                         onChange={(e) => handleChange("collegeDegree", e.target.value)}
                         fullWidth
@@ -1040,6 +1071,7 @@ const College = () => {
                         Highest Attained
                       </Typography>
                       <ModernTextField
+                        settings={settings}
                         value={newCollege.collegeHighestAttained}
                         onChange={(e) => handleChange("collegeHighestAttained", e.target.value)}
                         fullWidth
@@ -1052,6 +1084,7 @@ const College = () => {
                         Year Graduated <span style={{ color: grayColor, fontSize: '0.7rem' }}>(Auto-filled)</span>
                       </Typography>
                       <ModernTextField
+                        settings={settings}
                         value={newCollege.collegeYearGraduated}
                         fullWidth
                         size="small"
@@ -1071,6 +1104,7 @@ const College = () => {
                         Honors Received
                       </Typography>
                       <ModernTextField
+                        settings={settings}
                         value={newCollege.collegeScholarshipAcademicHonorsReceived}
                         onChange={(e) =>
                           handleChange("collegeScholarshipAcademicHonorsReceived", e.target.value)
@@ -1083,6 +1117,7 @@ const College = () => {
 
                   <Box sx={{ mt: 'auto', pt: 3 }}>
                     <ProfessionalButton
+                      settings={settings}
                       onClick={handleAdd}
                       variant="contained"
                       startIcon={<AddIcon />}
@@ -1108,7 +1143,7 @@ const College = () => {
           {/* College Records Section */}
           <Grid item xs={12} lg={6}>
             <Fade in timeout={900}>
-              <GlassCard sx={{ height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
+              <GlassCard settings={settings} sx={{ height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
                 <Box
                   sx={{
                     p: 4,
@@ -1169,6 +1204,7 @@ const College = () => {
                 }}>
                   <Box sx={{ mb: 3 }}>
                     <ModernTextField
+                      settings={settings}
                       size="small"
                       variant="outlined"
                       placeholder="Search by Employee ID, Name, or College"
@@ -1349,6 +1385,7 @@ const College = () => {
           }}
         >
           <GlassCard
+            settings={settings}
             sx={{
               width: '90%',
               maxWidth: '900px',
@@ -1470,7 +1507,7 @@ const College = () => {
                               <Typography
                                 variant="caption"
                                 sx={{
-                                  color: grayColor,
+                                  color: settings.textPrimaryColor || '#A31D1D',
                                   fontSize: '12px',
                                   lineHeight: 1.2,
                                 }}
@@ -1522,6 +1559,7 @@ const College = () => {
                       </Typography>
                       {isEditing ? (
                         <ModernTextField
+                          settings={settings}
                           value={editCollege.collegeNameOfSchool}
                           onChange={(e) => handleChange("collegeNameOfSchool", e.target.value, true)}
                           fullWidth
@@ -1547,6 +1585,7 @@ const College = () => {
                       </Typography>
                       {isEditing ? (
                         <ModernTextField
+                          settings={settings}
                           value={editCollege.collegeDegree}
                           onChange={(e) => handleChange("collegeDegree", e.target.value, true)}
                           fullWidth
@@ -1596,11 +1635,41 @@ const College = () => {
                     </Grid>
 
                     <Grid item xs={12} sm={6}>
+                      {isEditing ? (
+                        <FlexibleYearInput
+                          value={editCollege.collegePeriodTo}
+                          onChange={(value) => handleChange("collegePeriodTo", value, true)}
+                          label="Period To"
+                          settings={settings}
+                        />
+                      ) : (
+                        <Box>
+                          <Typography variant="body2" sx={{ fontWeight: 500, mb: 1, color: accentColor }}>
+                            Period To
+                          </Typography>
+                          <Box
+                            sx={{
+                              p: 1.5,
+                              bgcolor: 'rgba(109, 35, 35, 0.05)',
+                              borderRadius: 1,
+                              border: '1px solid rgba(0, 0, 0, 0.3)',
+                            }}
+                          >
+                            <Typography variant="body2">
+                              {editCollege.collegePeriodTo || 'N/A'}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      )}
+                    </Grid>
+
+                    <Grid item xs={12} sm={6}>
                       <Typography variant="body2" sx={{ fontWeight: 500, mb: 1, color: accentColor }}>
                         Highest Attained
                       </Typography>
                       {isEditing ? (
                         <ModernTextField
+                          settings={settings}
                           value={editCollege.collegeHighestAttained}
                           onChange={(e) => handleChange("collegeHighestAttained", e.target.value, true)}
                           fullWidth
@@ -1626,6 +1695,7 @@ const College = () => {
                       </Typography>
                       {isEditing ? (
                         <ModernTextField
+                          settings={settings}
                           value={editCollege.collegeYearGraduated}
                           fullWidth
                           size="small"
@@ -1658,6 +1728,7 @@ const College = () => {
                       </Typography>
                       {isEditing ? (
                         <ModernTextField
+                          settings={settings}
                           value={editCollege.collegeScholarshipAcademicHonorsReceived}
                           onChange={(e) => handleChange("collegeScholarshipAcademicHonorsReceived", e.target.value, true)}
                           fullWidth
@@ -1698,6 +1769,7 @@ const College = () => {
                   {!isEditing ? (
                     <>
                       <ProfessionalButton
+                        settings={settings}
                         onClick={() => handleDelete(editCollege.id)}
                         variant="outlined"
                         startIcon={<DeleteIcon />}
@@ -1715,6 +1787,7 @@ const College = () => {
                         Delete
                       </ProfessionalButton>
                       <ProfessionalButton
+                        settings={settings}
                         onClick={handleStartEdit}
                         variant="contained"
                         startIcon={<EditIcon />}
@@ -1733,6 +1806,7 @@ const College = () => {
                   ) : (
                     <>
                       <ProfessionalButton
+                        settings={settings}
                         onClick={handleCancelEdit}
                         variant="outlined"
                         startIcon={<CancelIcon />}
@@ -1750,6 +1824,7 @@ const College = () => {
                         Cancel
                       </ProfessionalButton>
                       <ProfessionalButton
+                        settings={settings}
                         onClick={handleUpdate}
                         variant="contained"
                         startIcon={<SaveIcon />}

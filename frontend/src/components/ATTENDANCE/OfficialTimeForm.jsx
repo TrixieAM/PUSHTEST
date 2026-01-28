@@ -1517,7 +1517,7 @@ const OfficialTimeForm = () => {
                                 {user.hasDefaultOfficialTime ? (
                                   <Chip
                                     icon={<CheckCircleIcon />}
-                                    label="Has Default"
+                                    label="Default"
                                     size="small"
                                     sx={{
                                       bgcolor: alpha('#4caf50', 0.1),

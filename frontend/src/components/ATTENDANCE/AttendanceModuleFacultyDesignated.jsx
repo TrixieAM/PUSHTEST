@@ -1,7 +1,7 @@
 import API_BASE_URL from "../../apiConfig";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Box, Button, Container, TextField, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Card, CardContent, CardHeader, Grid, InputAdornment, Divider, Avatar, IconButton, Tooltip, Badge, Fade, Alert, LinearProgress, alpha, Stack, Chip, useTheme, styled, Breadcrumbs, Link, Skeleton, Backdrop, CircularProgress } from "@mui/material";
+import { Box, Button, Container, TextField, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Card, CardContent, CardHeader, Grid, InputAdornment, Divider, Avatar, IconButton, Tooltip, Badge, Fade, Alert, LinearProgress, alpha, Stack, Chip, useTheme, styled, Breadcrumbs, Link, Skeleton, Backdrop, CircularProgress, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import { WorkHistory, Person, CalendarToday, Today, ArrowBackIos, ArrowForwardIos, Clear, SaveAs, Refresh, Home, Assessment, DateRange, FilterList, DateRange as DateRangeIcon, Download, FileDownload } from "@mui/icons-material";
 import dayjs from "dayjs";
 import * as XLSX from "xlsx";
@@ -863,12 +863,14 @@ const AttendanceModuleFaculty = () => {
 
  // Add this state with your other useState declarations
 const [selectedMonth, setSelectedMonth] = useState(null);
+const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+
+// Generate year options (current year ± 5 years)
+const yearOptions = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i);
 
 const handleMonthClick = (monthIndex) => {
-  const year = new Date().getFullYear();
-
-  const start = new Date(Date.UTC(year, monthIndex, 1));
-  const end = new Date(Date.UTC(year, monthIndex + 1, 0)); // last day of month
+  const start = new Date(Date.UTC(selectedYear, monthIndex, 1));
+  const end = new Date(Date.UTC(selectedYear, monthIndex + 1, 0)); // last day of month
 
   // format as YYYY-MM-DD (ISO format expected by <TextField type="date" />)
   const formattedStart = start.toISOString().substring(0, 10);
@@ -1111,7 +1113,7 @@ const handleMonthClick = (monthIndex) => {
   </Typography>
   <Box sx={{ 
     display: 'grid', 
-    gridTemplateColumns: { xs: 'repeat(3, 1fr)', sm: 'repeat(6, 1fr)', md: 'repeat(12, 1fr)' },
+    gridTemplateColumns: { xs: 'repeat(3, 1fr)', sm: 'repeat(6, 1fr)', md: 'repeat(13, 1fr)' },
     gap: 1.5 
   }}>
     {months.map((month, index) => (
@@ -1144,6 +1146,36 @@ const handleMonthClick = (monthIndex) => {
         {month}
       </ProfessionalButton>
     ))}
+    <FormControl size="small" sx={{ minWidth: 100 }}>
+      <InputLabel sx={{ fontWeight: 600, color: accentColor }}>Year</InputLabel>
+      <Select
+        value={selectedYear}
+        onChange={(e) => setSelectedYear(e.target.value)}
+        label="Year"
+        sx={{
+          backgroundColor: 'white',
+          '& .MuiOutlinedInput-notchedOutline': {
+            borderColor: accentColor,
+          },
+          borderRadius: 2,
+          fontWeight: 600,
+          color: accentColor,
+          '&:hover .MuiOutlinedInput-notchedOutline': {
+            borderColor: accentDark,
+          },
+          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+            borderColor: accentColor,
+            borderWidth: 2,
+          },
+        }}
+      >
+        {yearOptions.map((year) => (
+          <MenuItem key={year} value={year}>
+            {year}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
   </Box>
 </Box>
                 {/* Generate Button */}

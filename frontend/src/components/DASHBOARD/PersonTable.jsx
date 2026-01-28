@@ -1,9 +1,10 @@
 import API_BASE_URL from '../../apiConfig';
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import axios from 'axios';
 import { getAuthHeaders } from '../../utils/auth';
+import { useSocket } from '../../contexts/SocketContext';
 import {
   Button,
   Box,
@@ -235,7 +236,10 @@ const EmployeeAutocomplete = ({
     }
   };
 
-  const ModernTextField = styled(TextField)(() => createThemedTextField(settings));
+  const ModernTextField = useMemo(
+    () => styled(TextField)(() => createThemedTextField(settings)),
+    [settings],
+  );
 
   return (
     <Box sx={{ position: 'relative', width: '100%' }} ref={dropdownRef}>
@@ -334,6 +338,7 @@ const EmployeeAutocomplete = ({
 };
 
 const PersonTable = () => {
+  const { socket, connected } = useSocket();
   // Get settings from context
   const { settings } = useSystemSettings();
   
@@ -354,14 +359,21 @@ const PersonTable = () => {
   const { hasAccess, loading: accessLoading, error: accessError } = usePageAccess('personalinfo');
   // ACCESSING END
 
-  // Create themed styled components using system settings
-  const GlassCard = styled(Card)(() => createThemedCard(settings));
-  
-  const ProfessionalButton = styled(Button)(({ variant = 'contained' }) => 
-    createThemedButton(settings, variant)
+  // Create themed styled components using system settings (memoized to avoid remount/focus loss)
+  const GlassCard = useMemo(() => styled(Card)(() => createThemedCard(settings)), [settings]);
+
+  const ProfessionalButton = useMemo(
+    () =>
+      styled(Button)(({ variant = 'contained' }) =>
+        createThemedButton(settings, variant),
+      ),
+    [settings],
   );
 
-  const ModernTextField = styled(TextField)(() => createThemedTextField(settings));
+  const ModernTextField = useMemo(
+    () => styled(TextField)(() => createThemedTextField(settings)),
+    [settings],
+  );
   
   // Color scheme from settings (for compatibility)
   const primaryColor = settings.accentColor || '#FEF9E1';
@@ -456,6 +468,8 @@ const PersonTable = () => {
     setSnackbar({ open: true, message, severity });
   };
 
+  const fetchPersonsRef = useRef(null);
+
   useEffect(() => {
     fetchPersons();
   }, []);
@@ -483,6 +497,25 @@ const PersonTable = () => {
       console.error('Failed to fetch data:', error);
     }
   };
+
+  // Keep latest fetch function for Socket.IO handler
+  useEffect(() => {
+    fetchPersonsRef.current = fetchPersons;
+  });
+
+  // Socket.IO: when anyone updates Personal Info, refresh this page
+  useEffect(() => {
+    if (!socket || !connected) return;
+
+    const handlePersonalInfoChanged = () => {
+      fetchPersonsRef.current?.();
+    };
+
+    socket.on('personalInfoChanged', handlePersonalInfoChanged);
+    return () => {
+      socket.off('personalInfoChanged', handlePersonalInfoChanged);
+    };
+  }, [socket, connected]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -1216,13 +1249,14 @@ const PersonTable = () => {
 
   return (
     <Box sx={{ 
-      py: 4,
-      mt: -5,
-      width: '1600px',
+      py: { xs: 2, md: 4 },
+      mt: { xs: 0, md: -5 },
+      width: '100%',
+      maxWidth: '1600px',
       mx: 'auto',
-      overflow: 'hidden',
+      overflowX: 'hidden',
     }}>
-      <Box sx={{ px: 6 }}>
+      <Box sx={{ px: { xs: 2, sm: 3, md: 6 } }}>
         {/* Header */}
         <Fade in timeout={500}>
           <Box sx={{ mb: 4 }}>

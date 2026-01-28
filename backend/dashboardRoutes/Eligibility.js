@@ -4,6 +4,7 @@ const multer = require("multer");
 const fs = require("fs");
 const xlsx = require("xlsx");
 const router = express.Router();
+const socketService = require("../socket/socketService");
 
 
 
@@ -59,6 +60,12 @@ router.post("/eligibility", (req, res) => {
       console.error("Error adding eligibility:", err);
       return res.status(500).send(err);
     }
+
+    socketService.notifyEligibilityChanged("created", {
+      id: result.insertId,
+      person_id,
+    });
+
     res.status(201).send({ message: "Eligibility created", id: result.insertId });
   });
 });
@@ -73,6 +80,12 @@ router.put("/eligibility/:id", (req, res) => {
       console.error("Error updating eligibility:", err);
       return res.status(500).send({ message: "Error updating eligibility" });
     }
+
+    socketService.notifyEligibilityChanged("updated", {
+      id: Number(id),
+      person_id,
+    });
+
     res.status(200).send({ message: "Eligibility record updated" });
   });
 });
@@ -83,6 +96,9 @@ router.delete("/eligibility/:id", (req, res) => {
   const query = "DELETE FROM eligibility_table WHERE id = ?";
   db.query(query, [id], (err, result) => {
     if (err) return res.status(500).send(err);
+
+    socketService.notifyEligibilityChanged("deleted", { id: Number(id) });
+
     res.status(200).send({ message: "Eligibility record deleted" });
   });
 });

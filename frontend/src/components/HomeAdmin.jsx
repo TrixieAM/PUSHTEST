@@ -1,7 +1,8 @@
 import API_BASE_URL from "../apiConfig";
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { useSocket } from "../contexts/SocketContext";
 import {
   Container,
   Box,
@@ -401,6 +402,11 @@ const useAuth = () => {
 };
 
 const useDashboardData = (settings) => {
+  const { socket, connected } = useSocket();
+  const isRefreshingRef = useRef(false);
+  const refreshQueuedRef = useRef(false);
+  const didInitialLoadRef = useRef(false);
+
   const [stats, setStats] = useState({
     employees: 0,
     turnoverRate: 32,
@@ -748,15 +754,50 @@ const useDashboardData = (settings) => {
       }
     };
 
-    fetchAllData();
+    // Avoid overlapping refreshes if a request runs long, and coalesce bursts
+    const refreshAllData = async () => {
+      if (isRefreshingRef.current) {
+        refreshQueuedRef.current = true;
+        return;
+      }
 
-    console.log(" Setting up auto-refresh (5 minutes)");
-    const interval = setInterval(fetchAllData, 5 * 60 * 1000);
-    return () => {
-      console.log(" Clearing auto-refresh interval");
-      clearInterval(interval);
+      isRefreshingRef.current = true;
+      try {
+        await fetchAllData();
+      } finally {
+        isRefreshingRef.current = false;
+        if (refreshQueuedRef.current) {
+          refreshQueuedRef.current = false;
+          // Run one extra time to cover any updates that arrived mid-fetch
+          refreshAllData();
+        }
+      }
     };
-  }, [settings]);
+
+    // Initial load (do not re-run just because socket connects)
+    if (!didInitialLoadRef.current) {
+      didInitialLoadRef.current = true;
+      refreshAllData();
+    }
+
+    // Real-time: refresh dashboard when server emits an update event
+    const onDashboardUpdated = (payload) => {
+      console.log(" Dashboard update received via Socket.IO:", payload);
+      refreshAllData();
+    };
+
+    if (socket && connected) {
+      socket.on("adminDashboardUpdated", onDashboardUpdated);
+      socket.on("attendanceChanged", onDashboardUpdated);
+    }
+
+    return () => {
+      if (socket) {
+        socket.off("adminDashboardUpdated", onDashboardUpdated);
+        socket.off("attendanceChanged", onDashboardUpdated);
+      }
+    };
+  }, [settings, socket, connected]);
 
   return {
     stats,
@@ -2951,6 +2992,8 @@ const LogoutDialog = ({ open, settings }) => (
 const AdminHome = () => {
   const { username, fullName, employeeNumber, profilePicture } = useAuth();
   const settings = useSystemSettings();
+  const { socket, connected } = useSocket();
+  const lastNotifFetchEmpRef = useRef(null);
   const {
     stats,
     weeklyAttendanceData,
@@ -3076,11 +3119,28 @@ const AdminHome = () => {
       }
     };
 
-    fetchNotifications();
-    // Refresh notifications every 5 seconds for near real-time updates
-    const interval = setInterval(fetchNotifications, 5000);
-    return () => clearInterval(interval);
-  }, [employeeNumber]);
+    // Initial load for this user (avoid re-fetch just because socket connects)
+    if (employeeNumber && lastNotifFetchEmpRef.current !== employeeNumber) {
+      lastNotifFetchEmpRef.current = employeeNumber;
+      fetchNotifications();
+    }
+
+    // Real-time: refresh notifications when server emits an event to this user room
+    const onNotificationCreated = (payload) => {
+      console.log(" Notification received via Socket.IO:", payload);
+      fetchNotifications();
+    };
+
+    if (socket && connected) {
+      socket.on("notificationCreated", onNotificationCreated);
+    }
+
+    return () => {
+      if (socket) {
+        socket.off("notificationCreated", onNotificationCreated);
+      }
+    };
+  }, [employeeNumber, socket, connected]);
 
   const handleNotificationClick = async (notification) => {
     // Mark as read

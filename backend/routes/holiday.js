@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const { broadcastToRoles } = require('../socket/socketService');
+const { notifyPayrollChanged } = require('../socket/socketService');
 
 // GET all holiday records
 router.get('/holiday', (req, res) => {
@@ -29,6 +31,17 @@ router.post('/holiday', (req, res) => {
       console.error('Database Insert Error:', err.message);
       return res.status(500).json({ error: 'Internal Server Error' });
     }
+
+    notifyPayrollChanged('created', {
+      module: 'holiday',
+      holidayId: result.insertId,
+    });
+
+    broadcastToRoles(
+      ['administrator', 'superadmin', 'technical'],
+      'adminDashboardUpdated',
+      { source: 'holiday', action: 'created', holidayId: result.insertId },
+    );
 
     res.status(201).json({
       message: 'Holiday record added successfully',
@@ -60,6 +73,14 @@ router.put('/holiday/:id', (req, res) => {
       return res.status(404).json({ error: 'Hol record not found' });
     }
 
+    notifyPayrollChanged('updated', { module: 'holiday', holidayId: id });
+
+    broadcastToRoles(
+      ['administrator', 'superadmin', 'technical'],
+      'adminDashboardUpdated',
+      { source: 'holiday', action: 'updated', holidayId: id },
+    );
+
     res.json({ message: 'Hol record updated successfully' });
   });
 });
@@ -82,6 +103,14 @@ router.delete('/holiday/:id', (req, res) => {
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Hol record not found' });
     }
+
+    notifyPayrollChanged('deleted', { module: 'holiday', holidayId: id });
+
+    broadcastToRoles(
+      ['administrator', 'superadmin', 'technical'],
+      'adminDashboardUpdated',
+      { source: 'holiday', action: 'deleted', holidayId: id },
+    );
 
     res.json({ message: 'Hol record deleted successfully' });
   });

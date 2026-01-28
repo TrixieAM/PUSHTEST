@@ -2,6 +2,7 @@ const db = require("../db");
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const { notifyPayrollChanged } = require('../socket/socketService');
 
 
 
@@ -355,6 +356,11 @@ router.post('/employee-remittance', authenticateToken, (req, res) => {
           } catch (e) {
             console.error('Audit log error:', e);
           }
+          notifyPayrollChanged('created', {
+            module: 'remittance',
+            id: result.insertId,
+            employeeNumber,
+          });
           res.status(201).json({
             message: 'Data added successfully',
             id: result.insertId,
@@ -510,6 +516,11 @@ router.put('/employee-remittance/:id', authenticateToken, (req, res) => {
               } catch (e) {
                 console.error('Audit log error:', e);
               }
+              notifyPayrollChanged('updated', {
+                module: 'remittance',
+                id,
+                employeeNumber,
+              });
               res.status(200).json({ message: 'Data updated successfully' });
             }
           }
@@ -635,6 +646,11 @@ router.put('/employee-remittance/:id', authenticateToken, (req, res) => {
           } catch (e) {
             console.error('Audit log error:', e);
           }
+          notifyPayrollChanged('updated', {
+            module: 'remittance',
+            id,
+            employeeNumber,
+          });
           res.status(200).json({ message: 'Data updated successfully' });
         }
       }
@@ -662,6 +678,7 @@ router.delete('/employee-remittance/:id', authenticateToken, (req, res) => {
         } catch (e) {
           console.error('Audit log error:', e);
         }
+        notifyPayrollChanged('deleted', { module: 'remittance', id });
         res.status(200).json({ message: 'Data deleted successfully' });
       }
     }

@@ -2,6 +2,7 @@ import API_BASE_URL from '../../apiConfig';
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { getAuthHeaders } from '../../utils/auth';
+import { useSocket } from '../../contexts/SocketContext';
 import {
   Container,
   Typography,
@@ -69,6 +70,21 @@ import {
   createThemedTextField,
 } from '../../utils/theme';
 import { alpha } from '@mui/material';
+
+// Stable themed components (avoid recreating styled components on every render)
+const ThemedCard = styled(Card, {
+  shouldForwardProp: (prop) => prop !== 'settings',
+})(({ settings = {} }) => createThemedCard(settings));
+
+const ThemedButton = styled(Button, {
+  shouldForwardProp: (prop) => prop !== 'settings',
+})(({ settings = {}, variant = 'contained' }) =>
+  createThemedButton(settings, variant),
+);
+
+const ThemedTextField = styled(TextField, {
+  shouldForwardProp: (prop) => prop !== 'settings',
+})(({ settings = {} }) => createThemedTextField(settings));
 
 // Helper function to convert hex to rgb
 const hexToRgb = (hex) => {
@@ -232,12 +248,10 @@ const EmployeeAutocomplete = ({
     }
   };
 
-  // Create themed styled components inside EmployeeAutocomplete
-  const ModernTextField = styled(TextField)(() => createThemedTextField(settings));
-
   return (
     <Box sx={{ position: 'relative', width: '100%' }} ref={dropdownRef}>
-      <ModernTextField
+      <ThemedTextField
+        settings={settings}
         ref={inputRef}
         value={query}
         onChange={handleInputChange}
@@ -332,6 +346,8 @@ const EmployeeAutocomplete = ({
 };
 
 const WorkExperience = () => {
+  const { socket, connected } = useSocket();
+  const refreshWorkExperienceRef = useRef(null);
   const [data, setData] = useState([]);
   const [employeeNames, setEmployeeNames] = useState({});
   const [newWorkExperience, setNewWorkExperience] = useState({
@@ -371,14 +387,10 @@ const WorkExperience = () => {
   const { settings } = useSystemSettings();
   const navigate = useNavigate();
   
-  // Create themed styled components using system settings
-  const GlassCard = styled(Card)(() => createThemedCard(settings));
-  
-  const ProfessionalButton = styled(Button)(({ variant = 'contained' }) => 
-    createThemedButton(settings, variant)
-  );
-
-  const ModernTextField = styled(TextField)(() => createThemedTextField(settings));
+  // Use stable themed components
+  const GlassCard = ThemedCard;
+  const ProfessionalButton = ThemedButton;
+  const ModernTextField = ThemedTextField;
   
   // Get colors from system settings
   const primaryColor = settings.accentColor || '#FEF9E1'; // Cards color
@@ -433,6 +445,25 @@ const WorkExperience = () => {
       );
     }
   };
+
+  // Keep latest fetch function for Socket.IO handler
+  useEffect(() => {
+    refreshWorkExperienceRef.current = fetchWorkExperiences;
+  });
+
+  // Realtime: refresh when anyone changes work experience records
+  useEffect(() => {
+    if (!socket || !connected) return;
+
+    const handleChanged = () => {
+      refreshWorkExperienceRef.current?.();
+    };
+
+    socket.on('workExperienceChanged', handleChanged);
+    return () => {
+      socket.off('workExperienceChanged', handleChanged);
+    };
+  }, [socket, connected]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -694,17 +725,18 @@ const WorkExperience = () => {
 
   return (
     <Box sx={{ 
-      py: 4,
-      mt: -5,
-      width: '1600px',
+      py: { xs: 2, md: 4 },
+      mt: { xs: 0, md: -5 },
+      width: '100%',
+      maxWidth: '1600px',
       mx: 'auto',
-      overflow: 'hidden',
+      overflowX: 'hidden',
     }}>
-      <Box sx={{ px: 6 }}>
+      <Box sx={{ px: { xs: 2, sm: 3, md: 6 } }}>
         {/* Header */}
         <Fade in timeout={500}>
           <Box sx={{ mb: 4 }}>
-            <GlassCard>
+            <GlassCard settings={settings}>
               <Box
                 sx={{
                   p: 5,
@@ -797,7 +829,7 @@ const WorkExperience = () => {
           {/* Add New Work Experience Section */}
           <Grid item xs={12} lg={6}>
             <Fade in timeout={700}>
-              <GlassCard sx={{ height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
+              <GlassCard settings={settings} sx={{ height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
                 <Box
                   sx={{
                     p: 4,
@@ -882,7 +914,7 @@ const WorkExperience = () => {
                               <Typography
                                 variant="caption"
                                 sx={{
-                                  color: grayColor,
+                                  color: settings.textPrimaryColor || '#A31D1D',
                                   fontSize: '12px',
                                   lineHeight: 1.2,
                                 }}
@@ -1064,6 +1096,7 @@ const WorkExperience = () => {
 
                   <Box sx={{ mt: 'auto', pt: 3 }}>
                     <ProfessionalButton
+                      settings={settings}
                       onClick={handleAdd}
                       variant="contained"
                       startIcon={<AddIcon />}
@@ -1089,7 +1122,7 @@ const WorkExperience = () => {
           {/* Work Experience Records Section */}
           <Grid item xs={12} lg={6}>
             <Fade in timeout={900}>
-              <GlassCard sx={{ height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
+              <GlassCard settings={settings} sx={{ height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
                 <Box
                   sx={{
                     p: 4,
@@ -1150,6 +1183,7 @@ const WorkExperience = () => {
                 }}>
                   <Box sx={{ mb: 3 }}>
                     <ModernTextField
+                      settings={settings}
                       size="small"
                       variant="outlined"
                       placeholder="Search by Employee ID, Name, Company, or Position"
@@ -1373,6 +1407,7 @@ const WorkExperience = () => {
           }}
         >
           <GlassCard
+            settings={settings}
             sx={{
               width: "90%",
               maxWidth: "900px",
@@ -1498,7 +1533,7 @@ const WorkExperience = () => {
                               <Typography
                                 variant="caption"
                                 sx={{
-                                  color: grayColor,
+                                  color: settings.textPrimaryColor || '#A31D1D',
                                   fontSize: '12px',
                                   lineHeight: 1.2,
                                 }}
@@ -1794,6 +1829,7 @@ const WorkExperience = () => {
                   {!isEditing ? (
                     <>
                       <ProfessionalButton
+                        settings={settings}
                         onClick={() => handleDelete(editWorkExperience.id)}
                         variant="outlined"
                         startIcon={<DeleteIcon />}
@@ -1811,6 +1847,7 @@ const WorkExperience = () => {
                         Delete
                       </ProfessionalButton>
                       <ProfessionalButton
+                        settings={settings}
                         onClick={handleStartEdit}
                         variant="contained"
                         startIcon={<EditIcon />}
@@ -1829,6 +1866,7 @@ const WorkExperience = () => {
                   ) : (
                     <>
                       <ProfessionalButton
+                        settings={settings}
                         onClick={handleCancelEdit}
                         variant="outlined"
                         startIcon={<CancelIcon />}
@@ -1846,6 +1884,7 @@ const WorkExperience = () => {
                         Cancel
                       </ProfessionalButton>
                       <ProfessionalButton
+                        settings={settings}
                         onClick={handleUpdate}
                         variant="contained"
                         startIcon={<SaveIcon />}

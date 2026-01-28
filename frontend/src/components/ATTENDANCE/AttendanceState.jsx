@@ -1,6 +1,7 @@
 import API_BASE_URL from "../../apiConfig";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import { useSocket } from "../../contexts/SocketContext";
 import {
   Box,
   TextField,
@@ -36,6 +37,9 @@ import {
   alpha,
   styled,
   CardHeader,
+  FormControl,
+  InputLabel,
+  Select,
 } from "@mui/material";
 import { useSystemSettings } from "../../hooks/useSystemSettings";
 import usePageAccess from '../../hooks/usePageAccess';
@@ -157,6 +161,7 @@ const PremiumTableCell = styled(TableCell)(({ theme, isHeader = false }) => ({
 }));
 
 const AllAttendanceRecord = () => {
+  const { socket, connected } = useSocket();
   const { settings } = useSystemSettings();
   const [personID, setPersonID] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -169,6 +174,10 @@ const AllAttendanceRecord = () => {
   const [expandedRow, setExpandedRow] = useState(null);
   const [sortOrder, setSortOrder] = useState("desc");
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(null);
+
+  const fetchRecordsRef = useRef(null);
 
   // Get colors from system settings
   const primaryColor = settings.accentColor || "#FEF9E1"; // Cards color
@@ -281,6 +290,38 @@ const AllAttendanceRecord = () => {
     }
   };
 
+  // Keep latest fetch function for Socket.IO handler
+  useEffect(() => {
+    fetchRecordsRef.current = fetchRecords;
+  });
+
+  // Realtime: refresh when attendance data changes
+  useEffect(() => {
+    if (!socket || !connected) return;
+
+    const handleAttendanceChanged = (payload) => {
+      const changedPersonIDs = Array.isArray(payload?.personIDs)
+        ? payload.personIDs
+        : payload?.personID
+          ? [payload.personID]
+          : [];
+
+      // If user is filtering for a specific person, only refresh for that person
+      if (personID && changedPersonIDs.length > 0 && !changedPersonIDs.includes(personID)) {
+        return;
+      }
+
+      if (personID && startDate && endDate) {
+        fetchRecordsRef.current?.(false);
+      }
+    };
+
+    socket.on("attendanceChanged", handleAttendanceChanged);
+    return () => {
+      socket.off("attendanceChanged", handleAttendanceChanged);
+    };
+  }, [socket, connected, personID, startDate, endDate]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     fetchRecords(true);
@@ -308,6 +349,7 @@ const AllAttendanceRecord = () => {
     setEndDate("");
     setRecords([]);
     setSubmittedID("");
+    setSelectedMonth(null);
   };
 
   // Auto-fetch when dates change (for quick select buttons)
@@ -344,14 +386,16 @@ const AllAttendanceRecord = () => {
     "DEC",
   ];
 
+  // Generate year options (current year ± 5 years)
+  const currentYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i);
+
   const handleMonthClick = (monthIndex) => {
-    const year = new Date().getFullYear();
-    const start = new Date(Date.UTC(year, monthIndex, 1));
-    const end = new Date(Date.UTC(year, monthIndex + 1, 0));
-    const startFormatted = start.toISOString().substring(0, 10);
-    const endFormatted = end.toISOString().substring(0, 10);
-    setStartDate(startFormatted);
-    setEndDate(endFormatted);
+    const start = new Date(Date.UTC(selectedYear, monthIndex, 1));
+    const end = new Date(Date.UTC(selectedYear, monthIndex + 1, 0));
+    setStartDate(start.toISOString().substring(0, 10));
+    setEndDate(end.toISOString().substring(0, 10));
+    setSelectedMonth(monthIndex);
   };
 
   const getAttendanceIcon = (state) => {
@@ -590,7 +634,7 @@ const AllAttendanceRecord = () => {
           }}>
             <CardContent sx={{ p: 4 }}>
               <Box component="form" onSubmit={handleSubmit}>
-                <Grid container spacing={3}>
+                <Grid container spacing={4} sx={{ mb: 3 }}>
                   <Grid item xs={12} md={4}>
                     <ModernTextField
                       fullWidth
@@ -598,7 +642,6 @@ const AllAttendanceRecord = () => {
                       value={personID}
                       onChange={(e) => setPersonID(e.target.value)}
                       required
-                      variant="outlined"
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
@@ -645,79 +688,32 @@ const AllAttendanceRecord = () => {
                     />
                   </Grid>
                 </Grid>
+                <Divider sx={{ my: 3, borderColor: alpha(accentColor, 0.1) }} />
 
-                <Divider sx={{ my: 3, borderColor: "rgba(109,35,35,0.1)" }} />
-
-                {/* Month Selection */}
-                <Box sx={{ mb: 2 }}>
-                    <Typography
+                {/* Quick Date Selection Section */}
+                <Box sx={{ mb: 4 }}>
+                  <Typography
                     variant="h6"
-                    gutterBottom
                     sx={{
-                      color: accentColor,
+                      color: textPrimaryColor,
                       display: "flex",
                       alignItems: "center",
                       mb: 2,
                     }}
                   >
-                    <CalendarToday sx={{ mr: 2, fontSize: 24 }} />
-                    <b>Month:</b> <i>(select month to search employee records)</i>
+                    <FilterList sx={{ mr: 2 }} />
+                    Quick Date Selection
                   </Typography>
-                  <Box
-                    sx={{
-                      display: "grid",
-                      gridTemplateColumns: {
-                        xs: "repeat(3, 1fr)",
-                        sm: "repeat(6, 1fr)",
-                        md: "repeat(12, 1fr)",
-                      },
-                      gap: 1.5,
-                    }}
-                  >
-                    {months.map((month, index) => (
-                      <ProfessionalButton
-                        key={month}
-                        variant="outlined"
-                        size="small"
-                        onClick={() => handleMonthClick(index)}
-                        sx={{
-                          borderColor: accentColor,
-                          color: accentColor,
-                          minWidth: "auto",
-                          fontSize: "0.875rem",
-                          fontWeight: 500,
-                          py: 1,
-                          "&:hover": {
-                            backgroundColor: alpha(accentColor, 0.1),
-                          },
-                        }}
-                      >
-                        {month}
-                      </ProfessionalButton>
-                    ))}
-                  </Box>
-                </Box>
-
-                {/* Quick Select */}
-                <Box>
                   <Typography
-                    variant="h6"
-                    gutterBottom
-                    sx={{
-                      color: accentColor,
-                      display: "flex",
-                      alignItems: "center",
-                    }}
+                    variant="body2"
+                    sx={{ color: alpha(textPrimaryColor, 0.7), mb: 2 }}
                   >
-                    <FilterList sx={{ mr: 2, fontSize: 24 }} />
-                    <b>Filters:</b>
+                    Click any option below to automatically set the date range:
                   </Typography>
+
+                  {/* Quick Filters Row */}
                   <Box
-                    sx={{
-                      display: "flex",
-                      flexWrap: "wrap",
-                      gap: 1,
-                    }}
+                    sx={{ display: "flex", flexWrap: "wrap", gap: 2, mb: 3 }}
                   >
                     <ProfessionalButton
                       variant="outlined"
@@ -726,17 +722,9 @@ const AllAttendanceRecord = () => {
                         setStartDate(formattedToday);
                         setEndDate(formattedToday);
                       }}
-                      sx={{
-                        fontWeight: "normal",
-                        fontSize: "small",
-                        borderColor: accentColor,
-                        color: accentColor,
-                        "&:hover": {
-                          backgroundColor: alpha(accentColor, 0.1),
-                        },
-                      }}
+                      sx={{ borderColor: accentColor, color: textPrimaryColor }}
                     >
-                      TODAY
+                      Today
                     </ProfessionalButton>
                     <ProfessionalButton
                       variant="outlined"
@@ -744,84 +732,178 @@ const AllAttendanceRecord = () => {
                       onClick={() => {
                         const yesterday = new Date(today);
                         yesterday.setDate(yesterday.getDate() - 1);
-                        const yesterdayFormatted = yesterday
-                          .toISOString()
-                          .substring(0, 10);
-                        setStartDate(yesterdayFormatted);
-                        setEndDate(yesterdayFormatted);
+                        setStartDate(yesterday.toISOString().substring(0, 10));
+                        setEndDate(yesterday.toISOString().substring(0, 10));
                       }}
-                      sx={{
-                        fontWeight: "normal",
-                        fontSize: "small",
-                        borderColor: accentColor,
-                        color: accentColor,
-                        "&:hover": { backgroundColor: alpha(accentColor, 0.1) },
-                      }}
+                      sx={{ borderColor: accentColor, color: textPrimaryColor }}
                     >
-                      YESTERDAY
+                      Yesterday
                     </ProfessionalButton>
                     <ProfessionalButton
                       variant="outlined"
                       onClick={() => {
                         const lastWeek = new Date(today);
                         lastWeek.setDate(lastWeek.getDate() - 7);
-                        const lastWeekFormatted = lastWeek
-                          .toISOString()
-                          .substring(0, 10);
-                        setStartDate(lastWeekFormatted);
+                        setStartDate(lastWeek.toISOString().substring(0, 10));
                         setEndDate(formattedToday);
                       }}
-                      sx={{
-                        fontWeight: "normal",
-                        fontSize: "small",
-                        borderColor: accentColor,
-                        color: accentColor,
-                        "&:hover": { backgroundColor: alpha(accentColor, 0.1) },
-                      }}
+                      sx={{ borderColor: accentColor, color: textPrimaryColor }}
                     >
-                      LAST 7 DAYS
-                      {
-                        <ArrowForwardIos
-                          sx={{ marginLeft: "10px", fontSize: "large" }}
-                        />
-                      }
+                      Last 7 Days
                     </ProfessionalButton>
                     <ProfessionalButton
                       variant="outlined"
                       onClick={() => {
-                        const fifteenDaysAgo = new Date(today);
-                        fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
-                        const fifteenDaysAgoFormatted = fifteenDaysAgo
-                          .toISOString()
-                          .substring(0, 10);
-                        setStartDate(fifteenDaysAgoFormatted);
+                        const days15 = new Date(today);
+                        days15.setDate(days15.getDate() - 15);
+                        setStartDate(days15.toISOString().substring(0, 10));
                         setEndDate(formattedToday);
                       }}
-                      sx={{
-                        fontWeight: "normal",
-                        fontSize: "small",
-                        borderColor: accentColor,
-                        color: accentColor,
-                        "&:hover": { backgroundColor: alpha(accentColor, 0.1) },
-                      }}
+                      sx={{ borderColor: accentColor, color: textPrimaryColor }}
                     >
-                      LAST 15 DAYS
+                      Last 15 Days
                     </ProfessionalButton>
                     <ProfessionalButton
                       variant="outlined"
-                      startIcon={<Clear />}
-                      onClick={handleClearFilters}
-                      sx={{
-                        fontWeight: "normal",
-                        fontSize: "small",
-                        borderColor: accentColor,
-                        color: accentColor,
-                        "&:hover": { backgroundColor: alpha(accentColor, 0.1) },
+                      onClick={() => {
+                        const lastMonth = new Date(today);
+                        lastMonth.setMonth(lastMonth.getMonth() - 1);
+                        setStartDate(lastMonth.toISOString().substring(0, 10));
+                        setEndDate(formattedToday);
                       }}
+                      sx={{ borderColor: accentColor, color: textPrimaryColor }}
                     >
-                      CLEAR ALL
+                      Last 30 Days
                     </ProfessionalButton>
                   </Box>
+
+                  {/* Month Selection */}
+                  <Box
+                    sx={{
+                      p: 3,
+                      borderRadius: 2,
+                      border: `2px dashed ${alpha(accentColor, 0.2)}`,
+                      backgroundColor: alpha(primaryColor, 0.3),
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        mb: 2,
+                      }}
+                    >
+                      <Box>
+                        <Typography
+                          variant="subtitle1"
+                          sx={{
+                            color: textPrimaryColor,
+                            fontWeight: 600,
+                            mb: 0.5,
+                          }}
+                        >
+                          Select Entire Month
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{ color: alpha(textPrimaryColor, 0.7) }}
+                        >
+                          Choose a year, then click any month to view records
+                          for that entire month
+                        </Typography>
+                      </Box>
+                      <FormControl sx={{ minWidth: 140 }}>
+                        <InputLabel sx={{ fontWeight: 600 }}>Year</InputLabel>
+                        <Select
+                          value={selectedYear}
+                          onChange={(e) => setSelectedYear(e.target.value)}
+                          label="Year"
+                          sx={{
+                            backgroundColor: "white",
+                            "& .MuiOutlinedInput-notchedOutline": {
+                              borderColor: accentColor,
+                            },
+                            borderRadius: 2,
+                            fontWeight: 600,
+                          }}
+                        >
+                          {yearOptions.map((year) => (
+                            <MenuItem key={year} value={year}>
+                              {year}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Box>
+                    <Box
+                      sx={{
+                        display: "grid",
+                        gridTemplateColumns: {
+                          xs: "repeat(3, 1fr)",
+                          sm: "repeat(4, 1fr)",
+                          md: "repeat(6, 1fr)",
+                        },
+                        gap: 1.5,
+                      }}
+                    >
+                      {months.map((month, index) => {
+                        const isSelected = selectedMonth === index;
+                        return (
+                          <ProfessionalButton
+                            key={month}
+                            variant={isSelected ? "contained" : "outlined"}
+                            size="medium"
+                            onClick={() => handleMonthClick(index)}
+                            sx={{
+                              borderColor: isSelected
+                                ? accentColor
+                                : accentColor,
+                              backgroundColor: isSelected
+                                ? accentColor
+                                : "transparent",
+                              color: isSelected
+                                ? textSecondaryColor
+                                : textPrimaryColor,
+                              py: 1.5,
+                              fontWeight: 600,
+                              "&:hover": {
+                                backgroundColor: isSelected
+                                  ? accentDark
+                                  : alpha(accentColor, 0.1),
+                                borderWidth: 2,
+                              },
+                              transition: "all 0.3s ease",
+                              boxShadow: isSelected
+                                ? `0 4px 12px ${alpha(accentColor, 0.3)}`
+                                : "none",
+                            }}
+                          >
+                            {month}
+                          </ProfessionalButton>
+                        );
+                      })}
+                    </Box>
+                  </Box>
+                </Box>
+
+                {/* Clear Button */}
+                <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+                  <ProfessionalButton
+                    variant="outlined"
+                    startIcon={<Clear />}
+                    onClick={handleClearFilters}
+                    sx={{
+                      borderColor: "#d32f2f",
+                      color: "#d32f2f",
+                      "&:hover": {
+                        borderColor: "#b71c1c",
+                        backgroundColor: alpha("#d32f2f", 0.05),
+                      },
+                    }}
+                  >
+                    Clear All Filters
+                  </ProfessionalButton>
                 </Box>
               </Box>
             </CardContent>

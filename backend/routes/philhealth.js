@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const { notifyPayrollChanged } = require('../socket/socketService');
 
 // POST: Add PhilHealth contribution
 router.post('/api/philhealth', (req, res) => {
@@ -12,6 +13,10 @@ router.post('/api/philhealth', (req, res) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
+    notifyPayrollChanged('created', {
+      module: 'philhealth',
+      employeeNumber,
+    });
     res
       .status(201)
       .json({ message: 'PhilHealth contribution added successfully' });
@@ -45,6 +50,11 @@ router.put('/api/philhealth/:id', (req, res) => {
       if (results.affectedRows === 0) {
         return res.status(404).json({ message: 'Contribution not found' });
       }
+      notifyPayrollChanged('updated', {
+        module: 'philhealth',
+        id,
+        employeeNumber,
+      });
       res.json({ message: 'PhilHealth contribution updated successfully' });
     }
   );
@@ -62,6 +72,7 @@ router.delete('/api/philhealth/:id', (req, res) => {
     if (results.affectedRows === 0) {
       return res.status(404).json({ message: 'Contribution not found' });
     }
+    notifyPayrollChanged('deleted', { module: 'philhealth', id });
     res.json({ message: 'PhilHealth contribution deleted successfully' });
   });
 });

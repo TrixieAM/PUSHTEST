@@ -54,6 +54,7 @@ import AccessDenied from '../AccessDenied';
 import usePageAccess from '../../hooks/usePageAccess';
 import { useNavigate } from 'react-router-dom';
 import { useSystemSettings } from '../../hooks/useSystemSettings';
+import usePayrollRealtimeRefresh from '../../hooks/usePayrollRealtimeRefresh';
 
 // Helper function to convert hex to rgb
 const hexToRgb = (hex) => {
@@ -531,6 +532,10 @@ const EmployeeRemittance = () => {
       );
     }
   };
+
+  usePayrollRealtimeRefresh(() => {
+    fetchRemittances();
+  });
 
   const validateForm = () => {
     const newErrors = {};

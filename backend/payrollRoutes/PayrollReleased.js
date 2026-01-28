@@ -2,6 +2,7 @@ const db = require("../db");
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const { notifyPayrollChanged } = require('../socket/socketService');
 
 
 function authenticateToken(req, res, next) {
@@ -375,6 +376,12 @@ router.post('/release-payroll', authenticateToken, (req, res) => {
             payrollIds.join(', ')
           );
 
+          notifyPayrollChanged('released', {
+            module: 'payroll-released',
+            releasedCount: result.affectedRows,
+            payrollIds,
+          });
+
 
           // IMPORTANT: Don't delete from payroll_processed - just copy to payroll_released
           // The records should remain in payroll_processed for the PayrollProcessed view
@@ -443,6 +450,8 @@ router.delete('/released-payroll/:id', authenticateToken, (req, res) => {
 
     // Audit log: deleting released payroll record
     logAudit(req.user, 'delete', 'payroll_released', id);
+
+    notifyPayrollChanged('deleted', { module: 'payroll-released', id });
 
 
     res.json({ message: 'Released payroll record deleted successfully' });
