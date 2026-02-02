@@ -59,20 +59,31 @@ const confidentialPasswordRoutes = require('./routes/confidential-password');
 const app = express();
 
 // CORS configuration - MUST be before body parsing middleware
+// Allow localhost, any 192.168.* (LAN), and specific public origins so other devices can load data
 const allowedOrigins = [
   'http://localhost:5137',
-  'http://192.168.50.48:5137',
+  'http://192.168.50.42:5137',
   'http://192.168.50.45:5137',
   'http://136.239.248.42:5137',
   'http://192.168.50.97:5137',
 ];
 
+function isOriginAllowed(origin) {
+  if (!origin) return true;
+  if (allowedOrigins.indexOf(origin) !== -1) return true;
+  // Allow any device on LAN (192.168.x.x) and localhost with any port
+  try {
+    const u = new URL(origin);
+    if (u.hostname === 'localhost' || u.hostname === '127.0.0.1') return true;
+    if (u.hostname.startsWith('192.168.')) return true;
+  } catch (_) {}
+  return false;
+}
+
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.indexOf(origin) !== -1) {
+      if (isOriginAllowed(origin)) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
@@ -206,10 +217,11 @@ const io = initializeSocket(server);
 // Make io accessible to routes via app.locals
 app.locals.io = io;
 
-// Start server
-server.listen(PORT, () => {
+// Start server - listen on 0.0.0.0 so other devices on the network can connect
+const HOST = process.env.HOST || '0.0.0.0';
+server.listen(PORT, HOST, () => {
   console.log(`========================================`);
-  console.log(`✓ HTTP Server running on port ${PORT}`);
+  console.log(`✓ HTTP Server running on http://${HOST}:${PORT}`);
   console.log(`✓ Socket.IO server ready`);
   console.log(`========================================`);
 });

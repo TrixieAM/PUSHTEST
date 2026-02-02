@@ -226,6 +226,7 @@ const UsersList = () => {
   const [editedMiddleName, setEditedMiddleName] = useState("");
   const [editedLastName, setEditedLastName] = useState("");
   const [editedNameExtension, setEditedNameExtension] = useState("");
+  const [editedEmail, setEditedEmail] = useState("");
   const [editLoading, setEditLoading] = useState(false);
   
   // Delete User States
@@ -635,11 +636,7 @@ const UsersList = () => {
 
             if (!updateResponse.ok) {
               const errorData = await updateResponse.json().catch(() => ({}));
-              setError(
-                `Failed to update page access: ${
-                  errorData.error || "Unknown error"
-                }`
-              );
+              setError();
               setAccessChangeInProgress((prev) => ({
                 ...prev,
                 [pageId]: false,
@@ -785,6 +782,7 @@ const UsersList = () => {
     setEditedMiddleName(user.middleName || "");
     setEditedLastName(user.lastName || "");
     setEditedNameExtension(user.nameExtension || "");
+    setEditedEmail(user.email || "");
     setEditDialog(true);
   };
 
@@ -837,6 +835,26 @@ const UsersList = () => {
         setError(errorData.error || "Failed to update user name");
         setEditLoading(false);
         return;
+      }
+
+      // Update email if changed (users + person_table)
+      const currentEmail = (userToEdit.email || "").trim();
+      const newEmail = (editedEmail || "").trim();
+      if (newEmail !== currentEmail) {
+        const updateEmailResponse = await fetch(
+          `${API_BASE_URL}/users/${editedEmployeeNumber}/email`,
+          {
+            method: "PUT",
+            ...authHeaders,
+            body: JSON.stringify({ email: newEmail || null }),
+          }
+        );
+        if (!updateEmailResponse.ok) {
+          const errorData = await updateEmailResponse.json().catch(() => ({}));
+          setError(errorData.error || "Failed to update email");
+          setEditLoading(false);
+          return;
+        }
       }
 
       // Refresh users list
@@ -1644,6 +1662,7 @@ const UsersList = () => {
                     <MenuItem value="">All Roles</MenuItem>
                     <MenuItem value="Superadmin">Superadmin</MenuItem>
                     <MenuItem value="Administrator">Administrator</MenuItem>
+                    <MenuItem value="Technical">Technical</MenuItem>
                     <MenuItem value="Staff">Staff</MenuItem>
                   </ModernTextField>
                 </Grid>
@@ -1652,21 +1671,27 @@ const UsersList = () => {
           </GlassCard>
         </Fade>
 
-        {/* Loading Backdrop */}
-        <Backdrop
-          sx={{
-            color: settings?.accentColor || '#FEF9E1',
-            zIndex: (theme) => theme.zIndex.drawer + 1,
-          }}
-          open={loading && !refreshing}
-        >
-          <Box sx={{ textAlign: "center" }}>
-            <CircularProgress color="inherit" size={60} thickness={4} />
-            <Typography variant="h6" sx={{ mt: 2, color: settings?.accentColor || '#FEF9E1' }}>
-              Loading users...
-            </Typography>
-          </Box>
-        </Backdrop>
+        {/* Loading Backdrop - Portal so it covers entire app including sidebar, with blur */}
+        <Portal>
+          <Backdrop
+            open={loading && !refreshing}
+            sx={{
+              color: settings?.accentColor || '#FEF9E1',
+              zIndex: 9999,
+              position: 'fixed',
+              inset: 0,
+              backdropFilter: 'blur(8px)',
+              backgroundColor: 'rgba(0, 0, 0, 0.4)',
+            }}
+          >
+            <Box sx={{ textAlign: "center" }}>
+              <CircularProgress color="inherit" size={60} thickness={4} />
+              <Typography variant="h6" sx={{ mt: 2, color: settings?.accentColor || '#FEF9E1' }}>
+                Loading users...
+              </Typography>
+            </Box>
+          </Backdrop>
+        </Portal>
 
         {/* Users Table */}
         {!loading && (
@@ -1844,22 +1869,36 @@ const UsersList = () => {
                           </PremiumTableCell>
 
                           <PremiumTableCell>
-                            <ModernTextField
-                              select
-                              value={user.role || "staff"}
-                              onChange={(e) => handleRoleChange(user, e.target.value)}
-                              size="small"
-                              sx={{
-                                minWidth: 150,
-                                "& .MuiOutlinedInput-root": {
-                                  bgcolor: "rgba(255, 255, 255, 0.9)",
-                                },
-                              }}
-                            >
-                              <MenuItem value="superadmin">Superadmin</MenuItem>
-                              <MenuItem value="administrator">Administrator</MenuItem>
-                              <MenuItem value="staff">Staff</MenuItem>
-                            </ModernTextField>
+                            {user.role === "technical" ? (
+                              <Chip
+                                size="small"
+                                label="Technical"
+                                icon={getRoleColor("technical").icon}
+                                sx={{
+                                  ...getRoleColor("technical").sx,
+                                  fontWeight: 600,
+                                  pointerEvents: "none",
+                                }}
+                              />
+                            ) : (
+                              <ModernTextField
+                                select
+                                value={user.role || "staff"}
+                                onChange={(e) => handleRoleChange(user, e.target.value)}
+                                size="small"
+                                sx={{
+                                  minWidth: 150,
+                                  "& .MuiOutlinedInput-root": {
+                                    bgcolor: "rgba(255, 255, 255, 0.9)",
+                                  },
+                                }}
+                              >
+                                <MenuItem value="superadmin">Superadmin</MenuItem>
+                                <MenuItem value="administrator">Administrator</MenuItem>
+                                <MenuItem value="technical">Technical</MenuItem>
+                                <MenuItem value="staff">Staff</MenuItem>
+                              </ModernTextField>
+                            )}
                           </PremiumTableCell>
 
                           <PremiumTableCell sx={{ textAlign: "center" }}>
@@ -2804,14 +2843,23 @@ const UsersList = () => {
               background: `linear-gradient(135deg, ${settings?.primaryColor || '#894444'} 0%, ${settings?.secondaryColor || '#6d2323'} 100%)`,
               color: settings?.accentColor || '#FEF9E1',
               display: "flex",
-              alignItems: "center",
-              gap: 2,
+              flexDirection: "column",
+              alignItems: "flex-start",
+              gap: 0.5,
               p: 3,
               fontWeight: 700,
             }}
           >
-            <EditIcon sx={{ fontSize: 30 }} />
-            Edit User Information
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <EditIcon sx={{ fontSize: 30 }} />
+              Edit User Information
+            </Box>
+            {userToEdit && (
+              <Typography variant="body2" sx={{ fontWeight: 500, opacity: 0.95, pl: 5.5 }}>
+                Editing: <strong>{userToEdit.employeeNumber}</strong> — {[userToEdit.firstName, userToEdit.middleName, userToEdit.lastName].filter(Boolean).join(" ")}
+                {userToEdit.nameExtension ? ` ${userToEdit.nameExtension}` : ""}
+              </Typography>
+            )}
           </DialogTitle>
 
           <DialogContent sx={{ p: 4 }}>
@@ -2820,19 +2868,13 @@ const UsersList = () => {
                 <Box
                   sx={{
                     mb: 3,
+                    mt: 2,
                     p: 3,
                     borderRadius: 3,
                     border: `1px solid ${alpha(settings?.primaryColor || '#894444', 0.2)}`,
                     bgcolor: alpha(settings?.accentColor || '#FEF9E1', 0.5),
                   }}
                 >
-                  <Typography
-                    variant="h6"
-                    sx={{ fontWeight: 700, color: settings?.textPrimaryColor || '#6D2323', mb: 2 }}
-                  >
-                    Edit User Details
-                  </Typography>
-                  
                   <ModernTextField
                     fullWidth
                     label="Employee Number"
@@ -2878,6 +2920,15 @@ const UsersList = () => {
                       />
                     </Grid>
                   </Grid>
+                  <ModernTextField
+                    fullWidth
+                    label="Email"
+                    type="email"
+                    value={editedEmail}
+                    onChange={(e) => setEditedEmail(e.target.value)}
+                    sx={{ mt: 2 }}
+                    placeholder="Can be left empty to remove"
+                  />
                 </Box>
 
                 <Alert

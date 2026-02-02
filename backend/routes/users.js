@@ -1634,6 +1634,37 @@ router.put('/users/:employeeNumber/employee-number', authenticateToken, (req, re
   });
 });
 
+// PUT: Update user email (admin)
+router.put('/users/:employeeNumber/email', authenticateToken, (req, res) => {
+  const { employeeNumber } = req.params;
+  const { email } = req.body;
+
+  // Allow empty string to clear/remove email (users.email is NOT NULL, use '' for removed)
+  const newEmail = email == null ? '' : (typeof email === 'string' ? email.trim() : String(email));
+
+  const updateUserQuery = 'UPDATE users SET email = ? WHERE employeeNumber = ?';
+  db.query(updateUserQuery, [newEmail || '', employeeNumber], (err, userResult) => {
+    if (err) {
+      console.error('Error updating user email:', err);
+      return res.status(500).json({ error: 'Failed to update user email' });
+    }
+    if (userResult.affectedRows === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    const updatePersonQuery = 'UPDATE person_table SET emailAddress = ? WHERE agencyEmployeeNum = ?';
+    db.query(updatePersonQuery, [newEmail || '', employeeNumber], (errPerson) => {
+      if (errPerson) {
+        console.error('Error updating person_table email:', errPerson);
+        // User email was updated; still return success
+      }
+      res.status(200).json({
+        message: 'Email updated successfully',
+        employeeNumber,
+      });
+    });
+  });
+});
+
 // DELETE: Delete user
 router.delete('/users/:employeeNumber', authenticateToken, (req, res) => {
   const { employeeNumber } = req.params;

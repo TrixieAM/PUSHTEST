@@ -9,21 +9,29 @@ let io;
  * @returns {SocketIO.Server} Socket.IO server instance
  */
 function initializeSocket(server) {
+  const allowedOrigins = [
+    'http://localhost:5137',
+    'http://192.168.50.42:5137',
+    'http://192.168.50.45:5137',
+    'http://136.239.248.42:5137',
+    'http://192.168.50.97:5137',
+  ];
+
+  function isOriginAllowed(origin) {
+    if (!origin) return true;
+    if (allowedOrigins.indexOf(origin) !== -1) return true;
+    try {
+      const u = new URL(origin);
+      if (u.hostname === 'localhost' || u.hostname === '127.0.0.1') return true;
+      if (u.hostname.startsWith('192.168.')) return true;
+    } catch (_) {}
+    return false;
+  }
+
   io = socketIO(server, {
     cors: {
       origin: function (origin, callback) {
-        const allowedOrigins = [
-          'http://localhost:5137',
-          'http://192.168.50.48:5137',
-          'http://192.168.50.45:5137',
-          'http://136.239.248.42:5137',
-          'http://192.168.50.97:5137',
-        ];
-
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
-
-        if (allowedOrigins.indexOf(origin) !== -1) {
+        if (isOriginAllowed(origin)) {
           callback(null, true);
         } else {
           callback(new Error('Not allowed by CORS'));

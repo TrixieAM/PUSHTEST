@@ -26,6 +26,7 @@ import {
   Fade,
   Menu,
   MenuItem,
+  CircularProgress,
 } from "@mui/material";
 
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
@@ -165,6 +166,7 @@ const Home = () => {
   const [fullName, setFullName] = useState("");
   const [employeeNumber, setEmployeeNumber] = useState("");
   const [announcements, setAnnouncements] = useState([]);
+  const [announcementsLoading, setAnnouncementsLoading] = useState(true);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const [openModal, setOpenModal] = useState(false);
   const [profilePicture, setProfilePicture] = useState(null);
@@ -342,17 +344,18 @@ const Home = () => {
     fetchNotifications();
   }, [fetchNotifications]);
 
-  // Fetch announcements function (moved before socket effect to avoid initialization error)
+  // Fetch announcements function (runs on load; WebSocket only pushes updates)
   const fetchAnnouncements = useCallback(async () => {
+    setAnnouncementsLoading(true);
     try {
-      console.log('Fetching announcements from API...');
       const res = await axios.get(`${API_BASE_URL}/api/announcements`);
       const announcementsList = Array.isArray(res.data) ? res.data : [];
-      console.log(`Loaded ${announcementsList.length} announcements from API`);
       setAnnouncements(announcementsList);
     } catch (err) {
       console.error("Error fetching announcements:", err);
       setAnnouncements([]);
+    } finally {
+      setAnnouncementsLoading(false);
     }
   }, []);
 
@@ -857,7 +860,7 @@ const Home = () => {
   const handleMenuClose = () => setAnchorEl(null);
 
   return (
-    <Box sx={{ minHeight: "100vh", p: { xs: 2, md: 1 }, mt: -1, mb: 3 }}>
+    <Box sx={{ minHeight: "100vh", p: { xs: 1, md: 0.5 }, mt: -1, mb: 3 }}>
       {/* Header */}
       <Grow in timeout={300}>
         <Box
@@ -1080,7 +1083,30 @@ const Home = () => {
               }}
             >
               <Box sx={{ position: "relative", height: "100%" }}>
-                {announcements.length > 0 ? (
+                {announcementsLoading ? (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      height: "100%",
+                      flexDirection: "column",
+                      gap: 2,
+                      backgroundColor: `${settings.primaryColor}08`,
+                    }}
+                  >
+                    <CircularProgress
+                      size={48}
+                      sx={{ color: settings.primaryColor }}
+                    />
+                    <Typography
+                      variant="body2"
+                      sx={{ color: settings.textPrimaryColor, fontWeight: 500 }}
+                    >
+                      Loading announcements...
+                    </Typography>
+                  </Box>
+                ) : announcements.length > 0 ? (
                   <>
                     <Box
                       component="img"
@@ -1302,100 +1328,6 @@ const Home = () => {
             </Card>
           </Grow>
 
-          {/* Quick Actions Grid */}
-          <Grow in timeout={500}>
-            <Card
-              sx={{
-                background: settings.accentColor,
-                backdropFilter: "blur(15px)",
-                border: `1px solid ${settings.primaryColor}26`,
-                borderRadius: 4,
-                mb: 3,
-                boxShadow: `0 15px 40px ${settings.primaryColor}33`,
-              }}
-            >
-              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-                <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                  <DashboardIcon
-                    sx={{
-                      color: settings.textPrimaryColor,
-                      mr: 1,
-                      fontSize: 24,
-                    }}
-                  />
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      fontWeight: 700,
-                      color: settings.textPrimaryColor,
-                      fontSize: "1.125rem",
-                    }}
-                  >
-                    Employee Panel
-                  </Typography>
-                </Box>
-                <Grid container spacing={2}>
-                  {quickActions.map((action, index) => (
-                    <Grid item xs={6} sm={6} md={3} key={index}>
-                      <Link to={action.link} style={{ textDecoration: "none" }}>
-                        <Box
-                          sx={{
-                            p: { xs: 2, sm: 3 },
-                            textAlign: "center",
-                            borderRadius: 2,
-                            backgroundColor: `${settings.primaryColor}0A`,
-                            border: `1px solid ${settings.primaryColor}26`,
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            gap: 1,
-                            transition: "all 0.3s",
-                            cursor: "pointer",
-                            "&:hover": {
-                              backgroundColor: settings.primaryColor,
-                              transform: "translateY(-8px)",
-                              boxShadow: `0 12px 24px ${settings.primaryColor}4D`,
-                              "& .action-icon": {
-                                color: settings.textColor,
-                                transform: "scale(1.2) rotate(5deg)",
-                              },
-                              "& .action-label": { color: settings.textColor },
-                            },
-                          }}
-                        >
-                          <Box
-                            className="action-icon"
-                            sx={{
-                              color: action.color,
-                              fontSize: { xs: 32, sm: 40 },
-                              transition: "all 0.3s",
-                              display: "flex",
-                              justifyContent: "center",
-                            }}
-                          >
-                            {action.icon}
-                          </Box>
-                          <Typography
-                            className="action-label"
-                            variant="caption"
-                            sx={{
-                              fontWeight: 600,
-                              color: settings.textPrimaryColor,
-                              transition: "color 0.3s",
-                              fontSize: { xs: "0.8rem", sm: "0.9rem" },
-                            }}
-                          >
-                            {action.label}
-                          </Typography>
-                        </Box>
-                      </Link>
-                    </Grid>
-                  ))}
-                </Grid>
-              </CardContent>
-            </Card>
-          </Grow>
-
           {/* Payslip Card */}
           <Grow in timeout={600}>
             <Card
@@ -1566,116 +1498,127 @@ const Home = () => {
           </Grow>
         </Grid>
 
-        {/* Right Column */}
+        {/* Right Column - height matches carousel so bottom aligns */}
         <Grid item xs={12} md={5} lg={4}>
-          {/* Profile Card */}
+          <Box
+            sx={{
+              height: { xs: "auto", sm: 450, md: 550 },
+              display: "flex",
+              flexDirection: "column",
+              gap: 2,
+              mb: 3,
+            }}
+          >
+          {/* Employee Panel - DTR, Payslip, PDS, Attendance 1 row */}
           <Grow in timeout={400}>
             <Card
               sx={{
+                flexShrink: 0,
                 background: settings.accentColor,
                 backdropFilter: "blur(15px)",
                 border: `1px solid ${settings.primaryColor}26`,
                 borderRadius: 4,
-                mb: 3,
-                textAlign: "center",
                 boxShadow: `0 15px 40px ${settings.primaryColor}33`,
               }}
             >
-              <CardContent sx={{ p: 3 }}>
-                <Box>
-                  <Avatar
-                    src={
-                      profilePicture
-                        ? `${API_BASE_URL}${profilePicture}`
-                        : undefined
-                    }
-                    onClick={() => navigate("/profile")}
+              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+                <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                  <DashboardIcon
                     sx={{
-                      border: `2px solid ${settings.primaryColor}`,
-                      width: 100,
-                      height: 100,
-                      margin: "0 auto 16px",
-                      cursor: "pointer",
-                      transition: "all 0.3s",
-                      "&:hover": { transform: "scale(1.1)" },
+                      color: settings.textPrimaryColor,
+                      mr: 1,
+                      fontSize: 24,
                     }}
                   />
-                </Box>
-                <Typography
-                  variant="h6"
-                  sx={{
-                    fontWeight: 700,
-                    color: settings.textPrimaryColor,
-                    mb: 0.5,
-                  }}
-                >
-                  {fullName || username || "Employee Name"}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="textSecondary"
-                  sx={{ mb: 2 }}
-                >
-                  ID: {employeeNumber || "#00000000"}
-                </Typography>
-                <Divider sx={{ my: 2 }} />
-                <Box sx={{ display: "flex", gap: 1 }}>
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    size="small"
-                    startIcon={<ManageAccounts />}
-                    component={Link}
-                    to="/profile"
+                  <Typography
+                    variant="h6"
                     sx={{
-                      backgroundColor: settings.primaryColor,
-                      color: settings.textColor,
-                      "&:hover": {
-                        backgroundColor: settings.hoverColor,
-                        transform: "translateY(-2px)",
-                        boxShadow: `0 4px 12px ${settings.primaryColor}4D`,
-                      },
-                      "& .MuiSvgIcon-root": { transition: "transform 0.3s" },
+                      fontWeight: 700,
+                      color: settings.textPrimaryColor,
+                      fontSize: "1.125rem",
                     }}
                   >
-                    Profile
-                  </Button>
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    size="small"
-                    startIcon={<Logout />}
-                    onClick={handleLogout}
-                    sx={{
-                      backgroundColor: settings.primaryColor,
-                      "&:hover": {
-                        backgroundColor: settings.hoverColor,
-                        transform: "translateY(-2px)",
-                        boxShadow: `0 4px 12px ${settings.primaryColor}4D`,
-                      },
-                      transition: "all 0.3s",
-                    }}
-                  >
-                    Logout
-                  </Button>
+                    Employee Panel
+                  </Typography>
                 </Box>
+                <Grid container spacing={2}>
+                  {quickActions.map((action, index) => (
+                    <Grid item xs={6} sm={3} key={index}>
+                      <Link to={action.link} style={{ textDecoration: "none" }}>
+                        <Box
+                          sx={{
+                            p: { xs: 2, sm: 3 },
+                            textAlign: "center",
+                            borderRadius: 2,
+                            backgroundColor: `${settings.primaryColor}0A`,
+                            border: `1px solid ${settings.primaryColor}26`,
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            gap: 1,
+                            transition: "all 0.3s",
+                            cursor: "pointer",
+                            "&:hover": {
+                              backgroundColor: settings.primaryColor,
+                              transform: "translateY(-8px)",
+                              boxShadow: `0 12px 24px ${settings.primaryColor}4D`,
+                              "& .action-icon": {
+                                color: settings.textColor,
+                                transform: "scale(1.2) rotate(5deg)",
+                              },
+                              "& .action-label": { color: settings.textColor },
+                            },
+                          }}
+                        >
+                          <Box
+                            className="action-icon"
+                            sx={{
+                              color: action.color,
+                              fontSize: { xs: 32, sm: 40 },
+                              transition: "all 0.3s",
+                              display: "flex",
+                              justifyContent: "center",
+                            }}
+                          >
+                            {action.icon}
+                          </Box>
+                          <Typography
+                            className="action-label"
+                            variant="caption"
+                            sx={{
+                              fontWeight: 600,
+                              color: settings.textPrimaryColor,
+                              transition: "color 0.3s",
+                              fontSize: { xs: "0.8rem", sm: "0.9rem" },
+                            }}
+                          >
+                            {action.label}
+                          </Typography>
+                        </Box>
+                      </Link>
+                    </Grid>
+                  ))}
+                </Grid>
               </CardContent>
             </Card>
           </Grow>
 
-          {/* Calendar with Notes */}
+          {/* Calendar - fills remaining space, scrolls inside so bottom aligns with carousel */}
           <Grow in timeout={500}>
             <Card
               sx={{
+                flex: 1,
+                minHeight: 0,
+                display: "flex",
+                flexDirection: "column",
                 background: settings.accentColor,
                 backdropFilter: "blur(15px)",
                 border: `1px solid ${settings.primaryColor}26`,
                 borderRadius: 4,
-                mb: 3,
                 boxShadow: `0 15px 40px ${settings.primaryColor}33`,
               }}
             >
-              <CardContent sx={{ p: 3 }}>
+              <CardContent sx={{ p: 3, flex: 1, minHeight: 0, overflow: "auto", display: "flex", flexDirection: "column" }}>
                 <Box
                   sx={{
                     display: "flex",
@@ -2060,6 +2003,7 @@ const Home = () => {
               </CardContent>
             </Card>
           </Grow>
+          </Box>
 
           {/* Recent Activity */}
           <Grow in timeout={600}>

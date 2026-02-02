@@ -37,14 +37,10 @@ import LoadingOverlay from "../components/LoadingOverlay";
 import logo from "../assets/logo.PNG";
 import bg from "../assets/EaristBG.PNG";
 
-// UI shows "2013-" but backend/database expects digits only like "20134507"
-const EMPLOYEE_NUMBER_PREFIX_DISPLAY = "2013-";
-const EMPLOYEE_NUMBER_PREFIX_VALUE = "2013";
-
 const Login = () => {
   const [showIntro, setShowIntro] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
-  const [employeeLast4, setEmployeeLast4] = useState("");
+  const [employeeNumber, setEmployeeNumber] = useState("");
   const [resolvedEmployeeNumber, setResolvedEmployeeNumber] = useState("");
   const [formData, setFormData] = useState({ password: "" });
   const [errMessage, setErrorMessage] = useState("");
@@ -73,7 +69,7 @@ const Login = () => {
   const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
   const [isDefaultPassword, setIsDefaultPassword] = useState(false);
   const [showLaterModal, setShowLaterModal] = useState(false);
-
+  const [dashWarning, setDashWarning] = useState("");
 
   const primaryGradient = "linear-gradient(135deg, #800020, #A52A2A)";
   const primaryHoverGradient = "linear-gradient(135deg, #A52A2A, #800020)";
@@ -82,18 +78,9 @@ const Login = () => {
   const mediumText = "#800020";
   const placeholderGray = "rgba(0, 0, 0, 0.45)";
 
-  const fullEmployeeNumberDisplay = React.useMemo(() => {
-    return `${EMPLOYEE_NUMBER_PREFIX_DISPLAY}${employeeLast4}`;
-  }, [employeeLast4]);
-
-  const fullEmployeeNumberValue = React.useMemo(() => {
-    return `${EMPLOYEE_NUMBER_PREFIX_VALUE}${employeeLast4}`;
-  }, [employeeLast4]);
-
   const employeeNumberForRequests = React.useMemo(() => {
-    // Prefer whatever employee number the backend recognizes (from login response).
-    return resolvedEmployeeNumber || fullEmployeeNumberValue;
-  }, [resolvedEmployeeNumber, fullEmployeeNumberValue]);
+    return resolvedEmployeeNumber || employeeNumber;
+  }, [resolvedEmployeeNumber, employeeNumber]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -185,6 +172,15 @@ const Login = () => {
   }, [success]);
 
 
+  // Auto-hide dash warning after 3 seconds
+  useEffect(() => {
+    if (dashWarning) {
+      const timer = setTimeout(() => setDashWarning(""), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [dashWarning]);
+
+
   const handleChanges = e => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -192,8 +188,15 @@ const Login = () => {
 
   const handleEmployeeNumberChange = e => {
     const raw = e.target.value ?? "";
-    const digitsOnly = String(raw).replace(/\D/g, "");
-    setEmployeeLast4(digitsOnly.slice(-4));
+    // Show warning if user tried to type a dash (hyphen)
+    if (raw.includes("-")) {
+      setDashWarning("Hyphens (dashes) are not allowed in the employee number.");
+    } else {
+      setDashWarning("");
+    }
+    // Allow digits and letters only; normalize to uppercase (CAPSLOCK-style)
+    const allowed = String(raw).replace(/[^0-9A-Za-z]/g, "").toUpperCase();
+    setEmployeeNumber(allowed);
     setResolvedEmployeeNumber("");
   };
 
@@ -305,7 +308,7 @@ const Login = () => {
 
   const handleLogin = async e => {
     e.preventDefault();
-    if (!employeeLast4 || employeeLast4.length !== 4 || !formData.password) {
+    if (!employeeNumber.trim() || !formData.password) {
       setErrorMessage("Please fill all credentials");
       return;
     }
@@ -325,8 +328,7 @@ const Login = () => {
         return { response, data, employeeNumberAttempted: employeeNumber };
       };
 
-      // Backend/database expects digits only, e.g. "20134507" (no dash).
-      let { response, data, employeeNumberAttempted } = await tryLogin(fullEmployeeNumberValue);
+      let { response, data, employeeNumberAttempted } = await tryLogin(employeeNumber);
 
       if (response.ok) {
         const canonicalEmp = data.employeeNumber || employeeNumberAttempted;
@@ -669,20 +671,23 @@ const Login = () => {
 
               <form onSubmit={handleLogin}>
                 <TextField
-                  name="employeeLast4"
-                  placeholder="Last 4 digits"
+                  name="employeeNumber"
+                  placeholder="Employee Number"
                   fullWidth
-                  value={employeeLast4}
-                  inputProps={{ maxLength: 4, inputMode: "numeric" }}
+                  value={employeeNumber}
+                  inputProps={{ maxLength: 20 }}
                   sx={{
                     mb: 3,
+                    "& .MuiInputBase-input": {
+                      color: "#000",
+                    },
                     "& .MuiInputBase-input::placeholder": {
                       color: placeholderGray,
                       opacity: 1,
                     },
                     "& .MuiOutlinedInput-root": {
                       borderRadius: 2,
-                      background: "rgba(0,0,0,0.04)",
+                      background: "#fff",
                       "& fieldset": { borderColor: placeholderGray },
                       "&.Mui-focused fieldset": { borderColor: placeholderGray },
                       "& .MuiInputAdornment-root": {
@@ -696,10 +701,7 @@ const Login = () => {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <BadgeOutlined sx={{ color: placeholderGray, mr: 0.75 }} />
-                        <Typography sx={{ ml: 0, fontWeight: 700, color: placeholderGray }}>
-                          {EMPLOYEE_NUMBER_PREFIX_DISPLAY}
-                        </Typography>
+                        <BadgeOutlined sx={{ color: "#a31d1d", mr: 0.75 }} />
                       </InputAdornment>
                     ),
                   }}
@@ -712,13 +714,16 @@ const Login = () => {
                   type={showPassword ? "text" : "password"}
                   sx={{
                     mb: 2,
+                    "& .MuiInputBase-input": {
+                      color: "#000",
+                    },
                     "& .MuiInputBase-input::placeholder": {
                       color: placeholderGray,
                       opacity: 1,
                     },
                     "& .MuiOutlinedInput-root": {
                       borderRadius: 2,
-                      background: "rgba(0,0,0,0.04)",
+                      background: "#fff",
                       "& fieldset": { borderColor: placeholderGray },
                       "&.Mui-focused fieldset": { borderColor: placeholderGray },
                     },
@@ -726,14 +731,21 @@ const Login = () => {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <LockOutlined sx={{ color: placeholderGray }} />
+                        <LockOutlined sx={{ color: "#a31d1d" }} />
                       </InputAdornment>
                     ),
                   }}
                   onChange={handleChanges}
                 />
-                <Box sx={{ textAlign: "right", mb: 3 }}>
-                  <Link href="/forgot-password" underline="hover" sx={{ color: mediumText }}>
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3, gap: 2 }}>
+                  {dashWarning ? (
+                    <Alert severity="warning" sx={{ py: 0.5, flex: 1, fontSize: "0.8rem", "& .MuiAlert-message": { width: "100%", fontSize: "inherit" } }}>
+                      {dashWarning}
+                    </Alert>
+                  ) : (
+                    <span />
+                  )}
+                  <Link href="/forgot-password" underline="hover" sx={{ color: mediumText, flexShrink: 0 }}>
                     Forgot password?
                   </Link>
                 </Box>
@@ -976,12 +988,16 @@ const Login = () => {
               inputProps={{ maxLength: 6, style: { letterSpacing: "0.15rem", fontSize: "1.6rem", textAlign: "center" } }}
               sx={{
                 mb: 2,
+                "& .MuiInputBase-input": {
+                  color: "#000",
+                },
                 "& .MuiInputBase-input::placeholder": {
                   color: placeholderGray,
                   opacity: 1,
                 },
                 "& .MuiOutlinedInput-root": {
                   borderRadius: 2,
+                  background: "#fff",
                   "& fieldset": { borderColor: placeholderGray },
                   "&:hover fieldset": { borderColor: placeholderGray },
                   "&.Mui-focused fieldset": { borderColor: placeholderGray },

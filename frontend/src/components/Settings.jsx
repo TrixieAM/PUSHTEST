@@ -950,9 +950,18 @@ const Settings = () => {
                 lineHeight: 1.6,
               }}
             >
-              To change your password, we need to verify your identity. Enter
-              your current password below, and we'll send a verification code to
-              your email: <strong>{userEmail}</strong>
+              {userEmail && String(userEmail).trim() ? (
+                <>
+                  To change your password, we need to verify your identity. Enter
+                  your current password below, and we'll send a verification code
+                  to your email: <strong>{userEmail}</strong>
+                </>
+              ) : (
+                <>
+                  To change your password, you must have an email on file. Add
+                  one in Email Settings first, then return here.
+                </>
+              )}
             </Typography>
 
             <ModernTextField
@@ -979,7 +988,7 @@ const Settings = () => {
               type="submit"
               variant="contained"
               fullWidth
-              disabled={loading}
+              disabled={loading || !userEmail || !String(userEmail).trim()}
               startIcon={<MarkEmailReadOutlined />}
               sx={{
                 py: 1.8,
@@ -996,6 +1005,14 @@ const Settings = () => {
             >
               {loading ? "Sending..." : "Send Verification Code"}
             </ProfessionalButton>
+            {(!userEmail || !String(userEmail).trim()) && (
+              <Typography
+                variant="body2"
+                sx={{ mt: 2, color: "#d32f2f", textAlign: "center" }}
+              >
+                You need to add an email on email settings to proceed.
+              </Typography>
+            )}
           </Box>
         );
 
@@ -1221,6 +1238,22 @@ const Settings = () => {
         transform: "translateX(-50%)", // Center the element
       }}
     >
+      {/* Loading Backdrop - outside content */}
+      <Backdrop
+        sx={{
+          color: accentColor,
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+        }}
+        open={loading}
+      >
+        <Box sx={{ textAlign: "center" }}>
+          <CircularProgress color="inherit" size={60} thickness={4} />
+          <Typography variant="h6" sx={{ mt: 2, color: textPrimaryColor }}>
+            Processing...
+          </Typography>
+        </Box>
+      </Backdrop>
+
       {/* Wider Container */}
       <Box sx={{ px: 6, mx: "auto", maxWidth: "1600px" }}>
         {/* Header */}
@@ -1362,22 +1395,6 @@ const Settings = () => {
           </Box>
         </Fade>
 
-        {/* Loading Backdrop */}
-        <Backdrop
-          sx={{
-            color: accentColor,
-            zIndex: (theme) => theme.zIndex.drawer + 1,
-          }}
-          open={loading}
-        >
-          <Box sx={{ textAlign: "center" }}>
-            <CircularProgress color="inherit" size={60} thickness={4} />
-            <Typography variant="h6" sx={{ mt: 2, color: textPrimaryColor }}>
-              Processing...
-            </Typography>
-          </Box>
-        </Backdrop>
-
         {errMessage && (
           <Fade in timeout={300}>
             <Alert
@@ -1437,7 +1454,7 @@ const Settings = () => {
                     }}
                   >
                     <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                      Security
+                      Security  
                     </Typography>
                   </Box>
                   <List sx={{ p: 0 }}>
@@ -1513,7 +1530,7 @@ const Settings = () => {
                         <Shield sx={{ color: primaryColor }} />
                       </ListItemIcon>
                       <ListItemText
-                        primary="Security"
+                        primary="Security | OTP "
                         primaryTypographyProps={{
                           fontWeight: 500,
                           color:
@@ -1792,75 +1809,135 @@ const Settings = () => {
                     >
                       <EmailOutlined sx={{ fontSize: 28 }} />
                       <Typography variant="h5" sx={{ fontWeight: 600 }}>
-                        Email Settings
+                        {!userEmail || !String(userEmail).trim()
+                          ? "Add an Email"
+                          : "Email Settings"}
                       </Typography>
                     </Box>
                     <Box sx={{ p: 4, flex: "1 1 auto", overflow: "auto" }}>
-                      <Typography
-                        variant="body1"
-                        sx={{ mb: 3, color: "#666", lineHeight: 1.6 }}
-                      >
-                        Update your email address. You'll receive important
-                        notifications and verification codes at this address.
-                      </Typography>
+                      {!userEmail || !String(userEmail).trim() ? (
+                        <>
+                          <Typography
+                            variant="body1"
+                            sx={{ mb: 3, color: "#666", lineHeight: 1.6 }}
+                          >
+                            You don't have an email on file. Add one to receive
+                            notifications and verification codes (e.g. for
+                            password reset and login).
+                          </Typography>
 
-                      <ModernTextField
-                        fullWidth
-                        label="Current Email"
-                        value={userEmail}
-                        disabled
-                        sx={{ mb: 3 }}
-                        InputProps={{
-                          startAdornment: (
-                            <InputAdornment position="start">
-                              <EmailOutlined sx={{ color: primaryColor }} />
-                            </InputAdornment>
-                          ),
-                        }}
-                      />
+                          <ModernTextField
+                            fullWidth
+                            label="Email Address"
+                            value={newEmail}
+                            onChange={(e) => setNewEmail(e.target.value)}
+                            placeholder="Enter your email"
+                            sx={{ mb: 3 }}
+                            required
+                            helperText="Enter the email address you want to use"
+                          />
 
-                      <ModernTextField
-                        fullWidth
-                        label="New Email Address"
-                        value={newEmail}
-                        onChange={(e) => setNewEmail(e.target.value)}
-                        placeholder="Enter your new email"
-                        sx={{ mb: 3 }}
-                        required
-                        helperText="Enter the email address you want to use"
-                      />
+                          <ModernTextField
+                            fullWidth
+                            label="Confirm Email Address"
+                            value={confirmEmail}
+                            onChange={(e) => setConfirmEmail(e.target.value)}
+                            placeholder="Re-enter your email"
+                            sx={{ mb: 3 }}
+                            required
+                            helperText="Re-enter the same email to confirm"
+                          />
 
-                      <ModernTextField
-                        fullWidth
-                        label="Confirm New Email Address"
-                        value={confirmEmail}
-                        onChange={(e) => setConfirmEmail(e.target.value)}
-                        placeholder="Re-enter your new email"
-                        sx={{ mb: 3 }}
-                        required
-                        helperText="Re-enter the same email to confirm"
-                      />
+                          <ProfessionalButton
+                            fullWidth
+                            variant="contained"
+                            sx={{
+                              py: 1.8,
+                              fontSize: "1rem",
+                              fontWeight: 600,
+                              bgcolor: primaryColor,
+                              color: "white",
+                              "&:hover": {
+                                bgcolor: secondaryColor,
+                                transform: "scale(1.02)",
+                              },
+                              transition: "transform 0.2s ease-in-out",
+                            }}
+                            onClick={handleUpdateEmail}
+                            disabled={loading}
+                          >
+                            {loading ? "Adding..." : "Add Email"}
+                          </ProfessionalButton>
+                        </>
+                      ) : (
+                        <>
+                          <Typography
+                            variant="body1"
+                            sx={{ mb: 3, color: "#666", lineHeight: 1.6 }}
+                          >
+                            Update your email address. You'll receive important
+                            notifications and verification codes at this address.
+                          </Typography>
 
-                      <ProfessionalButton
-                        fullWidth
-                        variant="contained"
-                        sx={{
-                          py: 1.8,
-                          fontSize: "1rem",
-                          fontWeight: 600,
-                          bgcolor: primaryColor,
-                          color: "white",
-                          "&:hover": {
-                            bgcolor: secondaryColor,
-                            transform: "scale(1.02)",
-                          },
-                          transition: "transform 0.2s ease-in-out",
-                        }}
-                        onClick={handleUpdateEmail}
-                        disabled={loading}
-                      >
-                        {loading ? "Updating..." : "Update Email"}
-                      </ProfessionalButton>
+                          <ModernTextField
+                            fullWidth
+                            label="Current Email"
+                            value={userEmail}
+                            disabled
+                            sx={{ mb: 3 }}
+                            InputProps={{
+                              startAdornment: (
+                                <InputAdornment position="start">
+                                  <EmailOutlined sx={{ color: primaryColor }} />
+                                </InputAdornment>
+                              ),
+                            }}
+                          />
+
+                          <ModernTextField
+                            fullWidth
+                            label="New Email Address"
+                            value={newEmail}
+                            onChange={(e) => setNewEmail(e.target.value)}
+                            placeholder="Enter your new email"
+                            sx={{ mb: 3 }}
+                            required
+                            helperText="Enter the email address you want to use"
+                          />
+
+                          <ModernTextField
+                            fullWidth
+                            label="Confirm New Email Address"
+                            value={confirmEmail}
+                            onChange={(e) => setConfirmEmail(e.target.value)}
+                            placeholder="Re-enter your new email"
+                            sx={{ mb: 3 }}
+                            required
+                            helperText="Re-enter the same email to confirm"
+                          />
+
+                          <ProfessionalButton
+                            fullWidth
+                            variant="contained"
+                            sx={{
+                              py: 1.8,
+                              fontSize: "1rem",
+                              fontWeight: 600,
+                              bgcolor: primaryColor,
+                              color: "white",
+                              "&:hover": {
+                                bgcolor: secondaryColor,
+                                transform: "scale(1.02)",
+                              },
+                              transition: "transform 0.2s ease-in-out",
+                            }}
+                            onClick={handleUpdateEmail}
+                            disabled={loading}
+                          >
+                            {loading ? "Updating..." : "Update Email"}
+                          </ProfessionalButton>
+                        </>
+                      )}
                     </Box>
                   </CardContent>
                 </GlassCard>
