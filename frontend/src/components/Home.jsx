@@ -27,6 +27,9 @@ import {
   Menu,
   MenuItem,
   CircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
 } from "@mui/material";
 
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
@@ -63,6 +66,7 @@ import {
   PrivacyTip,
   EditCalendar,
   ManageAccounts,
+  MoreVert,
 } from "@mui/icons-material";
 
 const API_BASE_URL = "http://localhost:5000";
@@ -195,6 +199,14 @@ const Home = () => {
   // Avatar dropdown state
   const [anchorEl, setAnchorEl] = useState(null);
   const openMenu = Boolean(anchorEl);
+
+  // Calendar legends menu (3 dots)
+  const [calendarLegendAnchorEl, setCalendarLegendAnchorEl] = useState(null);
+  const openCalendarLegend = Boolean(calendarLegendAnchorEl);
+
+  // Payslip month for dropdown (wireframe)
+  const [payslipMonth, setPayslipMonth] = useState(new Date().getMonth());
+  const [payslipYear, setPayslipYear] = useState(new Date().getFullYear());
 
   const navigate = useNavigate();
 
@@ -1265,11 +1277,31 @@ const Home = () => {
                         })}
                       </Typography>
                     </Box>
+                    <Tooltip title="More options">
+                      <IconButton
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (announcements[currentSlide]) handleOpenModal(announcements[currentSlide]);
+                        }}
+                        sx={{
+                          position: "absolute",
+                          bottom: 16,
+                          right: 16,
+                          bgcolor: "rgba(0,0,0,0.4)",
+                          color: "#fff",
+                          "&:hover": { bgcolor: "rgba(0,0,0,0.6)" },
+                        }}
+                        size="small"
+                      >
+                        <MoreVert fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                     <Box
                       sx={{
                         position: "absolute",
                         bottom: 20,
-                        right: 20,
+                        left: "50%",
+                        transform: "translateX(-50%)",
                         display: "flex",
                         gap: 1.5,
                         alignItems: "center",
@@ -1347,7 +1379,7 @@ const Home = () => {
                     alignItems: "center",
                     mb: 3,
                     flexWrap: "wrap",
-                    gap: 1,
+                    gap: 2,
                   }}
                 >
                   <Box sx={{ display: "flex", alignItems: "center" }}>
@@ -1366,17 +1398,30 @@ const Home = () => {
                         fontSize: "1.125rem",
                       }}
                     >
-                      Latest Payslip
+                      Payslip
                     </Typography>
                   </Box>
-                  <Chip
-                    label={payrollData?.period || "Latest Period"}
-                    sx={{
-                      backgroundColor: `${settings.primaryColor}1A`,
-                      color: settings.textPrimaryColor,
-                      fontWeight: 600,
-                    }}
-                  />
+                  <FormControl size="small" sx={{ minWidth: 140 }}>
+                    <InputLabel id="payslip-month-label" sx={{ color: settings.textPrimaryColor }}>Month</InputLabel>
+                    <Select
+                      labelId="payslip-month-label"
+                      value={payslipMonth}
+                      label="Month"
+                      onChange={(e) => setPayslipMonth(Number(e.target.value))}
+                      sx={{
+                        color: settings.textPrimaryColor,
+                        "& .MuiOutlinedInput-notchedOutline": { borderColor: `${settings.primaryColor}40` },
+                        "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: settings.primaryColor },
+                        "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: settings.primaryColor },
+                      }}
+                    >
+                      {Array.from({ length: 12 }, (_, i) => (
+                        <MenuItem key={i} value={i}>
+                          {new Date(2000, i).toLocaleString("en-US", { month: "long" })}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
                 </Box>
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
@@ -1505,11 +1550,11 @@ const Home = () => {
               height: { xs: "auto", sm: 450, md: 550 },
               display: "flex",
               flexDirection: "column",
-              gap: 2,
+              gap: 1.5,
               mb: 3,
             }}
           >
-          {/* Employee Panel - DTR, Payslip, PDS, Attendance 1 row */}
+          {/* Employee Panel - DTR, Payslip, PDS, Attendance 1 row (compact to avoid calendar scroll) */}
           <Grow in timeout={400}>
             <Card
               sx={{
@@ -1521,13 +1566,13 @@ const Home = () => {
                 boxShadow: `0 15px 40px ${settings.primaryColor}33`,
               }}
             >
-              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-                <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+              <CardContent sx={{ p: { xs: 1.5, md: 2 }, "&:last-child": { pb: { xs: 1.5, md: 2 } } }}>
+                <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                   <DashboardIcon
                     sx={{
                       color: settings.textPrimaryColor,
                       mr: 1,
-                      fontSize: 24,
+                      fontSize: 20,
                     }}
                   />
                   <Typography
@@ -1535,19 +1580,19 @@ const Home = () => {
                     sx={{
                       fontWeight: 700,
                       color: settings.textPrimaryColor,
-                      fontSize: "1.125rem",
+                      fontSize: "1rem",
                     }}
                   >
-                    Employee Panel
+                    Panel / Quick Actions
                   </Typography>
                 </Box>
-                <Grid container spacing={2}>
+                <Grid container spacing={1.5}>
                   {quickActions.map((action, index) => (
                     <Grid item xs={6} sm={3} key={index}>
                       <Link to={action.link} style={{ textDecoration: "none" }}>
                         <Box
                           sx={{
-                            p: { xs: 2, sm: 3 },
+                            p: { xs: 1.25, sm: 1.5 },
                             textAlign: "center",
                             borderRadius: 2,
                             backgroundColor: `${settings.primaryColor}0A`,
@@ -1555,7 +1600,7 @@ const Home = () => {
                             display: "flex",
                             flexDirection: "column",
                             alignItems: "center",
-                            gap: 1,
+                            gap: 0.5,
                             transition: "all 0.3s",
                             cursor: "pointer",
                             "&:hover": {
@@ -1574,7 +1619,7 @@ const Home = () => {
                             className="action-icon"
                             sx={{
                               color: action.color,
-                              fontSize: { xs: 32, sm: 40 },
+                              fontSize: { xs: 26, sm: 30 },
                               transition: "all 0.3s",
                               display: "flex",
                               justifyContent: "center",
@@ -1589,7 +1634,7 @@ const Home = () => {
                               fontWeight: 600,
                               color: settings.textPrimaryColor,
                               transition: "color 0.3s",
-                              fontSize: { xs: "0.8rem", sm: "0.9rem" },
+                              fontSize: { xs: "0.75rem", sm: "0.8rem" },
                             }}
                           >
                             {action.label}
@@ -1624,7 +1669,7 @@ const Home = () => {
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    mb: 2,
+                    mb: 1,
                   }}
                 >
                   <IconButton
@@ -1674,7 +1719,7 @@ const Home = () => {
                     <ArrowForwardIosIcon fontSize="small" />
                   </IconButton>
                 </Box>
-                <Grid container spacing={0.5} sx={{ mb: 1 }}>
+                <Grid container spacing={0.5} sx={{ mb: 0.5 }}>
                   {["M", "T", "W", "T", "F", "S", "S"].map((day, i) => (
                     <Grid item xs={12 / 7} key={i}>
                       <Typography
@@ -1683,7 +1728,7 @@ const Home = () => {
                           fontWeight: 700,
                           fontSize: "0.75rem",
                           color: settings.textPrimaryColor,
-                          py: 0.5,
+                          py: 0.25,
                         }}
                       >
                         {day}
@@ -1746,7 +1791,8 @@ const Home = () => {
       }}
       sx={{
         textAlign: "center",
-        p: 0.8,
+        py: 0.4,
+        px: 0.75,
         fontSize: "0.875rem",
         borderRadius: 1,
         display: "flex",
@@ -1866,7 +1912,7 @@ const Home = () => {
                     : isToday
                     ? settings.textColor
                     : "#2196f3",
-                  boxShadow: "0 0 4px 0,0,0,0.3)",
+                  boxShadow: "0 0 4px rgba(0,0,0,0.3)",
                 }}
               />
             </Tooltip>
@@ -1881,10 +1927,16 @@ const Home = () => {
                 </Grid>
                 <Box
                   sx={{
-                    textAlign: "center",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    flexWrap: "wrap",
+                    gap: 1,
                     borderRadius: 2,
                     backgroundColor: `${settings.primaryColor}0A`,
                     border: `1px dashed ${settings.primaryColor}26`,
+                    p: 1.25,
+                    mt: 1,
                   }}
                 >
                   <Typography
@@ -1894,112 +1946,97 @@ const Home = () => {
                       fontWeight: 500,
                       display: "flex",
                       alignItems: "center",
-                      justifyContent: "center",
                       gap: 1,
+                      flex: 1,
+                      minWidth: 0,
                     }}
                   >
-                    <CalendarMonth sx={{ fontSize: 16 }} />
-                    Click on any day to view or add notes and events
+                    <CalendarMonth sx={{ fontSize: 16, flexShrink: 0 }} />
+                    Tips: Click any day to view or add notes and events
                   </Typography>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: settings.textPrimaryColor,
-                      display: "block",
-                    }}
-                  ></Typography>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    <Tooltip title="Add note">
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          const today = normalizeDate(new Date());
+                          setSelectedDate(today);
+                          handleAddNote();
+                        }}
+                        sx={{
+                          color: settings.textPrimaryColor,
+                          "&:hover": { backgroundColor: `${settings.primaryColor}1A` },
+                        }}
+                      >
+                        <Note fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Add event">
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          const today = normalizeDate(new Date());
+                          setSelectedDate(today);
+                          handleAddEvent();
+                        }}
+                        sx={{
+                          color: settings.textPrimaryColor,
+                          "&:hover": { backgroundColor: `${settings.primaryColor}1A` },
+                        }}
+                      >
+                        <Event fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Legends">
+                      <IconButton
+                        size="small"
+                        onClick={(e) => setCalendarLegendAnchorEl(e.currentTarget)}
+                        sx={{
+                          color: settings.textPrimaryColor,
+                          "&:hover": { backgroundColor: `${settings.primaryColor}1A` },
+                        }}
+                      >
+                        <MoreVert fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
                 </Box>
-                <Divider sx={{ my: 2.5 }} />
-                <Box sx={{ display: "flex", gap: 1, justifyContent: "center" }}>
-                  <Tooltip title="Add Note">
-                    <IconButton
-                      size="small"
-                      onClick={() => {
-                        const today = normalizeDate(new Date());
-                        setSelectedDate(today);
-                        handleAddNote();
-                      }}
-                      sx={{
-                        backgroundColor: `${settings.primaryColor}1A`,
-                        color: settings.textPrimaryColor,
-                        "&:hover": {
-                          backgroundColor: settings.primaryColor,
-                          color: settings.textColor,
-                          transform: "scale(1.1) rotate(90deg)",
-                        },
-                        transition: "all 0.3s",
-                      }}
-                    >
-                      <Note fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Add Event">
-                    <IconButton
-                      size="small"
-                      onClick={() => {
-                        const today = normalizeDate(new Date());
-                        setSelectedDate(today);
-                        handleAddEvent();
-                      }}
-                      sx={{
-                        backgroundColor: `${settings.primaryColor}1A`,
-                        color: settings.textPrimaryColor,
-                        "&:hover": {
-                          backgroundColor: settings.primaryColor,
-                          color: settings.textColor,
-                          transform: "scale(1.1) rotate(90deg)",
-                        },
-                        transition: "all 0.3s",
-                      }}
-                    >
-                      <Add fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </Box>
-                <Box
-                  sx={{
-                    mt: 2,
-                    display: "flex",
-                    gap: 2,
-                    justifyContent: "center",
-                    fontSize: "0.75rem",
+                <Menu
+                  anchorEl={calendarLegendAnchorEl}
+                  open={openCalendarLegend}
+                  onClose={() => setCalendarLegendAnchorEl(null)}
+                  anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                  transformOrigin={{ vertical: "top", horizontal: "right" }}
+                  PaperProps={{
+                    sx: {
+                      borderRadius: 2,
+                      minWidth: 180,
+                      backgroundColor: settings.accentColor,
+                      border: `1px solid ${settings.primaryColor}26`,
+                      boxShadow: `0 15px 40px ${settings.primaryColor}33`,
+                    },
                   }}
                 >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                    <Box
-                      sx={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: "50%",
-                        backgroundColor: "#ff9800",
-                      }}
-                    />
-                    <Typography variant="caption">Notes</Typography>
+                  <Box sx={{ px: 2, py: 1.5 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: settings.textPrimaryColor, mb: 1 }}>
+                      Legends
+                    </Typography>
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Box sx={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#ff9800" }} />
+                        <Typography variant="body2" sx={{ color: settings.textPrimaryColor }}>Notes</Typography>
+                      </Box>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Box sx={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#4caf50" }} />
+                        <Typography variant="body2" sx={{ color: settings.textPrimaryColor }}>Events</Typography>
+                      </Box>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Box sx={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#2196f3" }} />
+                        <Typography variant="body2" sx={{ color: settings.textPrimaryColor }}>Announcements</Typography>
+                      </Box>
+                    </Box>
                   </Box>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                    <Box
-                      sx={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: "50%",
-                        backgroundColor: "#4caf50",
-                      }}
-                    />
-                    <Typography variant="caption">Events</Typography>
-                  </Box>
-                  {/* Add announcement to the legend */}
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                    <Box
-                      sx={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: "50%",
-                        backgroundColor: "#2196f3",
-                      }}
-                    />
-                    <Typography variant="caption">Announcements</Typography>
-                  </Box>
-                </Box>
+                </Menu>
               </CardContent>
             </Card>
           </Grow>
